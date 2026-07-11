@@ -12,6 +12,7 @@ public record ForeverWorldPortalsConfig(
         Block frameBlock,
         Identifier activationItemId,
         Item activationItem,
+        ReturnPortalMode returnPortalMode,
         int minimumPortalSeparationBlocks,
         int destinationSearchAttempts
 ) {
@@ -26,6 +27,7 @@ public record ForeverWorldPortalsConfig(
                 frameBlock,
                 Identifier.parse("minecraft:flint_and_steel"),
                 activationItem,
+                ReturnPortalMode.GENERATE,
                 25000,
                 64
         );

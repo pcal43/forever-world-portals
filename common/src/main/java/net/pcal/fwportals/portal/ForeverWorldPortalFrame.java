@@ -24,4 +24,8 @@ public record ForeverWorldPortalFrame(
     public boolean containsInterior(BlockPos pos) {
         return interiorBlocks.contains(pos);
     }
+
+    public BlockPos representativePortalPosition() {
+        return interiorBlocks.get(0);
+    }
 }

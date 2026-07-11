@@ -24,6 +24,12 @@ final class ForeverWorldPortalsConfigParser {
         Level logLevel = parseLevel(properties, "logLevel", defaults.logLevel(), logger);
         Block frameBlock = parseBlock(properties, "frameBlock", defaults.frameBlock(), logger);
         Item activationItem = parseItem(properties, "activationItem", defaults.activationItem(), logger);
+        ReturnPortalMode returnPortalMode = parseReturnPortalMode(
+                properties,
+                "returnPortalMode",
+                defaults.returnPortalMode(),
+                logger
+        );
         int minimumPortalSeparationBlocks = parsePositiveInt(
                 properties,
                 "minimumPortalSeparationBlocks",
@@ -43,6 +49,7 @@ final class ForeverWorldPortalsConfigParser {
                 frameBlock,
                 BuiltInRegistries.ITEM.getKey(activationItem),
                 activationItem,
+                returnPortalMode,
                 minimumPortalSeparationBlocks,
                 destinationSearchAttempts
         );
@@ -167,6 +174,28 @@ final class ForeverWorldPortalsConfigParser {
         if (logger != null) {
             logger.warn(
                     ForeverWorldPortalsService.LOG_PREFIX + "Invalid positive integer '{}' for '{}'; using default {}",
+                    value,
+                    key,
+                    defaultValue
+            );
+        }
+        return defaultValue;
+    }
+
+    private static ReturnPortalMode parseReturnPortalMode(Properties properties, String key, ReturnPortalMode defaultValue, Logger logger) {
+        String value = properties.getProperty(key);
+        if (value == null) {
+            return defaultValue;
+        }
+
+        try {
+            return ReturnPortalMode.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        if (logger != null) {
+            logger.warn(
+                    ForeverWorldPortalsService.LOG_PREFIX + "Invalid return portal mode '{}' for '{}'; using default {}",
                     value,
                     key,
                     defaultValue

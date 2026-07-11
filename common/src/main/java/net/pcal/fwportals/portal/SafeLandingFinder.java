@@ -83,6 +83,25 @@ public final class SafeLandingFinder {
         return Optional.empty();
     }
 
+    public Optional<Vec3> findSafeStandingAt(ServerLevel level, ServerPlayer player, BlockPos feetPos) {
+        FailureReason validation = validateManualLandingSpot(level, feetPos);
+        if (validation != null) {
+            return Optional.empty();
+        }
+
+        Vec3 standingPosition = Vec3.atBottomCenterOf(feetPos);
+        Vec3 collisionFreePosition = PortalShape.findCollisionFreePosition(
+                standingPosition,
+                level,
+                player,
+                player.getDimensions(player.getPose())
+        );
+        if (!level.getWorldBorder().isWithinBounds(BlockPos.containing(collisionFreePosition))) {
+            return Optional.empty();
+        }
+        return Optional.of(collisionFreePosition);
+    }
+
     private boolean ensureChunkAvailable(ServerLevel level, BlockPos probe) {
         ChunkPos chunkPos = ChunkPos.containing(probe);
         if (level.getChunkSource().getChunkNow(chunkPos.x(), chunkPos.z()) != null) {
@@ -125,15 +144,9 @@ public final class SafeLandingFinder {
                 continue;
             }
 
-            Vec3 standingPosition = Vec3.atBottomCenterOf(feetPos);
-            Vec3 collisionFreePosition = PortalShape.findCollisionFreePosition(
-                    standingPosition,
-                    level,
-                    player,
-                    player.getDimensions(player.getPose())
-            );
-            if (level.getWorldBorder().isWithinBounds(BlockPos.containing(collisionFreePosition))) {
-                return ProbeResult.success(collisionFreePosition);
+            Optional<Vec3> standingPosition = findSafeStandingAt(level, player, feetPos);
+            if (standingPosition.isPresent()) {
+                return ProbeResult.success(standingPosition.get());
             }
         }
 

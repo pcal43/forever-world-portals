@@ -15,6 +15,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ForeverWorldPortalRegistryDataTest {
@@ -43,6 +44,11 @@ class ForeverWorldPortalRegistryDataTest {
                 new BlockPos(25010, 80, -400),
                 origin.id(),
                 false,
+                null,
+                null,
+                0,
+                0,
+                null,
                 1234L
         );
         data.registerLinkedPair(origin, destination);
@@ -101,6 +107,11 @@ class ForeverWorldPortalRegistryDataTest {
                 new BlockPos(30000, 80, 0),
                 origin.id(),
                 false,
+                null,
+                null,
+                0,
+                0,
+                null,
                 1L
         );
         data.registerLinkedPair(origin, destination);
@@ -108,6 +119,119 @@ class ForeverWorldPortalRegistryDataTest {
         assertFalse(data.isSeparated(Level.OVERWORLD, new BlockPos(100, 80, 0), 25000));
         assertFalse(data.isSeparated(Level.OVERWORLD, new BlockPos(30100, 80, 0), 25000));
         assertTrue(data.isSeparated(Level.OVERWORLD, new BlockPos(60000, 80, 0), 25000));
+    }
+
+    @Test
+    void materializedDestinationCanBeFoundByAnchor() {
+        TestBootstrap.ensureBootstrapped();
+
+        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        OriginPortalRecord origin = new OriginPortalRecord(
+                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
+                UUID.randomUUID(),
+                Level.OVERWORLD,
+                new BlockPos(5, 70, 5),
+                Direction.Axis.X,
+                2,
+                3,
+                new BlockPos(6, 71, 5),
+                UUID.randomUUID(),
+                10L
+        );
+        ReservedDestinationRecord destination = new ReservedDestinationRecord(
+                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
+                origin.linkedPortalId(),
+                Level.OVERWORLD,
+                new BlockPos(25000, 80, 25000),
+                origin.id(),
+                false,
+                null,
+                null,
+                0,
+                0,
+                null,
+                10L
+        );
+        data.registerLinkedPair(origin, destination);
+
+        ReservedDestinationRecord materialized = destination.withPhysicalPortal(
+                new BlockPos(25010, 80, 25010),
+                Direction.Axis.Z,
+                2,
+                3,
+                new BlockPos(25010, 81, 25011)
+        );
+        data.materializeReservedDestination(destination.id(), materialized);
+
+        Optional<ReservedDestinationRecord> loadedDestination = data.findReservedDestinationByAnchor(
+                new PortalLookupKey(Level.OVERWORLD, materialized.canonicalFrameAnchor())
+        );
+        assertTrue(loadedDestination.isPresent());
+        assertEquals(materialized.canonicalFrameAnchor(), loadedDestination.get().canonicalFrameAnchor());
+        assertTrue(loadedDestination.get().physicalPortalExists());
+    }
+
+    @Test
+    void duplicatePortalAnchorsAreRejected() {
+        TestBootstrap.ensureBootstrapped();
+
+        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        OriginPortalRecord origin = new OriginPortalRecord(
+                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
+                UUID.randomUUID(),
+                Level.OVERWORLD,
+                new BlockPos(0, 64, 0),
+                Direction.Axis.Z,
+                2,
+                3,
+                new BlockPos(0, 65, 1),
+                UUID.randomUUID(),
+                1L
+        );
+        ReservedDestinationRecord destination = new ReservedDestinationRecord(
+                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
+                origin.linkedPortalId(),
+                Level.OVERWORLD,
+                new BlockPos(30000, 80, 0),
+                origin.id(),
+                true,
+                new BlockPos(30000, 79, 0),
+                Direction.Axis.Z,
+                2,
+                3,
+                new BlockPos(30000, 80, 1),
+                1L
+        );
+        data.registerLinkedPair(origin, destination);
+
+        OriginPortalRecord conflictingOrigin = new OriginPortalRecord(
+                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
+                UUID.randomUUID(),
+                Level.OVERWORLD,
+                new BlockPos(30000, 79, 0),
+                Direction.Axis.Z,
+                2,
+                3,
+                new BlockPos(30000, 80, 1),
+                UUID.randomUUID(),
+                2L
+        );
+        ReservedDestinationRecord conflictingDestination = new ReservedDestinationRecord(
+                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
+                conflictingOrigin.linkedPortalId(),
+                Level.OVERWORLD,
+                new BlockPos(60000, 80, 0),
+                conflictingOrigin.id(),
+                false,
+                null,
+                null,
+                0,
+                0,
+                null,
+                2L
+        );
+
+        assertThrows(IllegalStateException.class, () -> data.registerLinkedPair(conflictingOrigin, conflictingDestination));
     }
 
     private static ForeverWorldPortalRegistryData roundTrip(ForeverWorldPortalRegistryData data) {

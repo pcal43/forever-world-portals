@@ -17,7 +17,7 @@ import java.util.UUID;
 
 public final class ForeverWorldPortalRegistryData extends SavedData {
 
-    public static final int CURRENT_DATA_VERSION = 1;
+    public static final int CURRENT_DATA_VERSION = 2;
     public static final SavedDataType<ForeverWorldPortalRegistryData> TYPE = new SavedDataType<>(
             Identifier.parse("fwportals_portal_registry"),
             ForeverWorldPortalRegistryData::new,
@@ -30,6 +30,7 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
     private final Map<UUID, OriginPortalRecord> originPortalsById = new LinkedHashMap<>();
     private final Map<PortalLookupKey, UUID> originPortalIdsByAnchor = new LinkedHashMap<>();
     private final Map<UUID, ReservedDestinationRecord> reservedDestinationsById = new LinkedHashMap<>();
+    private final Map<PortalLookupKey, UUID> reservedDestinationIdsByAnchor = new LinkedHashMap<>();
 
     public static ForeverWorldPortalRegistryData get(ServerLevel level) {
         ServerLevel overworld = level.getServer().overworld();
@@ -57,7 +58,7 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
                 continue;
             }
             ReservedDestinationRecord.fromTag(destinationTag, message -> LOGGER.warn("[fwportals] {}", message))
-                    .ifPresent(record -> data.reservedDestinationsById.put(record.id(), record));
+                    .ifPresent(data::addReservedDestinationInternal);
         }
 
         LOGGER.info(
@@ -96,9 +97,51 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
         return Optional.ofNullable(reservedDestinationsById.get(id));
     }
 
+    public Optional<ReservedDestinationRecord> findReservedDestinationByAnchor(PortalLookupKey key) {
+        UUID id = reservedDestinationIdsByAnchor.get(key);
+        return id == null ? Optional.empty() : Optional.ofNullable(reservedDestinationsById.get(id));
+    }
+
+    public Optional<OriginPortalRecord> findOriginById(UUID id) {
+        return Optional.ofNullable(originPortalsById.get(id));
+    }
+
     public void registerLinkedPair(OriginPortalRecord origin, ReservedDestinationRecord destination) {
+        PortalLookupKey originKey = new PortalLookupKey(origin.dimension(), origin.canonicalFrameAnchor());
+        if (originPortalIdsByAnchor.containsKey(originKey) || reservedDestinationIdsByAnchor.containsKey(originKey)) {
+            throw new IllegalStateException("Portal already registered at " + origin.canonicalFrameAnchor());
+        }
+        if (destination.physicalPortalExists() && destination.canonicalFrameAnchor() != null) {
+            PortalLookupKey destinationKey = new PortalLookupKey(destination.dimension(), destination.canonicalFrameAnchor());
+            if (originPortalIdsByAnchor.containsKey(destinationKey) || reservedDestinationIdsByAnchor.containsKey(destinationKey)) {
+                throw new IllegalStateException("Portal already registered at " + destination.canonicalFrameAnchor());
+            }
+        }
         addOriginInternal(origin);
-        reservedDestinationsById.put(destination.id(), destination);
+        addReservedDestinationInternal(destination);
+        setDirty();
+    }
+
+    public void materializeReservedDestination(UUID destinationId, ReservedDestinationRecord destination) {
+        ReservedDestinationRecord existing = reservedDestinationsById.get(destinationId);
+        if (existing == null) {
+            throw new IllegalStateException("Unknown reserved destination " + destinationId);
+        }
+        if (destination.canonicalFrameAnchor() == null) {
+            throw new IllegalArgumentException("Materialized destination is missing a canonical frame anchor");
+        }
+
+        PortalLookupKey destinationKey = new PortalLookupKey(destination.dimension(), destination.canonicalFrameAnchor());
+        UUID existingId = reservedDestinationIdsByAnchor.get(destinationKey);
+        if (existingId != null && !existingId.equals(destinationId)) {
+            throw new IllegalStateException("Portal already registered at " + destination.canonicalFrameAnchor());
+        }
+        if (originPortalIdsByAnchor.containsKey(destinationKey)) {
+            throw new IllegalStateException("Origin portal already registered at " + destination.canonicalFrameAnchor());
+        }
+
+        removeReservedDestinationLookup(existing);
+        addReservedDestinationInternal(destination);
         setDirty();
     }
 
@@ -131,6 +174,22 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
     private void addOriginInternal(OriginPortalRecord origin) {
         originPortalsById.put(origin.id(), origin);
         originPortalIdsByAnchor.put(new PortalLookupKey(origin.dimension(), origin.canonicalFrameAnchor()), origin.id());
+    }
+
+    private void addReservedDestinationInternal(ReservedDestinationRecord destination) {
+        reservedDestinationsById.put(destination.id(), destination);
+        if (destination.physicalPortalExists() && destination.canonicalFrameAnchor() != null) {
+            reservedDestinationIdsByAnchor.put(
+                    new PortalLookupKey(destination.dimension(), destination.canonicalFrameAnchor()),
+                    destination.id()
+            );
+        }
+    }
+
+    private void removeReservedDestinationLookup(ReservedDestinationRecord destination) {
+        if (destination.physicalPortalExists() && destination.canonicalFrameAnchor() != null) {
+            reservedDestinationIdsByAnchor.remove(new PortalLookupKey(destination.dimension(), destination.canonicalFrameAnchor()));
+        }
     }
 
     private CompoundTag migrateRootTag(CompoundTag root) {

@@ -16,6 +16,10 @@ final class PortalPersistenceHelper {
         return value;
     }
 
+    static <T> Optional<T> optional(CompoundTag tag, String field, Codec<T> codec) {
+        return tag.read(field, codec);
+    }
+
     private PortalPersistenceHelper() {
     }
 }
