@@ -22,6 +22,8 @@ class ForeverWorldPortalsConfigParserTest {
                         logLevel=LOUD
                         frameBlock=not a block id
                         activationItem=minecraft:not_an_item
+                        minimumPortalSeparationBlocks=-5
+                        destinationSearchAttempts=zero
                         """.getBytes(StandardCharsets.UTF_8)),
                 ForeverWorldPortalsConfig.defaults(),
                 null
@@ -31,5 +33,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
         assertEquals(Items.FLINT_AND_STEEL, config.activationItem());
+        assertEquals(25000, config.minimumPortalSeparationBlocks());
+        assertEquals(64, config.destinationSearchAttempts());
     }
 }

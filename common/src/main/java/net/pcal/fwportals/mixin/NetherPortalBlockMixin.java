@@ -59,8 +59,8 @@ public class NetherPortalBlockMixin {
             BlockPos portalEntryPos,
             CallbackInfoReturnable<@Nullable TeleportTransition> cir
     ) {
-        if (ForeverWorldPortalsService.getInstance().shouldSuppressTeleport(currentLevel, entity, portalEntryPos)) {
-            cir.setReturnValue(null);
+        if (ForeverWorldPortalsService.getInstance().isForeverWorldPortal(currentLevel, portalEntryPos)) {
+            cir.setReturnValue(ForeverWorldPortalsService.getInstance().getTeleportTransitionForPortal(currentLevel, entity, portalEntryPos));
         }
     }
 }

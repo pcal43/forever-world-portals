@@ -24,13 +24,27 @@ final class ForeverWorldPortalsConfigParser {
         Level logLevel = parseLevel(properties, "logLevel", defaults.logLevel(), logger);
         Block frameBlock = parseBlock(properties, "frameBlock", defaults.frameBlock(), logger);
         Item activationItem = parseItem(properties, "activationItem", defaults.activationItem(), logger);
+        int minimumPortalSeparationBlocks = parsePositiveInt(
+                properties,
+                "minimumPortalSeparationBlocks",
+                defaults.minimumPortalSeparationBlocks(),
+                logger
+        );
+        int destinationSearchAttempts = parsePositiveInt(
+                properties,
+                "destinationSearchAttempts",
+                defaults.destinationSearchAttempts(),
+                logger
+        );
         return new ForeverWorldPortalsConfig(
                 enabled,
                 logLevel,
                 BuiltInRegistries.BLOCK.getKey(frameBlock),
                 frameBlock,
                 BuiltInRegistries.ITEM.getKey(activationItem),
-                activationItem
+                activationItem,
+                minimumPortalSeparationBlocks,
+                destinationSearchAttempts
         );
     }
 
@@ -134,6 +148,31 @@ final class ForeverWorldPortalsConfigParser {
             }
             return null;
         }
+    }
+
+    private static int parsePositiveInt(Properties properties, String key, int defaultValue, Logger logger) {
+        String value = properties.getProperty(key);
+        if (value == null) {
+            return defaultValue;
+        }
+
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            if (parsed > 0) {
+                return parsed;
+            }
+        } catch (NumberFormatException ignored) {
+        }
+
+        if (logger != null) {
+            logger.warn(
+                    ForeverWorldPortalsService.LOG_PREFIX + "Invalid positive integer '{}' for '{}'; using default {}",
+                    value,
+                    key,
+                    defaultValue
+            );
+        }
+        return defaultValue;
     }
 
     private ForeverWorldPortalsConfigParser() {

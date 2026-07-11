@@ -11,7 +11,9 @@ public record ForeverWorldPortalsConfig(
         Identifier frameBlockId,
         Block frameBlock,
         Identifier activationItemId,
-        Item activationItem
+        Item activationItem,
+        int minimumPortalSeparationBlocks,
+        int destinationSearchAttempts
 ) {
 
     static ForeverWorldPortalsConfig defaults() {
@@ -23,7 +25,9 @@ public record ForeverWorldPortalsConfig(
                 Identifier.parse("minecraft:diamond_block"),
                 frameBlock,
                 Identifier.parse("minecraft:flint_and_steel"),
-                activationItem
+                activationItem,
+                25000,
+                64
         );
     }
 }

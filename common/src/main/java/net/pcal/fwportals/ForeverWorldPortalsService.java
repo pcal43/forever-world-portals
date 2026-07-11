@@ -10,7 +10,9 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.pcal.fwportals.portal.ForeverWorldPortalFrame;
 import net.pcal.fwportals.portal.PortalActivationService;
+import net.pcal.fwportals.portal.PortalTravelService;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -28,6 +30,7 @@ public final class ForeverWorldPortalsService {
     private boolean initialized;
     private MinecraftServer currentServer;
     private PortalActivationService portalActivationService;
+    private PortalTravelService portalTravelService;
 
     public static ForeverWorldPortalsService getInstance() {
         return INSTANCE;
@@ -40,6 +43,7 @@ public final class ForeverWorldPortalsService {
         this.config = requireNonNull(config);
         this.logger = requireNonNull(logger);
         this.portalActivationService = new PortalActivationService(config, logger);
+        this.portalTravelService = new PortalTravelService(config, logger);
         this.initialized = true;
     }
 
@@ -85,8 +89,8 @@ public final class ForeverWorldPortalsService {
         portalActivationService().onEntityInsidePortal(level, pos, entity);
     }
 
-    public boolean shouldSuppressTeleport(ServerLevel level, Entity entity, BlockPos portalEntryPos) {
-        return portalActivationService().shouldSuppressTeleport(level, entity, portalEntryPos);
+    public @Nullable net.minecraft.world.level.portal.TeleportTransition getTeleportTransitionForPortal(ServerLevel level, Entity entity, BlockPos portalEntryPos) {
+        return portalTravelService().getTeleportTransition(level, entity, portalEntryPos);
     }
 
     public void onServerStarting(MinecraftServer server) {
@@ -110,6 +114,9 @@ public final class ForeverWorldPortalsService {
         if (portalActivationService != null) {
             portalActivationService.clearRuntimeState();
         }
+        if (portalTravelService != null) {
+            portalTravelService.clearRuntimeState();
+        }
         logger().info(LOG_PREFIX + "Server stopped");
     }
 
@@ -118,6 +125,13 @@ public final class ForeverWorldPortalsService {
             throw new IllegalStateException("Forever World Portals has not been initialized");
         }
         return portalActivationService;
+    }
+
+    private PortalTravelService portalTravelService() {
+        if (!initialized || portalTravelService == null) {
+            throw new IllegalStateException("Forever World Portals has not been initialized");
+        }
+        return portalTravelService;
     }
 
     private ForeverWorldPortalsService() {
