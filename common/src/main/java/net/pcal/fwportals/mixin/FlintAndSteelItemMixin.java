@@ -9,7 +9,6 @@ import net.minecraft.world.item.FlintAndSteelItem;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.block.Blocks;
 import net.pcal.fwportals.ForeverWorldPortalsService;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -87,51 +86,5 @@ public class FlintAndSteelItemMixin {
         }
         itemStack.hurtAndBreak(1, player, context.getHand().asEquipmentSlot());
         cir.setReturnValue(InteractionResult.SUCCESS);
-    }
-
-    @Inject(method = "useOn", at = @At("RETURN"))
-    private void maybeActivateForeverWorldPortal(UseOnContext context, CallbackInfoReturnable<InteractionResult> cir) {
-        if (!cir.getReturnValue().consumesAction()) {
-            ForeverWorldPortalsService.getInstance().logger().info(
-                    ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel return hook saw non-consuming result {} at {}",
-                    cir.getReturnValue(),
-                    context.getClickedPos().relative(context.getClickedFace())
-            );
-            return;
-        }
-
-        Level level = context.getLevel();
-        if (level.isClientSide()) {
-            ForeverWorldPortalsService.getInstance().logger().info(
-                    ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel return hook skipped on client at {}",
-                    context.getClickedPos().relative(context.getClickedFace())
-            );
-            return;
-        }
-
-        BlockPos firePos = context.getClickedPos().relative(context.getClickedFace());
-        if (!level.getBlockState(firePos).is(Blocks.FIRE)) {
-            ForeverWorldPortalsService.getInstance().logger().info(
-                    ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel return hook found no fire at {} after vanilla handling; found {}",
-                    firePos,
-                    level.getBlockState(firePos).getBlock().getName().getString()
-            );
-            return;
-        }
-
-        Player player = context.getPlayer();
-        if (player == null) {
-            ForeverWorldPortalsService.getInstance().logger().info(
-                    ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel return hook found vanilla fire at {} but no player was present",
-                    firePos
-            );
-            return;
-        }
-
-        ForeverWorldPortalsService.getInstance().logger().info(
-                ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel return hook attempting post-vanilla activation at {}",
-                firePos
-        );
-        ForeverWorldPortalsService.getInstance().tryActivatePortal(level, firePos, context.getItemInHand(), player);
     }
 }
