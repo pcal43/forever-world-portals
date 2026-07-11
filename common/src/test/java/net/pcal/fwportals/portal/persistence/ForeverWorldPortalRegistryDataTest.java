@@ -7,60 +7,47 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.pcal.fwportals.TestBootstrap;
+import net.pcal.fwportals.portal.ForeverWorldPortalFrame;
+import net.pcal.fwportals.portal.PortalFrameDetector;
+import net.pcal.fwportals.portal.PortalFrameDetectorTestBlockGetter;
+import net.pcal.fwportals.portal.PortalIdentity;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ForeverWorldPortalRegistryDataTest {
 
+    private final PortalFrameDetector detector = new PortalFrameDetector();
+    private final PortalIdentity identity = new PortalIdentity();
+
     @Test
-    void serializesAndDeserializesPortalRegistry() {
+    void serializesAndDeserializesSourcePortals() {
         TestBootstrap.ensureBootstrapped();
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        OriginPortalRecord origin = new OriginPortalRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
+        SourcePortalRecord portal = new SourcePortalRecord(
                 UUID.randomUUID(),
                 Level.OVERWORLD,
-                new BlockPos(10, 64, 10),
-                Direction.Axis.X,
-                2,
-                3,
-                new BlockPos(10, 65, 11),
-                UUID.randomUUID(),
-                1234L
-        );
-        ReservedDestinationRecord destination = new ReservedDestinationRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                origin.linkedPortalId(),
+                new BlockPos(0, 2, 1),
                 Level.OVERWORLD,
-                new BlockPos(25010, 80, -400),
-                origin.id(),
-                false,
-                null,
-                null,
-                0,
-                0,
-                null,
-                1234L
+                new BlockPos(25010, 80, -400)
         );
-        data.registerLinkedPair(origin, destination);
+        data.createSourcePortal(portal);
 
         ForeverWorldPortalRegistryData reloaded = roundTrip(data);
-        Optional<OriginPortalRecord> loadedOrigin = reloaded.findOrigin(new PortalLookupKey(Level.OVERWORLD, origin.canonicalFrameAnchor()));
-        Optional<ReservedDestinationRecord> loadedDestination = reloaded.findReservedDestination(origin.linkedPortalId());
+        List<SourcePortalRecord> portals = reloaded.sourcePortals().stream().toList();
 
-        assertTrue(loadedOrigin.isPresent());
-        assertTrue(loadedDestination.isPresent());
-        assertEquals(origin.canonicalFrameAnchor(), loadedOrigin.get().canonicalFrameAnchor());
-        assertEquals(destination.reservedDestinationPosition(), loadedDestination.get().reservedDestinationPosition());
+        assertEquals(1, portals.size());
+        assertEquals(portal.originBlock(), portals.get(0).originBlock());
+        assertEquals(portal.destinationPosition(), portals.get(0).destinationPosition());
     }
 
     @Test
@@ -68,170 +55,94 @@ class ForeverWorldPortalRegistryDataTest {
         TestBootstrap.ensureBootstrapped();
 
         CompoundTag root = new CompoundTag();
-        root.store("dataVersion", com.mojang.serialization.Codec.INT, ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION);
-        ListTag origins = new ListTag();
-        CompoundTag malformedOrigin = new CompoundTag();
-        malformedOrigin.store("dimension", net.minecraft.resources.ResourceKey.codec(net.minecraft.core.registries.Registries.DIMENSION), Level.OVERWORLD);
-        origins.add(malformedOrigin);
-        root.put("origins", origins);
-        root.put("reservedDestinations", new ListTag());
+        ListTag sourcePortals = new ListTag();
+        CompoundTag malformedPortal = new CompoundTag();
+        malformedPortal.store("dimension", net.minecraft.resources.ResourceKey.codec(net.minecraft.core.registries.Registries.DIMENSION), Level.OVERWORLD);
+        sourcePortals.add(malformedPortal);
+        root.put("sourcePortals", sourcePortals);
 
         DataResult<ForeverWorldPortalRegistryData> parsed = ForeverWorldPortalRegistryData.TYPE.codec().parse(NbtOps.INSTANCE, root);
         ForeverWorldPortalRegistryData data = parsed.getOrThrow();
 
-        assertFalse(data.findOrigin(new PortalLookupKey(Level.OVERWORLD, new BlockPos(0, 0, 0))).isPresent());
-        assertEquals(0, data.originPortals().size());
+        assertEquals(0, data.sourcePortals().size());
     }
 
     @Test
-    void separationCheckUsesExistingOriginsAndReservedDestinations() {
+    void sourcePortalInsideFrameMatchesThatFrame() {
+        TestBootstrap.ensureBootstrapped();
+
+        ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+        BlockPos originBlock = identity.computeOriginBlock(frame);
+
+        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        data.createSourcePortal(new SourcePortalRecord(
+                UUID.randomUUID(),
+                Level.OVERWORLD,
+                originBlock,
+                Level.OVERWORLD,
+                new BlockPos(100, 80, 100)
+        ));
+
+        List<SourcePortalRecord> matches = data.findSourcePortalsContainedBy(Level.OVERWORLD, frame);
+        assertEquals(1, matches.size());
+        assertEquals(originBlock, matches.get(0).originBlock());
+    }
+
+    @Test
+    void sourcePortalOutsideFrameDoesNotMatch() {
+        TestBootstrap.ensureBootstrapped();
+
+        ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+
+        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        data.createSourcePortal(new SourcePortalRecord(
+                UUID.randomUUID(),
+                Level.OVERWORLD,
+                new BlockPos(100, 100, 100),
+                Level.OVERWORLD,
+                new BlockPos(200, 80, 200)
+        ));
+
+        assertTrue(data.findSourcePortalsContainedBy(Level.OVERWORLD, frame).isEmpty());
+    }
+
+    @Test
+    void multiplePhysicalFramesCanMatchSameStoredOrigin() {
+        TestBootstrap.ensureBootstrapped();
+
+        ForeverWorldPortalFrame smaller = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+        ForeverWorldPortalFrame larger = buildAxisZFrame(new BlockPos(0, 0, 0), 3, 4);
+        BlockPos originBlock = identity.computeOriginBlock(smaller);
+
+        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        data.createSourcePortal(new SourcePortalRecord(
+                UUID.randomUUID(),
+                Level.OVERWORLD,
+                originBlock,
+                Level.OVERWORLD,
+                new BlockPos(500, 80, 500)
+        ));
+
+        assertEquals(1, data.findSourcePortalsContainedBy(Level.OVERWORLD, smaller).size());
+        assertEquals(1, data.findSourcePortalsContainedBy(Level.OVERWORLD, larger).size());
+    }
+
+    @Test
+    void separationUsesOriginsAndDestinations() {
         TestBootstrap.ensureBootstrapped();
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        OriginPortalRecord origin = new OriginPortalRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
+        data.createSourcePortal(new SourcePortalRecord(
                 UUID.randomUUID(),
                 Level.OVERWORLD,
                 new BlockPos(0, 64, 0),
-                Direction.Axis.Z,
-                2,
-                3,
-                new BlockPos(0, 65, 1),
-                UUID.randomUUID(),
-                1L
-        );
-        ReservedDestinationRecord destination = new ReservedDestinationRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                origin.linkedPortalId(),
                 Level.OVERWORLD,
-                new BlockPos(30000, 80, 0),
-                origin.id(),
-                false,
-                null,
-                null,
-                0,
-                0,
-                null,
-                1L
-        );
-        data.registerLinkedPair(origin, destination);
+                new BlockPos(30000, 80, 0)
+        ));
 
         assertFalse(data.isSeparated(Level.OVERWORLD, new BlockPos(100, 80, 0), 25000));
         assertFalse(data.isSeparated(Level.OVERWORLD, new BlockPos(30100, 80, 0), 25000));
         assertTrue(data.isSeparated(Level.OVERWORLD, new BlockPos(60000, 80, 0), 25000));
-    }
-
-    @Test
-    void materializedDestinationCanBeFoundByAnchor() {
-        TestBootstrap.ensureBootstrapped();
-
-        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        OriginPortalRecord origin = new OriginPortalRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                UUID.randomUUID(),
-                Level.OVERWORLD,
-                new BlockPos(5, 70, 5),
-                Direction.Axis.X,
-                2,
-                3,
-                new BlockPos(6, 71, 5),
-                UUID.randomUUID(),
-                10L
-        );
-        ReservedDestinationRecord destination = new ReservedDestinationRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                origin.linkedPortalId(),
-                Level.OVERWORLD,
-                new BlockPos(25000, 80, 25000),
-                origin.id(),
-                false,
-                null,
-                null,
-                0,
-                0,
-                null,
-                10L
-        );
-        data.registerLinkedPair(origin, destination);
-
-        ReservedDestinationRecord materialized = destination.withPhysicalPortal(
-                new BlockPos(25010, 80, 25010),
-                Direction.Axis.Z,
-                2,
-                3,
-                new BlockPos(25010, 81, 25011)
-        );
-        data.materializeReservedDestination(destination.id(), materialized);
-
-        Optional<ReservedDestinationRecord> loadedDestination = data.findReservedDestinationByAnchor(
-                new PortalLookupKey(Level.OVERWORLD, materialized.canonicalFrameAnchor())
-        );
-        assertTrue(loadedDestination.isPresent());
-        assertEquals(materialized.canonicalFrameAnchor(), loadedDestination.get().canonicalFrameAnchor());
-        assertTrue(loadedDestination.get().physicalPortalExists());
-    }
-
-    @Test
-    void duplicatePortalAnchorsAreRejected() {
-        TestBootstrap.ensureBootstrapped();
-
-        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        OriginPortalRecord origin = new OriginPortalRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                UUID.randomUUID(),
-                Level.OVERWORLD,
-                new BlockPos(0, 64, 0),
-                Direction.Axis.Z,
-                2,
-                3,
-                new BlockPos(0, 65, 1),
-                UUID.randomUUID(),
-                1L
-        );
-        ReservedDestinationRecord destination = new ReservedDestinationRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                origin.linkedPortalId(),
-                Level.OVERWORLD,
-                new BlockPos(30000, 80, 0),
-                origin.id(),
-                true,
-                new BlockPos(30000, 79, 0),
-                Direction.Axis.Z,
-                2,
-                3,
-                new BlockPos(30000, 80, 1),
-                1L
-        );
-        data.registerLinkedPair(origin, destination);
-
-        OriginPortalRecord conflictingOrigin = new OriginPortalRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                UUID.randomUUID(),
-                Level.OVERWORLD,
-                new BlockPos(30000, 79, 0),
-                Direction.Axis.Z,
-                2,
-                3,
-                new BlockPos(30000, 80, 1),
-                UUID.randomUUID(),
-                2L
-        );
-        ReservedDestinationRecord conflictingDestination = new ReservedDestinationRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                conflictingOrigin.linkedPortalId(),
-                Level.OVERWORLD,
-                new BlockPos(60000, 80, 0),
-                conflictingOrigin.id(),
-                false,
-                null,
-                null,
-                0,
-                0,
-                null,
-                2L
-        );
-
-        assertThrows(IllegalStateException.class, () -> data.registerLinkedPair(conflictingOrigin, conflictingDestination));
     }
 
     private static ForeverWorldPortalRegistryData roundTrip(ForeverWorldPortalRegistryData data) {
@@ -239,5 +150,24 @@ class ForeverWorldPortalRegistryDataTest {
                 .encodeStart(NbtOps.INSTANCE, data)
                 .getOrThrow();
         return ForeverWorldPortalRegistryData.TYPE.codec().parse(NbtOps.INSTANCE, encoded).getOrThrow();
+    }
+
+    private ForeverWorldPortalFrame buildAxisZFrame(BlockPos anchor, int width, int height) {
+        PortalFrameDetectorTestBlockGetter level = new PortalFrameDetectorTestBlockGetter();
+        for (int z = 0; z < width + 2; z++) {
+            level.setBlock(anchor.offset(0, 0, z), Blocks.DIAMOND_BLOCK.defaultBlockState());
+            level.setBlock(anchor.offset(0, height + 1, z), Blocks.DIAMOND_BLOCK.defaultBlockState());
+        }
+        for (int y = 1; y <= height; y++) {
+            level.setBlock(anchor.offset(0, y, 0), Blocks.DIAMOND_BLOCK.defaultBlockState());
+            level.setBlock(anchor.offset(0, y, width + 1), Blocks.DIAMOND_BLOCK.defaultBlockState());
+        }
+        Optional<ForeverWorldPortalFrame> frame = detector.findEmptyFrame(
+                level,
+                anchor.offset(0, 1, 1),
+                Direction.Axis.Z,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        );
+        return frame.orElseThrow();
     }
 }

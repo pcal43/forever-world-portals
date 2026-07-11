@@ -1,0 +1,93 @@
+package net.pcal.fwportals.portal;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.Blocks;
+import net.pcal.fwportals.TestBootstrap;
+import org.junit.jupiter.api.Test;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class PortalIdentityTest {
+
+    private final PortalFrameDetector detector = new PortalFrameDetector();
+    private final PortalIdentity identity = new PortalIdentity();
+
+    @Test
+    void selectsOriginBlockNearVisualCenter() {
+        TestBootstrap.ensureBootstrapped();
+        ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+
+        assertEquals(new BlockPos(0, 2, 1), identity.computeOriginBlock(frame));
+    }
+
+    @Test
+    void breaksOriginTiesTowardNegativeCoordinates() {
+        TestBootstrap.ensureBootstrapped();
+        ForeverWorldPortalFrame frame = buildAxisXFrame(new BlockPos(10, 5, 20), 3, 4);
+
+        assertEquals(new BlockPos(12, 7, 20), identity.computeOriginBlock(frame));
+    }
+
+    @Test
+    void rebuiltPortalStillEnclosingOriginKeepsIdentity() {
+        TestBootstrap.ensureBootstrapped();
+        ForeverWorldPortalFrame original = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+        BlockPos origin = identity.computeOriginBlock(original);
+        ForeverWorldPortalFrame rebuilt = buildAxisZFrame(new BlockPos(0, 0, 0), 3, 4);
+
+        assertTrue(identity.portalEnclosesOrigin(rebuilt, origin));
+    }
+
+    @Test
+    void rebuiltPortalElsewhereBecomesDistinctIdentity() {
+        TestBootstrap.ensureBootstrapped();
+        ForeverWorldPortalFrame original = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+        BlockPos origin = identity.computeOriginBlock(original);
+        ForeverWorldPortalFrame rebuiltElsewhere = buildAxisZFrame(new BlockPos(10, 0, 0), 2, 3);
+
+        assertFalse(identity.portalEnclosesOrigin(rebuiltElsewhere, origin));
+    }
+
+    private ForeverWorldPortalFrame buildAxisZFrame(BlockPos anchor, int width, int height) {
+        PortalFrameDetectorTestBlockGetter level = new PortalFrameDetectorTestBlockGetter();
+        for (int z = 0; z < width + 2; z++) {
+            level.setBlock(anchor.offset(0, 0, z), Blocks.DIAMOND_BLOCK.defaultBlockState());
+            level.setBlock(anchor.offset(0, height + 1, z), Blocks.DIAMOND_BLOCK.defaultBlockState());
+        }
+        for (int y = 1; y <= height; y++) {
+            level.setBlock(anchor.offset(0, y, 0), Blocks.DIAMOND_BLOCK.defaultBlockState());
+            level.setBlock(anchor.offset(0, y, width + 1), Blocks.DIAMOND_BLOCK.defaultBlockState());
+        }
+        Optional<ForeverWorldPortalFrame> frame = detector.findEmptyFrame(
+                level,
+                anchor.offset(0, 1, 1),
+                Direction.Axis.Z,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        );
+        return frame.orElseThrow();
+    }
+
+    private ForeverWorldPortalFrame buildAxisXFrame(BlockPos anchor, int width, int height) {
+        PortalFrameDetectorTestBlockGetter level = new PortalFrameDetectorTestBlockGetter();
+        for (int x = 0; x < width + 2; x++) {
+            level.setBlock(anchor.offset(x, 0, 0), Blocks.DIAMOND_BLOCK.defaultBlockState());
+            level.setBlock(anchor.offset(x, height + 1, 0), Blocks.DIAMOND_BLOCK.defaultBlockState());
+        }
+        for (int y = 1; y <= height; y++) {
+            level.setBlock(anchor.offset(0, y, 0), Blocks.DIAMOND_BLOCK.defaultBlockState());
+            level.setBlock(anchor.offset(width + 1, y, 0), Blocks.DIAMOND_BLOCK.defaultBlockState());
+        }
+        Optional<ForeverWorldPortalFrame> frame = detector.findEmptyFrame(
+                level,
+                anchor.offset(1, 1, 0),
+                Direction.Axis.X,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        );
+        return frame.orElseThrow();
+    }
+}

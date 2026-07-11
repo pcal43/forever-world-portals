@@ -6,18 +6,21 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.pcal.fwportals.portal.ForeverWorldPortalFrame;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public final class ForeverWorldPortalRegistryData extends SavedData {
 
-    public static final int CURRENT_DATA_VERSION = 2;
     public static final SavedDataType<ForeverWorldPortalRegistryData> TYPE = new SavedDataType<>(
             Identifier.parse("fwportals_portal_registry"),
             ForeverWorldPortalRegistryData::new,
@@ -26,11 +29,14 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
     );
 
     private static final Logger LOGGER = LogManager.getLogger("fwportals");
+    private static final Comparator<SourcePortalRecord> PORTAL_ORDER = Comparator
+            .comparing((SourcePortalRecord portal) -> portal.dimension().identifier().toString())
+            .thenComparingInt(portal -> portal.originBlock().getX())
+            .thenComparingInt(portal -> portal.originBlock().getY())
+            .thenComparingInt(portal -> portal.originBlock().getZ())
+            .thenComparing(SourcePortalRecord::portalId);
 
-    private final Map<UUID, OriginPortalRecord> originPortalsById = new LinkedHashMap<>();
-    private final Map<PortalLookupKey, UUID> originPortalIdsByAnchor = new LinkedHashMap<>();
-    private final Map<UUID, ReservedDestinationRecord> reservedDestinationsById = new LinkedHashMap<>();
-    private final Map<PortalLookupKey, UUID> reservedDestinationIdsByAnchor = new LinkedHashMap<>();
+    private final Map<UUID, SourcePortalRecord> sourcePortalsById = new LinkedHashMap<>();
 
     public static ForeverWorldPortalRegistryData get(ServerLevel level) {
         ServerLevel overworld = level.getServer().overworld();
@@ -39,173 +45,85 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
 
     private static ForeverWorldPortalRegistryData fromTag(CompoundTag root) {
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        CompoundTag migrated = data.migrateRootTag(root);
 
-        int dataVersion = migrated.read("dataVersion", com.mojang.serialization.Codec.INT).orElse(CURRENT_DATA_VERSION);
-        ListTag origins = migrated.get("origins") instanceof ListTag list ? list : new ListTag();
-        for (int i = 0; i < origins.size(); i++) {
-            if (!(origins.get(i) instanceof CompoundTag originTag)) {
-                LOGGER.warn("[fwportals] Skipping malformed origin portal entry at index {}: not a compound tag", i);
+        ListTag sourcePortals = root.get("sourcePortals") instanceof ListTag list ? list : new ListTag();
+        for (int i = 0; i < sourcePortals.size(); i++) {
+            if (!(sourcePortals.get(i) instanceof CompoundTag portalTag)) {
+                LOGGER.warn("[fwportals] Skipping malformed source portal entry at index {}: not a compound tag", i);
                 continue;
             }
-            OriginPortalRecord.fromTag(originTag, message -> LOGGER.warn("[fwportals] {}", message)).ifPresent(record -> data.addOriginInternal(record));
-        }
-
-        ListTag reservedDestinations = migrated.get("reservedDestinations") instanceof ListTag list ? list : new ListTag();
-        for (int i = 0; i < reservedDestinations.size(); i++) {
-            if (!(reservedDestinations.get(i) instanceof CompoundTag destinationTag)) {
-                LOGGER.warn("[fwportals] Skipping malformed reserved destination entry at index {}: not a compound tag", i);
-                continue;
-            }
-            ReservedDestinationRecord.fromTag(destinationTag, message -> LOGGER.warn("[fwportals] {}", message))
-                    .ifPresent(data::addReservedDestinationInternal);
+            SourcePortalRecord.fromTag(portalTag, message -> LOGGER.warn("[fwportals] {}", message))
+                    .ifPresent(record -> data.sourcePortalsById.put(record.portalId(), record));
         }
 
         LOGGER.info(
-                "[fwportals] Loaded Forever World portal registry: dataVersion={} origins={} reservedDestinations={}",
-                dataVersion,
-                data.originPortalsById.size(),
-                data.reservedDestinationsById.size()
+                "[fwportals] Loaded Forever World portal registry: sourcePortals={}",
+                data.sourcePortalsById.size()
         );
         return data;
     }
 
     private CompoundTag toTag() {
         CompoundTag root = new CompoundTag();
-        root.store("dataVersion", com.mojang.serialization.Codec.INT, CURRENT_DATA_VERSION);
-
-        ListTag origins = new ListTag();
-        for (OriginPortalRecord record : originPortalsById.values()) {
-            origins.add(record.toTag());
+        ListTag sourcePortals = new ListTag();
+        for (SourcePortalRecord record : orderedSourcePortals()) {
+            sourcePortals.add(record.toTag());
         }
-        root.put("origins", origins);
-
-        ListTag reservedDestinations = new ListTag();
-        for (ReservedDestinationRecord record : reservedDestinationsById.values()) {
-            reservedDestinations.add(record.toTag());
-        }
-        root.put("reservedDestinations", reservedDestinations);
+        root.put("sourcePortals", sourcePortals);
         return root;
     }
 
-    public Optional<OriginPortalRecord> findOrigin(PortalLookupKey key) {
-        UUID id = originPortalIdsByAnchor.get(key);
-        return id == null ? Optional.empty() : Optional.ofNullable(originPortalsById.get(id));
+    public List<SourcePortalRecord> findSourcePortalsContainedBy(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension, ForeverWorldPortalFrame frame) {
+        return orderedSourcePortals().stream()
+                .filter(portal -> portal.dimension().equals(dimension))
+                .filter(portal -> frame.containsInterior(portal.originBlock()))
+                .toList();
     }
 
-    public Optional<ReservedDestinationRecord> findReservedDestination(UUID id) {
-        return Optional.ofNullable(reservedDestinationsById.get(id));
-    }
-
-    public Optional<ReservedDestinationRecord> findReservedDestinationByAnchor(PortalLookupKey key) {
-        UUID id = reservedDestinationIdsByAnchor.get(key);
-        return id == null ? Optional.empty() : Optional.ofNullable(reservedDestinationsById.get(id));
-    }
-
-    public Optional<OriginPortalRecord> findOriginById(UUID id) {
-        return Optional.ofNullable(originPortalsById.get(id));
-    }
-
-    public void registerLinkedPair(OriginPortalRecord origin, ReservedDestinationRecord destination) {
-        PortalLookupKey originKey = new PortalLookupKey(origin.dimension(), origin.canonicalFrameAnchor());
-        if (originPortalIdsByAnchor.containsKey(originKey) || reservedDestinationIdsByAnchor.containsKey(originKey)) {
-            throw new IllegalStateException("Portal already registered at " + origin.canonicalFrameAnchor());
+    public void createSourcePortal(SourcePortalRecord portal) {
+        if (sourcePortalsById.containsKey(portal.portalId())) {
+            throw new IllegalStateException("Source portal already exists with id " + portal.portalId());
         }
-        if (destination.physicalPortalExists() && destination.canonicalFrameAnchor() != null) {
-            PortalLookupKey destinationKey = new PortalLookupKey(destination.dimension(), destination.canonicalFrameAnchor());
-            if (originPortalIdsByAnchor.containsKey(destinationKey) || reservedDestinationIdsByAnchor.containsKey(destinationKey)) {
-                throw new IllegalStateException("Portal already registered at " + destination.canonicalFrameAnchor());
-            }
-        }
-        addOriginInternal(origin);
-        addReservedDestinationInternal(destination);
+        sourcePortalsById.put(portal.portalId(), portal);
         setDirty();
     }
 
-    public void materializeReservedDestination(UUID destinationId, ReservedDestinationRecord destination) {
-        ReservedDestinationRecord existing = reservedDestinationsById.get(destinationId);
-        if (existing == null) {
-            throw new IllegalStateException("Unknown reserved destination " + destinationId);
-        }
-        if (destination.canonicalFrameAnchor() == null) {
-            throw new IllegalArgumentException("Materialized destination is missing a canonical frame anchor");
-        }
+    public Optional<SourcePortalRecord> getSourcePortal(UUID portalId) {
+        return Optional.ofNullable(sourcePortalsById.get(portalId));
+    }
 
-        PortalLookupKey destinationKey = new PortalLookupKey(destination.dimension(), destination.canonicalFrameAnchor());
-        UUID existingId = reservedDestinationIdsByAnchor.get(destinationKey);
-        if (existingId != null && !existingId.equals(destinationId)) {
-            throw new IllegalStateException("Portal already registered at " + destination.canonicalFrameAnchor());
+    public void removeSourcePortal(UUID portalId) {
+        if (sourcePortalsById.remove(portalId) != null) {
+            setDirty();
         }
-        if (originPortalIdsByAnchor.containsKey(destinationKey)) {
-            throw new IllegalStateException("Origin portal already registered at " + destination.canonicalFrameAnchor());
-        }
-
-        removeReservedDestinationLookup(existing);
-        addReservedDestinationInternal(destination);
-        setDirty();
     }
 
     public boolean isSeparated(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension, net.minecraft.core.BlockPos position, int minimumPortalSeparationBlocks) {
-        long minimumDistanceSquared = (long)minimumPortalSeparationBlocks * (long)minimumPortalSeparationBlocks;
+        long minimumDistanceSquared = (long) minimumPortalSeparationBlocks * (long) minimumPortalSeparationBlocks;
 
-        for (OriginPortalRecord origin : originPortalsById.values()) {
-            if (origin.dimension().equals(dimension) && horizontalDistanceSquared(origin.representativePortalPosition(), position) < minimumDistanceSquared) {
+        for (SourcePortalRecord portal : sourcePortalsById.values()) {
+            if (portal.dimension().equals(dimension) && horizontalDistanceSquared(portal.originBlock(), position) < minimumDistanceSquared) {
+                return false;
+            }
+            if (portal.destinationDimension().equals(dimension)
+                    && horizontalDistanceSquared(portal.destinationPosition(), position) < minimumDistanceSquared) {
                 return false;
             }
         }
-
-        for (ReservedDestinationRecord destination : reservedDestinationsById.values()) {
-            if (destination.dimension().equals(dimension) && horizontalDistanceSquared(destination.reservedDestinationPosition(), position) < minimumDistanceSquared) {
-                return false;
-            }
-        }
-
         return true;
     }
 
-    public Collection<OriginPortalRecord> originPortals() {
-        return originPortalsById.values();
+    public Collection<SourcePortalRecord> sourcePortals() {
+        return orderedSourcePortals();
     }
 
-    public Collection<ReservedDestinationRecord> reservedDestinations() {
-        return reservedDestinationsById.values();
-    }
-
-    private void addOriginInternal(OriginPortalRecord origin) {
-        originPortalsById.put(origin.id(), origin);
-        originPortalIdsByAnchor.put(new PortalLookupKey(origin.dimension(), origin.canonicalFrameAnchor()), origin.id());
-    }
-
-    private void addReservedDestinationInternal(ReservedDestinationRecord destination) {
-        reservedDestinationsById.put(destination.id(), destination);
-        if (destination.physicalPortalExists() && destination.canonicalFrameAnchor() != null) {
-            reservedDestinationIdsByAnchor.put(
-                    new PortalLookupKey(destination.dimension(), destination.canonicalFrameAnchor()),
-                    destination.id()
-            );
-        }
-    }
-
-    private void removeReservedDestinationLookup(ReservedDestinationRecord destination) {
-        if (destination.physicalPortalExists() && destination.canonicalFrameAnchor() != null) {
-            reservedDestinationIdsByAnchor.remove(new PortalLookupKey(destination.dimension(), destination.canonicalFrameAnchor()));
-        }
-    }
-
-    private CompoundTag migrateRootTag(CompoundTag root) {
-        int version = root.read("dataVersion", com.mojang.serialization.Codec.INT).orElse(CURRENT_DATA_VERSION);
-        return switch (version) {
-            case CURRENT_DATA_VERSION -> root;
-            default -> {
-                LOGGER.warn("[fwportals] Loading portal registry with unexpected dataVersion={}; attempting best-effort read", version);
-                yield root;
-            }
-        };
+    private List<SourcePortalRecord> orderedSourcePortals() {
+        return sourcePortalsById.values().stream().sorted(PORTAL_ORDER).toList();
     }
 
     private static long horizontalDistanceSquared(net.minecraft.core.BlockPos a, net.minecraft.core.BlockPos b) {
-        long dx = (long)a.getX() - b.getX();
-        long dz = (long)a.getZ() - b.getZ();
+        long dx = (long) a.getX() - b.getX();
+        long dz = (long) a.getZ() - b.getZ();
         return dx * dx + dz * dz;
     }
 }

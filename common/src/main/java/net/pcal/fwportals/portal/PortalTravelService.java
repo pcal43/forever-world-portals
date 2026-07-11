@@ -11,16 +11,15 @@ import net.minecraft.world.phys.Vec3;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
 import net.pcal.fwportals.ReturnPortalMode;
 import net.pcal.fwportals.portal.persistence.ForeverWorldPortalRegistryData;
-import net.pcal.fwportals.portal.persistence.OriginPortalRecord;
-import net.pcal.fwportals.portal.persistence.PortalLookupKey;
 import net.pcal.fwportals.portal.persistence.PortalReservation;
-import net.pcal.fwportals.portal.persistence.ReservedDestinationRecord;
+import net.pcal.fwportals.portal.persistence.SourcePortalRecord;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.UUID;
 
 public final class PortalTravelService {
@@ -31,7 +30,8 @@ public final class PortalTravelService {
     private final PortalDestinationSelector destinationSelector;
     private final SafeLandingFinder safeLandingFinder;
     private final PortalPlacementService portalPlacementService;
-    private final Set<PortalLookupKey> inProgressPortals = new HashSet<>();
+    private final PortalIdentity portalIdentity = new PortalIdentity();
+    private final Set<SourcePortalKey> inProgressPortals = new HashSet<>();
 
     public PortalTravelService(ForeverWorldPortalsConfig config, Logger logger) {
         this.config = config;
@@ -58,32 +58,27 @@ public final class PortalTravelService {
 
         ForeverWorldPortalFrame frame = maybeFrame.get();
         ForeverWorldPortalRegistryData registry = ForeverWorldPortalRegistryData.get(level);
-        PortalLookupKey lookupKey = new PortalLookupKey(level.dimension(), frame.anchorPos());
-        Optional<OriginPortalRecord> existingOrigin = registry.findOrigin(lookupKey);
-
-        if (existingOrigin.isPresent()) {
-            return handleOriginPortalTravel(level, player, frame, existingOrigin.get(), registry, lookupKey);
-        }
-
-        Optional<ReservedDestinationRecord> generatedDestination = registry.findReservedDestinationByAnchor(lookupKey);
-        if (generatedDestination.isPresent()) {
-            return handleGeneratedDestinationTravel(level, player, generatedDestination.get(), registry);
+        List<SourcePortalRecord> matches = registry.findSourcePortalsContainedBy(level.dimension(), frame);
+        if (!matches.isEmpty()) {
+            return handleRegisteredPortalTravel(level, player, matches);
         }
 
         if (config.returnPortalMode() != ReturnPortalMode.GENERATE) {
-            return failForUnimplementedReturnMode(player, lookupKey);
+            return failForUnimplementedReturnMode(player, frame);
         }
 
-        if (!inProgressPortals.add(lookupKey)) {
-            player.sendSystemMessage(Component.literal("Forever World portal linking is already in progress."));
-            logger.warn("[fwportals] Portal founding already in progress for {}", lookupKey.canonicalFrameAnchor());
+        BlockPos originBlock = portalIdentity.computeOriginBlock(frame);
+        SourcePortalKey inProgressKey = new SourcePortalKey(level.dimension(), originBlock);
+        if (!inProgressPortals.add(inProgressKey)) {
+            player.sendSystemMessage(Component.literal("Forever World portal founding is already in progress."));
+            logger.warn("[fwportals] Portal founding already in progress for origin block {}", originBlock);
             return null;
         }
 
         try {
-            return handleFoundingTravel(level, player, portalEntryPos, frame, registry, lookupKey);
+            return handleFoundingTravel(level, player, frame, registry, originBlock);
         } finally {
-            inProgressPortals.remove(lookupKey);
+            inProgressPortals.remove(inProgressKey);
         }
     }
 
@@ -91,296 +86,177 @@ public final class PortalTravelService {
         inProgressPortals.clear();
     }
 
-    private @Nullable TeleportTransition handleOriginPortalTravel(
-            ServerLevel level,
-            ServerPlayer player,
-            ForeverWorldPortalFrame sourceFrame,
-            OriginPortalRecord originRecord,
-            ForeverWorldPortalRegistryData registry,
-            PortalLookupKey lookupKey
-    ) {
-        Optional<ReservedDestinationRecord> reservedDestination = registry.findReservedDestination(originRecord.linkedPortalId());
-        if (reservedDestination.isEmpty()) {
+    private @Nullable TeleportTransition handleRegisteredPortalTravel(ServerLevel level, ServerPlayer player, List<SourcePortalRecord> matches) {
+        SourcePortalRecord selected = matches.get(0);
+        if (matches.size() > 1) {
             logger.warn(
-                    "[fwportals] Existing origin portal {} is missing reserved destination {}",
-                    originRecord.id(),
-                    originRecord.linkedPortalId()
+                    "[fwportals] Multiple source portals matched one physical portal in {}: {}. Using first deterministic match {}",
+                    level.dimension().identifier(),
+                    matches.stream().map(SourcePortalRecord::portalId).toList(),
+                    selected.portalId()
+            );
+        }
+
+        ServerLevel destinationLevel = level.getServer().getLevel(selected.destinationDimension());
+        if (destinationLevel == null) {
+            logger.warn(
+                    "[fwportals] Destination dimension {} is unavailable for source portal {}",
+                    selected.destinationDimension().identifier(),
+                    selected.portalId()
             );
             player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
             return null;
         }
 
-        ReservedDestinationRecord destination = reservedDestination.get();
-        if (!destination.physicalPortalExists()) {
-            if (config.returnPortalMode() != ReturnPortalMode.GENERATE) {
-                return failForUnimplementedReturnMode(player, lookupKey);
-            }
-            if (!inProgressPortals.add(lookupKey)) {
-                player.sendSystemMessage(Component.literal("Forever World portal linking is already in progress."));
-                logger.warn("[fwportals] Destination materialization already in progress for {}", lookupKey.canonicalFrameAnchor());
-                return null;
-            }
-            try {
-                return materializeReturnPortalAndTeleport(level, player, sourceFrame, destination, registry, lookupKey);
-            } finally {
-                inProgressPortals.remove(lookupKey);
-            }
-        }
-
-        Optional<ForeverWorldPortalFrame> destinationFrame = resolveDestinationFrame(level, destination);
-        if (destinationFrame.isEmpty()) {
-            logger.warn(
-                    "[fwportals] Linked destination portal {} for origin {} is missing or invalid",
-                    destination.reservedDestinationPosition(),
-                    originRecord.canonicalFrameAnchor()
-            );
-            player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
-            return null;
-        }
-
-        Optional<Vec3> arrival = portalPlacementService.findArrivalPosition(level, player, destinationFrame.get());
-        if (arrival.isEmpty()) {
-            logger.warn(
-                    "[fwportals] Linked destination portal {} for origin {} has no safe arrival",
-                    destination.canonicalFrameAnchor(),
-                    originRecord.canonicalFrameAnchor()
-            );
-            player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
-            return null;
-        }
-
-        logger.info(
-                "[fwportals] Reusing linked destination portal {} for origin {}",
-                destination.canonicalFrameAnchor(),
-                originRecord.canonicalFrameAnchor()
-        );
-        return buildTransition(level, arrival.get(), player);
-    }
-
-    private @Nullable TeleportTransition handleGeneratedDestinationTravel(
-            ServerLevel level,
-            ServerPlayer player,
-            ReservedDestinationRecord destinationRecord,
-            ForeverWorldPortalRegistryData registry
-    ) {
-        Optional<OriginPortalRecord> originRecord = registry.findOriginById(destinationRecord.linkedOriginId());
-        if (originRecord.isEmpty()) {
-            logger.warn(
-                    "[fwportals] Generated destination portal {} is missing linked origin {}",
-                    destinationRecord.canonicalFrameAnchor(),
-                    destinationRecord.linkedOriginId()
-            );
-            player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
-            return null;
-        }
-
-        Optional<ForeverWorldPortalFrame> originFrame = resolveOriginFrame(level, originRecord.get());
-        if (originFrame.isEmpty()) {
-            logger.warn(
-                    "[fwportals] Linked origin portal {} for destination {} is missing or invalid",
-                    originRecord.get().canonicalFrameAnchor(),
-                    destinationRecord.canonicalFrameAnchor()
-            );
-            player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
-            return null;
-        }
-
-        Optional<Vec3> arrival = portalPlacementService.findArrivalPosition(level, player, originFrame.get());
-        if (arrival.isEmpty()) {
-            logger.warn(
-                    "[fwportals] Linked origin portal {} for destination {} has no safe arrival",
-                    originRecord.get().canonicalFrameAnchor(),
-                    destinationRecord.canonicalFrameAnchor()
-            );
-            player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
-            return null;
-        }
-
-        logger.info(
-                "[fwportals] Reusing linked origin portal {} for generated destination {}",
-                originRecord.get().canonicalFrameAnchor(),
-                destinationRecord.canonicalFrameAnchor()
-        );
-        return buildTransition(level, arrival.get(), player);
+        return buildTransition(destinationLevel, Vec3.atBottomCenterOf(selected.destinationPosition()), player);
     }
 
     private @Nullable TeleportTransition handleFoundingTravel(
             ServerLevel level,
             ServerPlayer player,
-            BlockPos portalEntryPos,
             ForeverWorldPortalFrame sourceFrame,
             ForeverWorldPortalRegistryData registry,
-            PortalLookupKey lookupKey
+            BlockPos sourceOriginBlock
     ) {
         Optional<PortalReservation> reservation = destinationSelector.selectDestination(level, player, sourceFrame.anchorPos(), registry);
         if (reservation.isEmpty()) {
             player.sendSystemMessage(Component.literal("Forever World portal could not find a safe destination yet."));
             logger.warn(
-                    "[fwportals] Failed to reserve destination for origin {} in {}",
-                    sourceFrame.anchorPos(),
+                    "[fwportals] Failed to reserve destination for source origin {} in {}",
+                    sourceOriginBlock,
                     level.dimension().identifier()
             );
             return null;
         }
 
-        Optional<GeneratedPortalPlacement> generatedPortal = portalPlacementService.generateReturnPortal(
-                level,
-                player,
-                reservation.get().reservedDestinationPosition(),
-                sourceFrame,
-                config.frameBlock().defaultBlockState()
-        );
-        if (generatedPortal.isEmpty()) {
-            player.sendSystemMessage(Component.literal("Forever World portal could not create a return portal yet."));
-            logger.warn(
-                    "[fwportals] Failed to generate return portal near reserved destination {} for origin {}",
-                    reservation.get().reservedDestinationPosition(),
-                    lookupKey.canonicalFrameAnchor()
-            );
-            return null;
-        }
-
-        UUID originId = UUID.randomUUID();
-        UUID destinationId = UUID.randomUUID();
-        OriginPortalRecord originRecord = new OriginPortalRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                originId,
+        BlockPos destinationPosition = BlockPos.containing(reservation.get().landingPosition());
+        SourcePortalRecord outboundPortal = new SourcePortalRecord(
+                UUID.randomUUID(),
                 level.dimension(),
-                sourceFrame.anchorPos(),
-                sourceFrame.axis(),
-                sourceFrame.width(),
-                sourceFrame.height(),
-                portalEntryPos.immutable(),
-                destinationId,
-                level.getGameTime()
-        );
-        ReservedDestinationRecord reservedDestinationRecord = new ReservedDestinationRecord(
-                ForeverWorldPortalRegistryData.CURRENT_DATA_VERSION,
-                destinationId,
+                sourceOriginBlock.immutable(),
                 reservation.get().dimension(),
-                reservation.get().reservedDestinationPosition(),
-                originId,
-                true,
-                generatedPortal.get().frame().anchorPos(),
-                generatedPortal.get().frame().axis(),
-                generatedPortal.get().frame().width(),
-                generatedPortal.get().frame().height(),
-                generatedPortal.get().frame().representativePortalPosition(),
-                level.getGameTime()
-        );
-        registry.registerLinkedPair(originRecord, reservedDestinationRecord);
-
-        logger.info(
-                "[fwportals] Registered new Forever World origin {} linked to reserved destination {}",
-                originRecord.canonicalFrameAnchor(),
-                reservedDestinationRecord.reservedDestinationPosition()
-        );
-        logger.info(
-                "[fwportals] Reserved destination {} in {} for origin {}",
-                reservedDestinationRecord.reservedDestinationPosition(),
-                reservedDestinationRecord.dimension().identifier(),
-                originRecord.canonicalFrameAnchor()
-        );
-        logger.info(
-                "[fwportals] Generated linked return portal {} for origin {}",
-                reservedDestinationRecord.canonicalFrameAnchor(),
-                originRecord.canonicalFrameAnchor()
+                destinationPosition
         );
 
-        return buildTransition(level, generatedPortal.get().arrivalPosition(), player);
-    }
+        ServerLevel destinationLevel = level.getServer().getLevel(reservation.get().dimension());
+        if (destinationLevel == null) {
+            player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
+            logger.warn(
+                    "[fwportals] Destination dimension {} is unavailable for source origin {}",
+                    reservation.get().dimension().identifier(),
+                    sourceOriginBlock
+            );
+            return null;
+        }
 
-    private @Nullable TeleportTransition materializeReturnPortalAndTeleport(
-            ServerLevel level,
-            ServerPlayer player,
-            ForeverWorldPortalFrame sourceFrame,
-            ReservedDestinationRecord destinationRecord,
-            ForeverWorldPortalRegistryData registry,
-            PortalLookupKey lookupKey
-    ) {
         Optional<GeneratedPortalPlacement> generatedPortal = portalPlacementService.generateReturnPortal(
-                level,
+                destinationLevel,
                 player,
-                destinationRecord.reservedDestinationPosition(),
+                reservation.get().reservedDestinationPosition(),
                 sourceFrame,
                 config.frameBlock().defaultBlockState()
         );
         if (generatedPortal.isEmpty()) {
             player.sendSystemMessage(Component.literal("Forever World portal could not create a return portal yet."));
             logger.warn(
-                    "[fwportals] Failed to materialize return portal near {} for origin {}",
-                    destinationRecord.reservedDestinationPosition(),
-                    lookupKey.canonicalFrameAnchor()
+                    "[fwportals] Failed to generate return portal near {} for source origin {}",
+                    reservation.get().reservedDestinationPosition(),
+                    sourceOriginBlock
             );
             return null;
         }
 
-        ReservedDestinationRecord materialized = destinationRecord.withPhysicalPortal(
-                generatedPortal.get().frame().anchorPos(),
-                generatedPortal.get().frame().axis(),
-                generatedPortal.get().frame().width(),
-                generatedPortal.get().frame().height(),
-                generatedPortal.get().frame().representativePortalPosition()
-        );
-        registry.materializeReservedDestination(destinationRecord.id(), materialized);
-
-        logger.info(
-                "[fwportals] Materialized linked return portal {} for origin {}",
-                materialized.canonicalFrameAnchor(),
-                lookupKey.canonicalFrameAnchor()
-        );
-        return buildTransition(level, generatedPortal.get().arrivalPosition(), player);
-    }
-
-    private Optional<ForeverWorldPortalFrame> resolveOriginFrame(ServerLevel level, OriginPortalRecord originRecord) {
-        return detector.findPortalFrame(
-                level,
-                originRecord.representativePortalPosition(),
-                originRecord.axis(),
-                config.frameBlock().defaultBlockState()
-        );
-    }
-
-    private Optional<ForeverWorldPortalFrame> resolveDestinationFrame(ServerLevel level, ReservedDestinationRecord destinationRecord) {
-        if (!destinationRecord.physicalPortalExists()
-                || destinationRecord.axis() == null
-                || destinationRecord.representativePortalPosition() == null) {
-            return Optional.empty();
+        List<SourcePortalRecord> destinationMatches = registry.findSourcePortalsContainedBy(destinationLevel.dimension(), generatedPortal.get().frame());
+        if (!destinationMatches.isEmpty()) {
+            player.sendSystemMessage(Component.literal("Forever World return portal location is already claimed."));
+            logger.warn(
+                    "[fwportals] Generated destination portal at {} encloses existing source portal ids {}",
+                    generatedPortal.get().frame().anchorPos(),
+                    destinationMatches.stream().map(SourcePortalRecord::portalId).toList()
+            );
+            return null;
         }
-        return detector.findPortalFrame(
-                level,
-                destinationRecord.representativePortalPosition(),
-                destinationRecord.axis(),
-                config.frameBlock().defaultBlockState()
-        );
+
+        Optional<Vec3> reverseArrival = portalPlacementService.findArrivalPosition(level, player, sourceFrame);
+        if (reverseArrival.isEmpty()) {
+            player.sendSystemMessage(Component.literal("Forever World portal could not determine a safe return destination."));
+            logger.warn(
+                    "[fwportals] Failed to determine safe reverse arrival near source origin {}",
+                    sourceOriginBlock
+            );
+            return null;
+        }
+
+        BlockPos generatedOriginBlock = portalIdentity.computeOriginBlock(generatedPortal.get().frame());
+        SourcePortalKey generatedKey = new SourcePortalKey(reservation.get().dimension(), generatedOriginBlock);
+        if (!inProgressPortals.add(generatedKey)) {
+            player.sendSystemMessage(Component.literal("Forever World return portal founding is already in progress."));
+            logger.warn("[fwportals] Reverse route founding already in progress for origin block {}", generatedOriginBlock);
+            return null;
+        }
+
+        try {
+            SourcePortalRecord reversePortal = new SourcePortalRecord(
+                    UUID.randomUUID(),
+                    reservation.get().dimension(),
+                    generatedOriginBlock.immutable(),
+                    level.dimension(),
+                    BlockPos.containing(reverseArrival.get())
+            );
+
+            registry.createSourcePortal(outboundPortal);
+            registry.createSourcePortal(reversePortal);
+
+            logger.info(
+                    "[fwportals] Registered new source portal {} in {} -> {} in {}",
+                    outboundPortal.originBlock(),
+                    outboundPortal.dimension().identifier(),
+                    outboundPortal.destinationPosition(),
+                    outboundPortal.destinationDimension().identifier()
+            );
+            logger.info(
+                    "[fwportals] Registered complementary source portal {} in {} -> {} in {}",
+                    reversePortal.originBlock(),
+                    reversePortal.dimension().identifier(),
+                    reversePortal.destinationPosition(),
+                    reversePortal.destinationDimension().identifier()
+            );
+
+            return buildTransition(destinationLevel, generatedPortal.get().arrivalPosition(), player);
+        } finally {
+            inProgressPortals.remove(generatedKey);
+        }
     }
 
-    private @Nullable TeleportTransition failForUnimplementedReturnMode(ServerPlayer player, PortalLookupKey lookupKey) {
+    private @Nullable TeleportTransition failForUnimplementedReturnMode(ServerPlayer player, ForeverWorldPortalFrame frame) {
         player.sendSystemMessage(Component.literal(
                 "Forever World return portal mode " + config.returnPortalMode() + " is not implemented yet."
         ));
         logger.warn(
-                "[fwportals] Return portal mode {} is not implemented for portal {}",
+                "[fwportals] Return portal mode {} is not implemented for portal anchor {}",
                 config.returnPortalMode(),
-                lookupKey.canonicalFrameAnchor()
+                frame.anchorPos()
         );
         return null;
     }
 
-    private TeleportTransition buildTransition(ServerLevel level, Vec3 targetPosition, ServerPlayer player) {
+    private TeleportTransition buildTransition(ServerLevel destinationLevel, Vec3 targetPosition, ServerPlayer player) {
         logger.info(
                 "[fwportals] Teleporting player {} to {} in {}",
                 player.getName().getString(),
                 BlockPos.containing(targetPosition),
-                level.dimension().identifier()
+                destinationLevel.dimension().identifier()
         );
         return new TeleportTransition(
-                level,
+                destinationLevel,
                 targetPosition,
                 Vec3.ZERO,
                 player.getYRot(),
                 player.getXRot(),
                 TeleportTransition.PLAY_PORTAL_SOUND
         );
+    }
+
+    private record SourcePortalKey(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension, BlockPos originBlock) {
     }
 }

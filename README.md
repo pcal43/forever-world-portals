@@ -1,6 +1,6 @@
 # Forever World Portals
 
-Forever World Portals is currently in Pass 3. Diamond-block portal frames can be detected, activated with flint and steel, filled with vanilla Nether portal blocks, recognized when entities enter them, and used to found a persistent bidirectional portal pair. Generated return portals are implemented by default. Inventory stripping is still intentionally not implemented.
+Forever World Portals is currently in Pass 3. Diamond-block portal frames can be detected, activated with flint and steel, filled with vanilla Nether portal blocks, recognized when entities enter them, and used to register persistent source portals. Each source portal stores one hidden origin block plus one exact destination coordinate. Generated return portals are implemented by default. Inventory stripping is still intentionally not implemented.
 
 - Mod ID: `fwportals`
 - Java package: `net.pcal.fwportals`
@@ -53,14 +53,24 @@ Build a standard vertical Nether-portal rectangle, but use `minecraft:diamond_bl
 
 The first time a player enters a valid diamond-frame portal:
 
-- the frame is normalized and looked up in persistent portal registry data
-- if no registry record exists yet, the mod chooses a distant same-dimension destination
+- the complete portal is detected and assigned one hidden origin block near the visual center of its interior
+- if no registered source portal is enclosed by that physical portal, the mod chooses a distant same-dimension destination
 - the destination is validated for safe landing and nearby portal placement
 - a diamond-framed return portal is generated near the reserved destination
-- an origin portal record and a linked destination portal record are stored persistently
-- the player is teleported to the generated partner portal
+- two independent source portal records are stored persistently when return generation succeeds
+- the player is teleported to the generated return area
 
-Later entries through either linked portal reuse the stored partner instead of selecting a new destination.
+Later entries through any physical Forever World portal that still encloses the same stored origin block reuse the same exact destination without selecting a new one.
+
+## Source Portal Identity
+
+The registry stores source portals, not linked portal pairs.
+
+- Each source portal has one hidden `originBlock` chosen from the portal interior near the visual center
+- A rebuilt frame keeps the same identity if it still encloses that stored origin block
+- Moving the frame away so it no longer encloses that block creates a new source portal
+- Multiple physical portals may intentionally enclose the same origin block and therefore share one destination
+- Teleportation uses the stored destination coordinate directly and does not require a destination portal
 
 ## Configuration
 
@@ -79,10 +89,10 @@ The mod writes and loads `config/fwportals.properties`.
 ## Status
 
 - The mod is intended to remain server-side-only so vanilla clients can connect.
-- Diamond-block Forever World portal activation, recognition, persistent linkage, first-entry teleportation, and generated return portals are implemented.
+- Diamond-block Forever World portal activation, source-portal identity, first-entry teleportation, and generated return portals are implemented.
 - Ordinary obsidian Nether portals are left to vanilla behavior.
-- Entering a new Forever World portal permanently creates a linked source/destination pair in world saved data.
-- The generated partner portal uses the same diamond-frame Forever World portal rules and can be used for return travel.
+- Entering a new Forever World portal permanently creates a source portal record with one exact destination in world saved data.
+- Generated return travel works by creating a second independent source portal near the generated destination portal.
 - Teleportation currently stays within the same dimension as the origin portal.
 - Inventory stripping, player-built return-portal matching, commands, custom content, and other later gameplay systems are not implemented yet.
 
@@ -91,4 +101,5 @@ The mod writes and loads `config/fwportals.properties`.
 - Only players are teleported in Pass 3. Non-player entities are recognized but not transported.
 - `REQUIRE_PLAYER_BUILD` and `NONE` are intentionally not implemented yet and fail clearly if selected.
 - Inventory stripping and player-built portal matching are deferred to later passes.
+- This pass keeps the current development-only assumption that older experimental registry data will be discarded rather than migrated.
 - In-world portal founding and restart persistence were not exercised through automated game tests in this pass; verification focused on build/test coverage plus Fabric and NeoForge dedicated-server startup.
