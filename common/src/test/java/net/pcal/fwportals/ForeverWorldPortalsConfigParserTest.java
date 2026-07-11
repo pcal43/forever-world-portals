@@ -1,5 +1,7 @@
 package net.pcal.fwportals;
 
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
 
@@ -13,10 +15,13 @@ class ForeverWorldPortalsConfigParserTest {
 
     @Test
     void fallsBackToDefaultsForMalformedValues() throws IOException {
+        TestBootstrap.ensureBootstrapped();
         ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
                 new ByteArrayInputStream("""
                         enabled=maybe
                         logLevel=LOUD
+                        frameBlock=not a block id
+                        activationItem=minecraft:not_an_item
                         """.getBytes(StandardCharsets.UTF_8)),
                 ForeverWorldPortalsConfig.defaults(),
                 null
@@ -24,5 +29,7 @@ class ForeverWorldPortalsConfigParserTest {
 
         assertEquals(true, config.enabled());
         assertEquals(Level.INFO, config.logLevel());
+        assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
+        assertEquals(Items.FLINT_AND_STEEL, config.activationItem());
     }
 }

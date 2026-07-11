@@ -1,0 +1,27 @@
+package net.pcal.fwportals.portal;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+
+import java.util.Comparator;
+import java.util.List;
+
+public record ForeverWorldPortalFrame(
+        Direction.Axis axis,
+        BlockPos anchorPos,
+        BlockPos interiorOrigin,
+        int width,
+        int height,
+        List<BlockPos> frameBlocks,
+        List<BlockPos> interiorBlocks
+) {
+
+    static final Comparator<BlockPos> POSITION_COMPARATOR = Comparator
+            .comparingInt((BlockPos pos) -> pos.getY())
+            .thenComparingInt(pos -> pos.getX())
+            .thenComparingInt(pos -> pos.getZ());
+
+    public boolean containsInterior(BlockPos pos) {
+        return interiorBlocks.contains(pos);
+    }
+}

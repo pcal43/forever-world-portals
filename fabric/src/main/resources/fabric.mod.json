@@ -3,7 +3,7 @@
   "id": "fwportals",
   "version": "${mod_version}",
   "name": "Forever World Portals",
-  "description": "Pass 0 placeholder scaffold for a server-side portal mod.",
+  "description": "Server-side diamond-frame portal activation and recognition without teleportation yet.",
   "authors": ["pcal.net"],
   "contact": {
     "homepage": "https://github.com/pcal43/forever-world-portals",
@@ -16,6 +16,9 @@
       "net.pcal.fwportals.fabric.ForeverWorldPortalsFabricInitializer"
     ]
   },
+  "mixins": [
+    "fwportals.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=${fabric_loader_version}",
     "fabric-api": "*",

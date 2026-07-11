@@ -1,7 +1,18 @@
 package net.pcal.fwportals;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.pcal.fwportals.portal.ForeverWorldPortalFrame;
+import net.pcal.fwportals.portal.PortalActivationService;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
@@ -16,6 +27,7 @@ public final class ForeverWorldPortalsService {
     private Logger logger;
     private boolean initialized;
     private MinecraftServer currentServer;
+    private PortalActivationService portalActivationService;
 
     public static ForeverWorldPortalsService getInstance() {
         return INSTANCE;
@@ -27,6 +39,7 @@ public final class ForeverWorldPortalsService {
         }
         this.config = requireNonNull(config);
         this.logger = requireNonNull(logger);
+        this.portalActivationService = new PortalActivationService(config, logger);
         this.initialized = true;
     }
 
@@ -52,6 +65,26 @@ public final class ForeverWorldPortalsService {
         return currentServer;
     }
 
+    public boolean tryActivatePortal(Level level, BlockPos firePos, ItemStack activationStack, Player player) {
+        return portalActivationService().tryActivatePortal(level, firePos, activationStack, player);
+    }
+
+    public Optional<ForeverWorldPortalFrame> findForeverWorldPortal(BlockGetter level, BlockPos pos) {
+        return portalActivationService().findForeverWorldPortal(level, pos);
+    }
+
+    public boolean isForeverWorldPortal(BlockGetter level, BlockPos pos) {
+        return portalActivationService().isForeverWorldPortal(level, pos);
+    }
+
+    public void onEntityInsidePortal(Level level, BlockPos pos, Entity entity) {
+        portalActivationService().onEntityInsidePortal(level, pos, entity);
+    }
+
+    public boolean shouldSuppressTeleport(ServerLevel level, Entity entity, BlockPos portalEntryPos) {
+        return portalActivationService().shouldSuppressTeleport(level, entity, portalEntryPos);
+    }
+
     public void onServerStarting(MinecraftServer server) {
         currentServer = requireNonNull(server);
         logger().info(LOG_PREFIX + "Server starting");
@@ -70,7 +103,17 @@ public final class ForeverWorldPortalsService {
     public void onServerStopped(MinecraftServer server) {
         requireNonNull(server);
         currentServer = null;
+        if (portalActivationService != null) {
+            portalActivationService.clearRuntimeState();
+        }
         logger().info(LOG_PREFIX + "Server stopped");
+    }
+
+    private PortalActivationService portalActivationService() {
+        if (!initialized || portalActivationService == null) {
+            throw new IllegalStateException("Forever World Portals has not been initialized");
+        }
+        return portalActivationService;
     }
 
     private ForeverWorldPortalsService() {

@@ -65,7 +65,7 @@ public final class ForeverWorldPortals {
         }
 
         ForeverWorldPortalsService.getInstance().init(config, logger);
-        logger.info(LOG_PREFIX + "Initialized Forever World Portals placeholder");
+        logger.info(LOG_PREFIX + "Initialized Forever World Portals");
     }
 
     private ForeverWorldPortals() {

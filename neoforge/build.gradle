@@ -62,6 +62,11 @@ jar {
     from("LICENSE") {
         rename { "${it}_${archives_base_name}" }
     }
+    manifest {
+        attributes([
+                'MixinConfigs': 'fwportals.mixins.json'
+        ])
+    }
 }
 
 modrinth {

@@ -4,11 +4,13 @@ plugins {
 
 repositories {
     maven { url = 'https://maven.fabricmc.net/' }
+    maven { url = 'https://repo.spongepowered.org/maven/' }
     mavenCentral()
 }
 
 dependencies {
 	minecraft "com.mojang:minecraft:${minecraft_version}"
+	compileOnly "org.spongepowered:mixin:${spongepowered_version}"
 
 	testImplementation "org.junit.jupiter:junit-jupiter-api:${junit_version}"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
