@@ -16,11 +16,12 @@ public final class PortalDestinationSelector {
 
     private final ForeverWorldPortalsConfig config;
     private final Logger logger;
-    private final SafeLandingFinder safeLandingFinder = new SafeLandingFinder();
+    private final SafeLandingFinder safeLandingFinder;
 
     public PortalDestinationSelector(ForeverWorldPortalsConfig config, Logger logger) {
         this.config = config;
         this.logger = logger;
+        this.safeLandingFinder = new SafeLandingFinder(logger);
     }
 
     public Optional<PortalReservation> selectDestination(
@@ -41,6 +42,12 @@ public final class PortalDestinationSelector {
             BlockPos candidate = new BlockPos(x, originAnchor.getY(), z);
 
             if (!registry.isSeparated(level.dimension(), candidate, minimumSeparation)) {
+                logger.info(
+                        "[fwportals] Rejecting destination attempt {} at {} in {} because it is too close to an existing portal reservation",
+                        attempt + 1,
+                        candidate,
+                        level.dimension().identifier()
+                );
                 continue;
             }
 

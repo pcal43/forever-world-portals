@@ -26,12 +26,13 @@ public final class PortalTravelService {
     private final Logger logger;
     private final PortalFrameDetector detector = new PortalFrameDetector();
     private final PortalDestinationSelector destinationSelector;
-    private final SafeLandingFinder safeLandingFinder = new SafeLandingFinder();
+    private final SafeLandingFinder safeLandingFinder;
 
     public PortalTravelService(ForeverWorldPortalsConfig config, Logger logger) {
         this.config = config;
         this.logger = logger;
         this.destinationSelector = new PortalDestinationSelector(config, logger);
+        this.safeLandingFinder = new SafeLandingFinder(logger);
     }
 
     public @Nullable TeleportTransition getTeleportTransition(ServerLevel level, Entity entity, BlockPos portalEntryPos) {
