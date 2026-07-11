@@ -1,0 +1,349 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${fabric_loom_version}" apply false
+	id 'net.neoforged.moddev' version "${neoforge_moddev_version}" apply false
+	id 'com.modrinth.minotaur' version "${minotaur_plugin_version}" apply false
+	id 'net.darkhax.curseforgegradle' version "${curseforgegradle_plugin_version}" apply false
+}
+
+ext {
+	archivesBaseNameFabric = "${archives_base_name}-fabric"
+	archivesBaseNameNeoForge = "${archives_base_name}-neoforge"
+}
+
+subprojects {
+	tasks.withType(JavaCompile).configureEach {
+		it.options.release = project.java_version as Integer
+		options.encoding = "UTF-8"
+	}
+}
+
+tasks.register('validateRelease') {
+	group = 'release'
+	description = 'Validates that the environment is ready for a release'
+
+	doFirst {
+		if (!System.getenv("CURSEFORGE_TOKEN")) {
+			throw new GradleException("CURSEFORGE_TOKEN environment variable not set")
+		}
+		if (!System.getenv("MODRINTH_TOKEN")) {
+			throw new GradleException("MODRINTH_TOKEN environment variable not set")
+		}
+	}
+
+	doLast {
+		def gitStatus = 'git status --porcelain'.execute().text.trim()
+		if (!gitStatus.isEmpty()) {
+			throw new GradleException("Working directory not clean, cannot release:\n${gitStatus}")
+		}
+
+		def currentBranch = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
+		if (currentBranch != 'main') {
+			throw new GradleException("Releases must be performed on main. Currently on '${currentBranch}'")
+		}
+
+		println "[OK] Working directory is clean"
+		println "[OK] On main branch"
+	}
+}
+
+tasks.register('prepareReleaseVersion') {
+	group = 'release'
+	description = 'Removes -prerelease suffix from mod_version'
+
+	doLast {
+		def propsFile = file('gradle.properties')
+		def content = propsFile.text
+
+		def matcher = content =~ /(?m)^mod_version\s*=\s*(.+)$/
+		if (!matcher.find()) {
+			throw new GradleException("Could not find mod_version in gradle.properties")
+		}
+
+		def currentVersion = matcher.group(1).trim()
+		println "Current version: ${currentVersion}"
+
+		if (!currentVersion.contains('-prerelease')) {
+			throw new GradleException("Current version is not a prerelease: ${currentVersion}")
+		}
+
+		def releaseVersion = currentVersion.replace('-prerelease', '')
+		println "Release version: ${releaseVersion}"
+
+		def updatedContent = content.replaceAll(
+			/(?m)^mod_version\s*=\s*.+$/,
+			"mod_version = ${releaseVersion}"
+		)
+
+		propsFile.text = updatedContent
+
+		println "[OK] Updated gradle.properties to version ${releaseVersion}"
+		project.ext.releaseVersion = releaseVersion
+	}
+}
+
+tasks.register('commitReleaseVersion') {
+	group = 'release'
+	description = 'Commits the release version to git'
+
+	doLast {
+		def releaseVersion = project.ext.releaseVersion
+
+		def addResult = ["git", "add", "gradle.properties"].execute()
+		def addOutput = new StringBuilder()
+		def addError = new StringBuilder()
+		addResult.consumeProcessOutput(addOutput, addError)
+		addResult.waitFor()
+		if (addResult.exitValue() != 0) {
+			throw new GradleException("Failed to stage gradle.properties: ${addError}")
+		}
+
+		def commitResult = ["git", "commit", "-m", "*** Release ${releaseVersion} ***"].execute()
+		def commitOutput = new StringBuilder()
+		def commitError = new StringBuilder()
+		commitResult.consumeProcessOutput(commitOutput, commitError)
+		commitResult.waitFor()
+		if (commitResult.exitValue() != 0) {
+			throw new GradleException("Failed to commit release version:\n${commitOutput}\n${commitError}")
+		}
+
+		println "[OK] Committed release version ${releaseVersion}"
+	}
+}
+
+tasks.register('buildReleaseJars') {
+	group = 'release'
+	description = 'Builds Fabric and NeoForge release jars'
+
+	doLast {
+		def releaseVersion = project.ext.releaseVersion
+
+		println "Building release jars with version ${releaseVersion}..."
+
+		def gradleCmd = [
+			'./gradlew',
+			'clean',
+			':fabric:build',
+			':neoforge:build',
+			'--console=plain'
+		]
+
+		def buildProcess = gradleCmd.execute()
+		buildProcess.waitForProcessOutput(System.out, System.err)
+
+		if (buildProcess.exitValue() != 0) {
+			throw new GradleException("Failed to build release jars")
+		}
+
+		println "[OK] Built release jars:"
+		println "  - fabric/build/libs/${archivesBaseNameFabric}-${releaseVersion}.jar"
+		println "  - neoforge/build/libs/${archivesBaseNameNeoForge}-${releaseVersion}.jar"
+	}
+}
+
+tasks.register('publishGitHub') {
+	group = 'release'
+	description = 'Pushes to git and creates GitHub release'
+
+	doLast {
+		def releaseVersion = project.ext.releaseVersion
+
+		println "Pushing to origin..."
+		def pushResult = ["git", "push"].execute()
+		pushResult.waitForProcessOutput(System.out, System.err)
+		if (pushResult.exitValue() != 0) {
+			throw new GradleException("Failed to push to git")
+		}
+
+		println "Creating GitHub release ${releaseVersion}..."
+		def currentBranch = 'git branch --show-current'.execute().text.trim()
+
+		def fabricJar = file("fabric/build/libs/${archivesBaseNameFabric}-${releaseVersion}.jar")
+		def neoforgeJar = file("neoforge/build/libs/${archivesBaseNameNeoForge}-${releaseVersion}.jar")
+
+		if (!fabricJar.exists()) throw new GradleException("Fabric release jar not found at ${fabricJar}")
+		if (!neoforgeJar.exists()) throw new GradleException("NeoForge release jar not found at ${neoforgeJar}")
+
+		def ghCmd = [
+			'gh', 'release', 'create',
+			'--target', currentBranch,
+			'--generate-notes',
+			'--title', releaseVersion,
+			'--notes', "release ${releaseVersion}",
+			releaseVersion,
+			fabricJar.absolutePath,
+			neoforgeJar.absolutePath
+		]
+
+		def ghResult = ghCmd.execute()
+		ghResult.waitForProcessOutput(System.out, System.err)
+		if (ghResult.exitValue() != 0) {
+			throw new GradleException("Failed to create GitHub release")
+		}
+
+		println "[OK] Created GitHub release ${releaseVersion}"
+	}
+}
+
+tasks.register('publishCurseForge') {
+	group = 'release'
+	description = 'Publishes to CurseForge'
+
+	doLast {
+		println "Publishing to CurseForge..."
+
+		def gradleCmd = [
+			'./gradlew',
+			':fabric:publishCurseForge',
+			':neoforge:publishCurseForge',
+			'--console=plain'
+		]
+
+		def publishProcess = gradleCmd.execute()
+		publishProcess.waitForProcessOutput(System.out, System.err)
+
+		if (publishProcess.exitValue() != 0) {
+			throw new GradleException("Failed to publish to CurseForge")
+		}
+
+		println "[OK] Published to CurseForge"
+	}
+}
+
+tasks.register('publishModrinth') {
+	group = 'release'
+	description = 'Publishes to Modrinth'
+
+	doLast {
+		println "Publishing to Modrinth..."
+
+		def gradleCmd = [
+			'./gradlew',
+			':fabric:modrinth',
+			':neoforge:modrinth',
+			'--console=plain'
+		]
+
+		def publishProcess = gradleCmd.execute()
+		publishProcess.waitForProcessOutput(System.out, System.err)
+
+		if (publishProcess.exitValue() != 0) {
+			throw new GradleException("Failed to publish to Modrinth")
+		}
+
+		println "[OK] Published to Modrinth"
+	}
+}
+
+tasks.register('bumpVersion') {
+	group = 'release'
+	description = 'Increments version and adds -prerelease suffix'
+
+	doLast {
+		def propsFile = file('gradle.properties')
+		def content = propsFile.text
+
+		def matcher = content =~ /(?m)^mod_version\s*=\s*(.+)$/
+		if (!matcher.find()) {
+			throw new GradleException("Could not find mod_version in gradle.properties")
+		}
+
+		def releaseVersion = matcher.group(1).trim()
+		println "Previous release version: ${releaseVersion}"
+
+		def versionParts = releaseVersion.split('\\+')
+		def semver = versionParts[0].split('\\.')
+		def buildMetadata = versionParts.length > 1 ? versionParts[1] : ''
+
+		def major = semver[0]
+		def minor = semver[1]
+		def patch = (semver[2] as Integer) + 1
+
+		def nextVersion = "${major}.${minor}.${patch}+${buildMetadata}-prerelease"
+		println "Next version: ${nextVersion}"
+
+		def updatedContent = content.replaceAll(
+			/(?m)^mod_version\s*=\s*.+$/,
+			"mod_version = ${nextVersion}"
+		)
+
+		propsFile.text = updatedContent
+
+		println "[OK] Updated gradle.properties to version ${nextVersion}"
+		project.ext.nextVersion = nextVersion
+	}
+}
+
+tasks.register('commitVersionBump') {
+	group = 'release'
+	description = 'Commits and pushes the version bump'
+
+	doLast {
+		def nextVersion = project.ext.nextVersion
+
+		def addResult = ["git", "add", "gradle.properties"].execute()
+		def addOutput = new StringBuilder()
+		def addError = new StringBuilder()
+		addResult.consumeProcessOutput(addOutput, addError)
+		addResult.waitFor()
+		if (addResult.exitValue() != 0) {
+			throw new GradleException("Failed to stage gradle.properties: ${addError}")
+		}
+
+		def commitResult = ["git", "commit", "-m", "Prepare for next version ${nextVersion}"].execute()
+		def commitOutput = new StringBuilder()
+		def commitError = new StringBuilder()
+		commitResult.consumeProcessOutput(commitOutput, commitError)
+		commitResult.waitFor()
+		if (commitResult.exitValue() != 0) {
+			throw new GradleException("Failed to commit version bump:\n${commitOutput}\n${commitError}")
+		}
+
+		def pushResult = ["git", "push"].execute()
+		pushResult.waitForProcessOutput(System.out, System.err)
+		if (pushResult.exitValue() != 0) {
+			throw new GradleException("Failed to push version bump")
+		}
+
+		println "[OK] Committed and pushed version bump to ${nextVersion}"
+	}
+}
+
+tasks.register('release') {
+	group = 'release'
+	description = 'Complete release: GitHub, CurseForge, Modrinth, and version bump'
+
+	dependsOn validateRelease,
+	          prepareReleaseVersion,
+	          commitReleaseVersion,
+	          buildReleaseJars,
+	          publishGitHub,
+	          publishCurseForge,
+	          publishModrinth,
+	          bumpVersion,
+	          commitVersionBump
+
+	prepareReleaseVersion.mustRunAfter validateRelease
+	commitReleaseVersion.mustRunAfter prepareReleaseVersion
+	buildReleaseJars.mustRunAfter commitReleaseVersion
+	publishGitHub.mustRunAfter buildReleaseJars
+	publishCurseForge.mustRunAfter publishGitHub
+	publishModrinth.mustRunAfter publishCurseForge
+	bumpVersion.mustRunAfter publishModrinth
+	commitVersionBump.mustRunAfter bumpVersion
+
+	doFirst {
+		println ""
+		println "============================================================"
+		println "Starting Release Process"
+		println "============================================================"
+		println ""
+	}
+
+	doLast {
+		println ""
+		println "============================================================"
+		println "Release Complete!"
+		println "============================================================"
+		println ""
+	}
+}

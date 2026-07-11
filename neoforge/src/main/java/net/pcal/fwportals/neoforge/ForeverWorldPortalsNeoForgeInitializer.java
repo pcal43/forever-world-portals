@@ -1,0 +1,29 @@
+package net.pcal.fwportals.neoforge;
+
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.pcal.fwportals.ForeverWorldPortals;
+import net.pcal.fwportals.ForeverWorldPortalsService;
+
+@Mod(ForeverWorldPortalsNeoForgeInitializer.MOD_ID)
+public class ForeverWorldPortalsNeoForgeInitializer {
+
+    public static final String MOD_ID = "fwportals";
+
+    public ForeverWorldPortalsNeoForgeInitializer(IEventBus modEventBus) {
+        ForeverWorldPortals.initialize();
+        NeoForge.EVENT_BUS.addListener((ServerStartingEvent event) ->
+                ForeverWorldPortalsService.getInstance().onServerStarting(event.getServer()));
+        NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) ->
+                ForeverWorldPortalsService.getInstance().onServerStarted(event.getServer()));
+        NeoForge.EVENT_BUS.addListener((ServerStoppingEvent event) ->
+                ForeverWorldPortalsService.getInstance().onServerStopping(event.getServer()));
+        NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) ->
+                ForeverWorldPortalsService.getInstance().onServerStopped(event.getServer()));
+    }
+}

@@ -1,0 +1,21 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+[[mods]]
+modId = "fwportals"
+version = "${mod_version}"
+displayName = "Forever World Portals"
+description = "Pass 0 placeholder scaffold for a server-side portal mod."
+displayTest = "IGNORE_ALL_VERSION"
+[[dependencies.fwportals]]
+modId = "neoforge"
+type = "required"
+versionRange = "[${neoforge_version},)"
+ordering = "NONE"
+side = "BOTH"
+[[dependencies.fwportals]]
+modId = "minecraft"
+type = "required"
+versionRange = "[${minecraft_version},)"
+ordering = "NONE"
+side = "BOTH"
