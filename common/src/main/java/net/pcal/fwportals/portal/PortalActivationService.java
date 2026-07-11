@@ -72,6 +72,18 @@ public final class PortalActivationService {
         return true;
     }
 
+    public boolean canActivatePortalAt(BlockGetter level, BlockPos firePos, ItemStack activationStack) {
+        if (!config.enabled()) {
+            return false;
+        }
+        if (!activationStack.is(config.activationItem())) {
+            return false;
+        }
+
+        BlockState frameState = config.frameBlock().defaultBlockState();
+        return detector.findEmptyFrame(level, firePos, Direction.Axis.X, frameState).isPresent();
+    }
+
     public Optional<ForeverWorldPortalFrame> findForeverWorldPortal(BlockGetter level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         if (!state.is(Blocks.NETHER_PORTAL)) {

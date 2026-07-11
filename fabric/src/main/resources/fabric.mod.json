@@ -10,7 +10,7 @@
     "sources": "https://github.com/pcal43/forever-world-portals"
   },
   "license": "MIT",
-  "environment": "server",
+  "environment": "*",
   "entrypoints": {
     "main": [
       "net.pcal.fwportals.fabric.ForeverWorldPortalsFabricInitializer"

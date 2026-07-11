@@ -69,6 +69,10 @@ public final class ForeverWorldPortalsService {
         return portalActivationService().tryActivatePortal(level, firePos, activationStack, player);
     }
 
+    public boolean canActivatePortalAt(BlockGetter level, BlockPos firePos, ItemStack activationStack) {
+        return portalActivationService().canActivatePortalAt(level, firePos, activationStack);
+    }
+
     public Optional<ForeverWorldPortalFrame> findForeverWorldPortal(BlockGetter level, BlockPos pos) {
         return portalActivationService().findForeverWorldPortal(level, pos);
     }
