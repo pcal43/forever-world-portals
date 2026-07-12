@@ -9,5 +9,6 @@ pluginManagement {
 
 rootProject.name = 'forever-world-portals'
 include 'common'
+include 'client'
 include 'fabric'
 include 'neoforge'

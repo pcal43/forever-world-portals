@@ -19,6 +19,7 @@ dependencies {
 	implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
 
 	compileOnly project(':common')
+	compileOnly project(':client')
 }
 
 processResources {
@@ -37,7 +38,9 @@ processResources {
 sourceSets {
 	main {
 		java { srcDir project(":common").file("src/main/java") }
+		java { srcDir project(":client").file("src/main/java") }
 		resources { srcDir project(":common").file("src/main/resources") }
+		resources { srcDir project(":client").file("src/main/resources") }
 	}
 }
 

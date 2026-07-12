@@ -14,10 +14,14 @@
   "entrypoints": {
     "main": [
       "net.pcal.fwportals.fabric.ForeverWorldPortalsFabricInitializer"
+    ],
+    "client": [
+      "net.pcal.fwportals.fabric.ForeverWorldPortalsFabricClientInitializer"
     ]
   },
   "mixins": [
-    "fwportals.mixins.json"
+    "fwportals.mixins.json",
+    "fwportals.client.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=${fabric_loader_version}",

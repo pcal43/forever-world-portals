@@ -3,6 +3,8 @@ loaderVersion = "[4,)"
 license = "MIT"
 [[mixins]]
 config = "fwportals.mixins.json"
+[[mixins]]
+config = "fwportals.client.mixins.json"
 [[mods]]
 modId = "fwportals"
 version = "${mod_version}"

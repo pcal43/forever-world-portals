@@ -15,6 +15,7 @@ repositories {
 
 dependencies {
     compileOnly project(':common')
+    compileOnly project(':client')
 }
 
 neoForge {
@@ -43,7 +44,9 @@ neoForge {
 sourceSets {
     main {
         java { srcDir project(":common").file("src/main/java") }
+        java { srcDir project(":client").file("src/main/java") }
         resources { srcDir project(":common").file("src/main/resources") }
+        resources { srcDir project(":client").file("src/main/resources") }
     }
 }
 
@@ -64,7 +67,7 @@ jar {
     }
     manifest {
         attributes([
-                'MixinConfigs': 'fwportals.mixins.json'
+                'MixinConfigs': 'fwportals.mixins.json,fwportals.client.mixins.json'
         ])
     }
 }
