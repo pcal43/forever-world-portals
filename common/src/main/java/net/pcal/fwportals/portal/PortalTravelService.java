@@ -10,6 +10,8 @@ import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
 import net.pcal.fwportals.ReturnPortalMode;
+import net.pcal.fwportals.attunement.BiomeDestinationTarget;
+import net.pcal.fwportals.attunement.DestinationTargets;
 import net.pcal.fwportals.portal.persistence.ForeverWorldPortalRegistryData;
 import net.pcal.fwportals.portal.persistence.PortalRecord;
 import org.apache.logging.log4j.Logger;
@@ -116,12 +118,13 @@ public final class PortalTravelService {
             ForeverWorldPortalRegistryData registry,
             BlockPos portalAnchor
     ) {
-        ServerLevel destinationLevel = level.getServer().getLevel(level.dimension());
+        BiomeDestinationTarget destinationTarget = defaultFoundingDestinationTarget();
+        ServerLevel destinationLevel = level.getServer().getLevel(destinationTarget.dimension());
         if (destinationLevel == null) {
             player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
             logger.warn(
                     "[fwportals] Destination dimension {} is unavailable for portal anchor {}",
-                    level.dimension().identifier(),
+                    destinationTarget.dimension().identifier(),
                     portalAnchor
             );
             return null;
@@ -268,12 +271,17 @@ public final class PortalTravelService {
 
         player.sendSystemMessage(Component.literal("Forever World portal could not find a safe destination yet."));
         logger.warn(
-                "[fwportals] Failed to create a destination portal after {} attempts for portal anchor {} in {}",
+                "[fwportals] Failed to create a destination portal after {} attempts for portal anchor {} in {} using {}",
                 config.destinationSearchAttempts(),
                 portalAnchor,
-                level.dimension().identifier()
+                level.dimension().identifier(),
+                DestinationTargets.defaultTargetLabel()
         );
         return null;
+    }
+
+    static BiomeDestinationTarget defaultFoundingDestinationTarget() {
+        return DestinationTargets.defaultBiomeTarget();
     }
 
     private @Nullable TeleportTransition failForUnimplementedReturnMode(ServerPlayer player, ForeverWorldPortalFrame frame) {

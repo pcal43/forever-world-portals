@@ -1,0 +1,23 @@
+{
+  "sunflower_plains": {
+    "item": "minecraft:sunflower",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:sunflower_plains"
+    ]
+  },
+  "flower_forest": {
+    "item": "minecraft:allium",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:flower_forest"
+    ]
+  },
+  "pale_garden": {
+    "item": "minecraft:pale_oak_sapling",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:pale_garden"
+    ]
+  }
+}

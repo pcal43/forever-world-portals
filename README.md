@@ -1,6 +1,6 @@
 # Forever World Portals
 
-Forever World Portals is currently in Pass 4. Diamond-block portal frames can be detected, activated with flint and steel, filled with vanilla Nether portal blocks, recognized when entities enter them, and used to register persistent portal routes. Each route maps one canonical portal anchor to another canonical portal anchor. Generated return portals are implemented by default. Inventory stripping is still intentionally not implemented.
+Forever World Portals currently supports diamond-frame portal activation, anchor-based persistent routes, generated return portals, and reloadable data-driven attunement definitions. Inventory stripping is still intentionally not implemented.
 
 - Mod ID: `fwportals`
 - Java package: `net.pcal.fwportals`
@@ -55,7 +55,7 @@ The first time a player enters a valid diamond-frame portal:
 
 - the complete portal is detected and assigned one canonical anchor block in the lowest interior row
 - if no registered source portal anchor is enclosed by that physical portal, the mod walks a deterministic square spiral of distant search anchors
-- at each eligible spiral anchor, the mod uses Minecraft's built-in worldgen biome search to look for `minecraft:sunflower_plains`, `minecraft:flower_forest`, or `minecraft:pale_garden`
+- at each eligible spiral anchor, the mod uses Minecraft's built-in worldgen biome search for the current default biome target
 - the mod attempts to generate a destination portal whose canonical anchor is exactly the requested candidate block
 - after generation succeeds, two independent source-portal routes are stored persistently:
   - original source anchor -> generated destination anchor
@@ -63,6 +63,35 @@ The first time a player enters a valid diamond-frame portal:
 - the player is teleported to `Vec3.atBottomCenterOf(destinationAnchor)`
 
 Later entries through any physical Forever World portal that still encloses the same stored source anchor reuse the same exact destination anchor without rerolling anything.
+
+## Attunements
+
+Attunements are loaded from server data packs at:
+
+```text
+data/<namespace>/forever_world_portals/attunements.json
+```
+
+The built-in file lives at:
+
+```text
+common/src/main/resources/data/forever_world_portals/forever_world_portals/attunements.json
+```
+
+Definitions are merged by logical attunement ID in pack-priority order. A higher-priority definition replaces the entire lower-priority definition with the same logical ID. Definitions with other IDs remain in place.
+
+Current built-in mappings:
+
+- `minecraft:sunflower` -> `minecraft:sunflower_plains`
+- `minecraft:allium` -> `minecraft:flower_forest`
+- `minecraft:pale_oak_sapling` -> `minecraft:pale_garden`
+
+Current scope:
+
+- item-to-target mappings are loaded and validated from data packs
+- biome targets only
+- `minecraft:overworld` only
+- portal founding currently ignores attunements and uses the default biome target
 
 ## Portal Anchor Identity
 
@@ -93,18 +122,19 @@ The mod writes and loads `config/fwportals.properties`.
 ## Status
 
 - The mod is intended to remain server-side-only so vanilla clients can connect.
-- Diamond-block Forever World portal activation, anchor-based route identity, first-entry teleportation, and generated return portals are implemented.
+- Diamond-block Forever World portal activation, anchor-based route identity, first-entry teleportation, generated return portals, and data-pack-driven attunement loading are implemented.
 - Ordinary obsidian Nether portals are left to vanilla behavior.
 - Entering a new Forever World portal permanently creates an anchor-to-anchor route in world saved data.
 - Generated return travel works by creating a second independent source portal route from the generated destination anchor back to the original source anchor.
-- Teleportation currently stays within the same dimension as the origin portal.
-- Destination selection currently targets only `sunflower_plains`, `flower_forest`, and `pale_garden`.
+- Teleportation currently supports only `minecraft:overworld` destination targets.
+- Destination selection currently always uses the default `sunflower_plains` / `flower_forest` / `pale_garden` target set for new portals.
 - Inventory stripping, player-built return-portal matching, commands, custom content, and other later gameplay systems are not implemented yet.
 
 ## Known Limitations
 
 - Only players are teleported in Pass 4. Non-player entities are recognized but not transported.
 - `REQUIRE_PLAYER_BUILD` and `NONE` are intentionally not implemented yet and fail clearly if selected.
+- Attunement reload fails fast on invalid item IDs, biome IDs, duplicate effective input items, empty biome lists, or unsupported destination dimensions.
 - Inventory stripping and player-built portal matching are deferred to later passes.
 - This pass keeps the current development-only assumption that older experimental registry data will be discarded rather than migrated.
 - In-world portal founding and restart persistence were not exercised through automated game tests in this pass; verification focused on build/test coverage plus Fabric and NeoForge dedicated-server startup.

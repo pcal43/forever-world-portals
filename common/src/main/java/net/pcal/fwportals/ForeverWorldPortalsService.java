@@ -8,6 +8,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.pcal.fwportals.attunement.AttunementRegistry;
 import net.pcal.fwportals.portal.ForeverWorldPortalFrame;
 import net.pcal.fwportals.portal.PortalActivationService;
 import net.pcal.fwportals.portal.PortalTravelService;
@@ -31,6 +32,7 @@ public final class ForeverWorldPortalsService {
     private MinecraftServer currentServer;
     private PortalActivationService portalActivationService;
     private PortalTravelService portalTravelService;
+    private AttunementRegistry attunementRegistry;
 
     public static ForeverWorldPortalsService getInstance() {
         return INSTANCE;
@@ -42,6 +44,7 @@ public final class ForeverWorldPortalsService {
         }
         this.config = requireNonNull(config);
         this.logger = requireNonNull(logger);
+        this.attunementRegistry = new AttunementRegistry(logger);
         this.portalActivationService = new PortalActivationService(config, logger);
         this.portalTravelService = new PortalTravelService(config, logger);
         this.initialized = true;
@@ -67,6 +70,13 @@ public final class ForeverWorldPortalsService {
 
     public MinecraftServer currentServer() {
         return currentServer;
+    }
+
+    public AttunementRegistry attunementRegistry() {
+        if (!initialized || attunementRegistry == null) {
+            throw new IllegalStateException("Forever World Portals has not been initialized");
+        }
+        return attunementRegistry;
     }
 
     public boolean tryActivatePortal(Level level, BlockPos firePos, ItemStack activationStack, Player player) {

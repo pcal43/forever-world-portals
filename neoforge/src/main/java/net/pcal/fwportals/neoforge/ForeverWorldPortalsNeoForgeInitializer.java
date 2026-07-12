@@ -3,10 +3,12 @@ package net.pcal.fwportals.neoforge;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.minecraft.resources.Identifier;
 import net.pcal.fwportals.ForeverWorldPortals;
 import net.pcal.fwportals.ForeverWorldPortalsService;
 
@@ -14,9 +16,15 @@ import net.pcal.fwportals.ForeverWorldPortalsService;
 public class ForeverWorldPortalsNeoForgeInitializer {
 
     public static final String MOD_ID = "fwportals";
+    private static final Identifier ATTUNEMENTS_RELOAD_ID = Identifier.fromNamespaceAndPath(MOD_ID, "attunements");
 
     public ForeverWorldPortalsNeoForgeInitializer(IEventBus modEventBus) {
         ForeverWorldPortals.initialize();
+        NeoForge.EVENT_BUS.addListener((AddServerReloadListenersEvent event) ->
+                event.addListener(
+                        ATTUNEMENTS_RELOAD_ID,
+                        ForeverWorldPortalsService.getInstance().attunementRegistry().createReloadListener(event.getRegistryAccess())
+                ));
         NeoForge.EVENT_BUS.addListener((ServerStartingEvent event) ->
                 ForeverWorldPortalsService.getInstance().onServerStarting(event.getServer()));
         NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) ->

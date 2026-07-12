@@ -87,7 +87,8 @@ class PortalDestinationSelectorTest {
                 spiralAnchor -> Optional.of(new BlockPos(spiralAnchor.getX() + 64, 0, spiralAnchor.getZ() + 96)),
                 ignored -> {
                 },
-                "minecraft:overworld"
+                "minecraft:overworld",
+                "default destination target"
         );
 
         assertEquals(Optional.of(new BlockPos(64, 0, 96)), result);
@@ -105,7 +106,8 @@ class PortalDestinationSelectorTest {
                         : Optional.of(spiralAnchor.offset(128, 0, 128)),
                 ignored -> {
                 },
-                "minecraft:overworld"
+                "minecraft:overworld",
+                "default destination target"
         );
         Optional<BlockPos> second = PortalDestinationSelector.findNextBiomeSearchAnchor(
                 iterator,
@@ -113,7 +115,8 @@ class PortalDestinationSelectorTest {
                 spiralAnchor -> Optional.of(spiralAnchor.offset(128, 0, 128)),
                 ignored -> {
                 },
-                "minecraft:overworld"
+                "minecraft:overworld",
+                "default destination target"
         );
 
         assertTrue(first.isEmpty());
@@ -138,7 +141,8 @@ class PortalDestinationSelectorTest {
                             : Optional.of(spiralAnchor.offset(1024, 0, 1024)),
                     ignored -> {
                     },
-                    "minecraft:overworld"
+                    "minecraft:overworld",
+                    "default destination target"
             );
         }
 
@@ -159,7 +163,8 @@ class PortalDestinationSelectorTest {
                 spiralAnchor -> Optional.of(spiralAnchor),
                 ignored -> {
                 },
-                "minecraft:overworld"
+                "minecraft:overworld",
+                "default destination target"
         );
 
         assertTrue(result.isEmpty());

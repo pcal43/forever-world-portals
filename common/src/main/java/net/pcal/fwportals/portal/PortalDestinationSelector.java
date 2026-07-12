@@ -6,6 +6,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
+import net.pcal.fwportals.attunement.BiomeDestinationTarget;
+import net.pcal.fwportals.attunement.DestinationTargets;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
@@ -36,9 +38,25 @@ public final class PortalDestinationSelector {
             ServerLevel level,
             BlockPos portalAnchor
     ) {
+        return beginSearch(
+                level,
+                portalAnchor,
+                DestinationTargets.defaultBiomeTarget(),
+                DestinationTargets.defaultTargetLabel()
+        );
+    }
+
+    SearchContext beginSearch(
+            ServerLevel level,
+            BlockPos portalAnchor,
+            BiomeDestinationTarget destinationTarget,
+            String targetLabel
+    ) {
         return new SearchContext(
                 level,
                 portalAnchor.immutable(),
+                destinationTarget,
+                targetLabel,
                 new SpiralAnchorIterator(config.minimumGeneratedTerrainDistanceBlocks()),
                 List.of(
                         GeneratedTerrainDistanceConstraint.snapshot(
@@ -59,10 +77,12 @@ public final class PortalDestinationSelector {
                 transientAnchor -> destinationBiomeLocator.findNearest(
                         searchContext.level(),
                         transientAnchor,
-                        config.minimumGeneratedTerrainDistanceBlocks()
+                        config.minimumGeneratedTerrainDistanceBlocks(),
+                        searchContext.destinationTarget()
                 ),
                 reason -> logger.info("[fwportals] {}", reason),
-                searchContext.level().dimension().identifier().toString()
+                searchContext.level().dimension().identifier().toString(),
+                searchContext.targetLabel()
         );
         if (maybeBiomeAnchor.isEmpty()) {
             return Optional.empty();
@@ -81,25 +101,26 @@ public final class PortalDestinationSelector {
             List<DestinationConstraint> constraints,
             Function<BlockPos, Optional<BlockPos>> biomeLocator,
             java.util.function.Consumer<String> logSink,
-            String dimensionId
+            String dimensionId,
+            String targetLabel
     ) {
         BlockPos transientAnchor = spiralAnchors.next();
         String transientRejection = firstRejectionReason(constraints, transientAnchor);
         if (transientRejection != null) {
-            logSink.accept("Rejecting spiral anchor " + transientAnchor + " in " + dimensionId + " because " + transientRejection);
+            logSink.accept("Rejecting spiral anchor " + transientAnchor + " in " + dimensionId + " for " + targetLabel + " because " + transientRejection);
             return Optional.empty();
         }
 
         Optional<BlockPos> maybeBiomeAnchor = biomeLocator.apply(transientAnchor);
         if (maybeBiomeAnchor.isEmpty()) {
-            logSink.accept("No target biome found near spiral anchor " + transientAnchor + " in " + dimensionId);
+            logSink.accept("No target biome found near spiral anchor " + transientAnchor + " in " + dimensionId + " for " + targetLabel);
             return Optional.empty();
         }
 
         BlockPos biomeAnchor = maybeBiomeAnchor.get();
         String biomeRejection = firstRejectionReason(constraints, biomeAnchor);
         if (biomeRejection != null) {
-            logSink.accept("Rejecting biome-targeted anchor " + biomeAnchor + " from spiral anchor " + transientAnchor + " in " + dimensionId + " because " + biomeRejection);
+            logSink.accept("Rejecting biome-targeted anchor " + biomeAnchor + " from spiral anchor " + transientAnchor + " in " + dimensionId + " for " + targetLabel + " because " + biomeRejection);
             return Optional.empty();
         }
 
@@ -136,6 +157,8 @@ public final class PortalDestinationSelector {
     public record SearchContext(
             ServerLevel level,
             BlockPos portalAnchor,
+            BiomeDestinationTarget destinationTarget,
+            String targetLabel,
             SpiralAnchorIterator spiralAnchors,
             List<DestinationConstraint> constraints
     ) {
