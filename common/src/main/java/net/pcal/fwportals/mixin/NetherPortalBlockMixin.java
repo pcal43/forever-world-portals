@@ -11,6 +11,7 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.NetherPortalBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.pcal.fwportals.ForeverWorldPortalsService;
 import org.jetbrains.annotations.Nullable;
@@ -50,6 +51,24 @@ public class NetherPortalBlockMixin {
             org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci
     ) {
         ForeverWorldPortalsService.getInstance().onEntityInsidePortal(level, pos, entity);
+    }
+
+    @Inject(method = "getPortalTransitionTime", at = @At("RETURN"), cancellable = true)
+    private void useStandardPlayerPortalDelayForForeverWorldPortals(
+            ServerLevel level,
+            Entity entity,
+            CallbackInfoReturnable<Integer> cir
+    ) {
+        if (entity.portalProcess == null) {
+            return;
+        }
+
+        BlockPos entryPos = entity.portalProcess.getEntryPosition();
+        if (!ForeverWorldPortalsService.getInstance().isForeverWorldPortal(level, entryPos)) {
+            return;
+        }
+
+        cir.setReturnValue(Math.max(1, level.getGameRules().get(GameRules.PLAYERS_NETHER_PORTAL_DEFAULT_DELAY)));
     }
 
     @Inject(method = "getPortalDestination", at = @At("HEAD"), cancellable = true)
