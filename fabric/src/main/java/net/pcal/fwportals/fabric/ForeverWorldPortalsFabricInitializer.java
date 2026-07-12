@@ -2,6 +2,7 @@ package net.pcal.fwportals.fabric;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.resources.Identifier;
@@ -26,6 +27,7 @@ public class ForeverWorldPortalsFabricInitializer implements ModInitializer {
         );
         ServerLifecycleEvents.SERVER_STARTING.register(ForeverWorldPortalsService.getInstance()::onServerStarting);
         ServerLifecycleEvents.SERVER_STARTED.register(ForeverWorldPortalsService.getInstance()::onServerStarted);
+        ServerTickEvents.END_SERVER_TICK.register(ForeverWorldPortalsService.getInstance()::onServerTick);
         ServerLifecycleEvents.SERVER_STOPPING.register(ForeverWorldPortalsService.getInstance()::onServerStopping);
         ServerLifecycleEvents.SERVER_STOPPED.register(ForeverWorldPortalsService.getInstance()::onServerStopped);
     }

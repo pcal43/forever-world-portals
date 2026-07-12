@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -24,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +39,7 @@ public final class PortalAttunementService {
     private final AttunementRegistry attunementRegistry;
     private final PortalIdentity portalIdentity = new PortalIdentity();
     private final Map<UUID, Long> recentlyAcceptedOfferingTicks = new HashMap<>();
+    private final Map<ResourceKey<Level>, List<ActiveAnimation>> activeAnimationsByDimension = new HashMap<>();
 
     public PortalAttunementService(Logger logger, AttunementRegistry attunementRegistry) {
         this.logger = logger;
@@ -80,7 +83,7 @@ public final class PortalAttunementService {
         consumeAcceptedItem(itemEntity);
         recentlyAcceptedOfferingTicks.put(itemEntity.getUUID(), gameTime);
 
-        emitAcceptedOfferingFeedback(level, portalAnchor, frame, offering.attunementDefinition());
+        startAcceptedOfferingFeedback(level, portalAnchor, frame, offering.attunementDefinition());
 
         Entity owner = itemEntity.getOwner();
         if (owner instanceof ServerPlayer player && !player.isRemoved()) {
@@ -99,6 +102,33 @@ public final class PortalAttunementService {
 
     public void clearRuntimeState() {
         recentlyAcceptedOfferingTicks.clear();
+        activeAnimationsByDimension.clear();
+    }
+
+    public void onServerTick(MinecraftServer server) {
+        for (Map.Entry<ResourceKey<Level>, List<ActiveAnimation>> entry : activeAnimationsByDimension.entrySet()) {
+            ServerLevel level = server.getLevel(entry.getKey());
+            if (level == null) {
+                continue;
+            }
+
+            Iterator<ActiveAnimation> iterator = entry.getValue().iterator();
+            while (iterator.hasNext()) {
+                ActiveAnimation animation = iterator.next();
+                PortalAttunementParticles.emitAcceptedOfferingTick(
+                        level,
+                        animation.bounds(),
+                        animation.colorRgb(),
+                        animation.tickIndex()
+                );
+                if (animation.tickIndex() + 1 >= PortalAttunementParticles.ANIMATION_TICKS) {
+                    iterator.remove();
+                } else {
+                    animation.advance();
+                }
+            }
+        }
+        activeAnimationsByDimension.values().removeIf(List::isEmpty);
     }
 
     static Optional<AcceptedOffering> resolveAcceptedOffering(
@@ -153,14 +183,20 @@ public final class PortalAttunementService {
         return Math.max(0, count - 1);
     }
 
-    private void emitAcceptedOfferingFeedback(
+    private void startAcceptedOfferingFeedback(
             ServerLevel level,
             BlockPos portalAnchor,
             ForeverWorldPortalFrame frame,
             AttunementDefinition attunementDefinition
     ) {
         level.playSound(null, portalAnchor, SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.BLOCKS, 0.75F, 1.1F);
-        PortalAttunementParticles.emitAcceptedOffering(level, frame, attunementDefinition.colorRgb());
+        ActiveAnimation animation = new ActiveAnimation(
+                PortalAttunementParticles.boundsOf(frame),
+                attunementDefinition.colorRgb()
+        );
+        activeAnimationsByDimension.computeIfAbsent(level.dimension(), ignored -> new java.util.ArrayList<>()).add(animation);
+        PortalAttunementParticles.emitAcceptedOfferingTick(level, animation.bounds(), animation.colorRgb(), animation.tickIndex());
+        animation.advance();
     }
 
     private PortalRecord selectDeterministicMatch(ResourceKey<Level> dimension, List<PortalRecord> matches) {
@@ -181,5 +217,32 @@ public final class PortalAttunementService {
     }
 
     record AcceptedOffering(PortalRecord updatedPortal, Identifier attunementItemId, AttunementDefinition attunementDefinition) {
+    }
+
+    private static final class ActiveAnimation {
+        private final PortalAttunementParticles.PortalInteriorBounds bounds;
+        private final int colorRgb;
+        private int tickIndex;
+
+        private ActiveAnimation(PortalAttunementParticles.PortalInteriorBounds bounds, int colorRgb) {
+            this.bounds = bounds;
+            this.colorRgb = colorRgb;
+        }
+
+        PortalAttunementParticles.PortalInteriorBounds bounds() {
+            return bounds;
+        }
+
+        int colorRgb() {
+            return colorRgb;
+        }
+
+        int tickIndex() {
+            return tickIndex;
+        }
+
+        void advance() {
+            tickIndex++;
+        }
     }
 }

@@ -6,25 +6,28 @@ import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+
 import java.util.List;
 
 public final class PortalAttunementParticles {
 
-    static final int EXPLOSION_EMITTER_COUNT = 1;
-    static final int END_ROD_COUNT = 24;
-    static final int REVERSE_PORTAL_COUNT = 48;
-    static final int DUST_COUNT = 24;
-    static final float DUST_SCALE = 1.0F;
+    static final int ANIMATION_TICKS = 6;
+    static final int END_ROD_COUNT = 30;
+    static final int REVERSE_PORTAL_COUNT = 36;
+    static final int DUST_COUNT = 18;
+    static final float DUST_SCALE = 0.9F;
 
     private PortalAttunementParticles() {
     }
 
-    public static void emitAcceptedOffering(ServerLevel level, ForeverWorldPortalFrame frame, int colorRgb) {
-        PortalInteriorBounds bounds = PortalInteriorBounds.of(frame);
-        spawnAtCenter(level, ParticleTypes.EXPLOSION_EMITTER, bounds.center());
-        spawnAcrossInterior(level, bounds, ParticleTypes.END_ROD, END_ROD_COUNT, 0.01);
-        spawnAcrossInterior(level, bounds, ParticleTypes.REVERSE_PORTAL, REVERSE_PORTAL_COUNT, 0.02);
-        spawnAcrossInterior(level, bounds, dustFromRgb(colorRgb), DUST_COUNT, 0.005);
+    public static void emitAcceptedOfferingTick(ServerLevel level, PortalInteriorBounds bounds, int colorRgb, int tickIndex) {
+        int emittedEndRod = countForTick(END_ROD_COUNT, ANIMATION_TICKS, tickIndex);
+        int emittedReversePortal = countForTick(REVERSE_PORTAL_COUNT, ANIMATION_TICKS, tickIndex);
+        int emittedDust = countForTick(DUST_COUNT, ANIMATION_TICKS, tickIndex);
+
+        spawnAcrossInterior(level, bounds, ParticleTypes.END_ROD, emittedEndRod, 0.01);
+        spawnAcrossInterior(level, bounds, ParticleTypes.REVERSE_PORTAL, emittedReversePortal, 0.015);
+        spawnAcrossInterior(level, bounds, dustFromRgb(colorRgb), emittedDust, 0.004);
     }
 
     static DustParticleOptions dustFromRgb(int colorRgb) {
@@ -35,10 +38,6 @@ public final class PortalAttunementParticles {
         return PortalInteriorBounds.of(frame);
     }
 
-    private static void spawnAtCenter(ServerLevel level, ParticleOptions particle, PortalInteriorCenter center) {
-        level.sendParticles(particle, center.x(), center.y(), center.z(), EXPLOSION_EMITTER_COUNT, 0.0, 0.0, 0.0, 0.0);
-    }
-
     private static void spawnAcrossInterior(
             ServerLevel level,
             PortalInteriorBounds bounds,
@@ -46,12 +45,21 @@ public final class PortalAttunementParticles {
             int count,
             double speed
     ) {
+        if (count <= 0) {
+            return;
+        }
         for (int i = 0; i < count; i++) {
             double x = randomBetween(level, bounds.minX(), bounds.maxX());
             double y = randomBetween(level, bounds.minY(), bounds.maxY());
             double z = randomBetween(level, bounds.minZ(), bounds.maxZ());
             level.sendParticles(particle, x, y, z, 1, 0.0, 0.0, 0.0, speed);
         }
+    }
+
+    static int countForTick(int totalCount, int totalTicks, int tickIndex) {
+        int emittedBefore = totalCount * tickIndex / totalTicks;
+        int emittedAfter = totalCount * (tickIndex + 1) / totalTicks;
+        return emittedAfter - emittedBefore;
     }
 
     private static double randomBetween(ServerLevel level, double min, double max) {

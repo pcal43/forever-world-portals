@@ -97,7 +97,7 @@ Current scope:
 - `minecraft:overworld` only
 - attunement is applied by throwing one recognized item into an unresolved portal before first use
 - the most recently accepted offering replaces any previous portal attunement
-- accepted offerings are consumed immediately, trigger a portal-wide vanilla particle burst plus a confirmation sound, and send an action-bar message to the throwing player when identified
+- accepted offerings are consumed immediately, trigger a brief multi-tick portal-wide magical particle surge plus a confirmation sound, and send an action-bar message to the throwing player when identified
 - unrecognized items are ignored without feedback
 - established portals cannot be re-attuned
 - portal founding uses the stored portal attunement when present and otherwise falls back to the effective data-driven `default` target

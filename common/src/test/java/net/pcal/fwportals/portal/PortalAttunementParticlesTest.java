@@ -25,6 +25,14 @@ class PortalAttunementParticlesTest {
     }
 
     @Test
+    void spreadsParticleCountsAcrossAnimationTicks() {
+        assertEquals(6, PortalAttunementParticles.ANIMATION_TICKS);
+        assertEquals(30, sumCountsForAllTicks(PortalAttunementParticles.END_ROD_COUNT));
+        assertEquals(36, sumCountsForAllTicks(PortalAttunementParticles.REVERSE_PORTAL_COUNT));
+        assertEquals(18, sumCountsForAllTicks(PortalAttunementParticles.DUST_COUNT));
+    }
+
+    @Test
     void generatesPortalWideBoundsAcrossInterior() {
         ForeverWorldPortalFrame frame = new ForeverWorldPortalFrame(
                 Direction.Axis.Z,
@@ -54,5 +62,13 @@ class PortalAttunementParticlesTest {
         assertTrue(bounds.center().x() > bounds.minX() && bounds.center().x() < bounds.maxX());
         assertTrue(bounds.center().y() > bounds.minY() && bounds.center().y() < bounds.maxY());
         assertTrue(bounds.center().z() > bounds.minZ() && bounds.center().z() < bounds.maxZ());
+    }
+
+    private static int sumCountsForAllTicks(int totalCount) {
+        int sum = 0;
+        for (int tick = 0; tick < PortalAttunementParticles.ANIMATION_TICKS; tick++) {
+            sum += PortalAttunementParticles.countForTick(totalCount, PortalAttunementParticles.ANIMATION_TICKS, tick);
+        }
+        return sum;
     }
 }

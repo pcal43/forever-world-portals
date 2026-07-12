@@ -4,6 +4,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -29,6 +30,8 @@ public class ForeverWorldPortalsNeoForgeInitializer {
                 ForeverWorldPortalsService.getInstance().onServerStarting(event.getServer()));
         NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) ->
                 ForeverWorldPortalsService.getInstance().onServerStarted(event.getServer()));
+        NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) ->
+                ForeverWorldPortalsService.getInstance().onServerTick(event.getServer()));
         NeoForge.EVENT_BUS.addListener((ServerStoppingEvent event) ->
                 ForeverWorldPortalsService.getInstance().onServerStopping(event.getServer()));
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) ->

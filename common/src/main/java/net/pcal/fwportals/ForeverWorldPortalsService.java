@@ -116,6 +116,13 @@ public final class ForeverWorldPortalsService {
         logger().info(LOG_PREFIX + "Server started");
     }
 
+    public void onServerTick(MinecraftServer server) {
+        requireNonNull(server);
+        if (portalAttunementService != null) {
+            portalAttunementService.onServerTick(server);
+        }
+    }
+
     public void onServerStopping(MinecraftServer server) {
         requireNonNull(server);
         logger().info(LOG_PREFIX + "Server stopping");
