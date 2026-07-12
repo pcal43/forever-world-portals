@@ -28,23 +28,23 @@ class ForeverWorldPortalRegistryDataTest {
     private final PortalIdentity identity = new PortalIdentity();
 
     @Test
-    void serializesAndDeserializesSourcePortals() {
+    void serializesAndDeserializesPortals() {
         TestBootstrap.ensureBootstrapped();
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        SourcePortalRecord portal = new SourcePortalRecord(
+        PortalRecord portal = new PortalRecord(
                 Level.OVERWORLD,
                 new BlockPos(0, 2, 1),
                 Level.OVERWORLD,
                 new BlockPos(25010, 80, -400)
         );
-        data.createSourcePortal(portal);
+        data.createPortal(portal);
 
         ForeverWorldPortalRegistryData reloaded = roundTrip(data);
-        List<SourcePortalRecord> portals = reloaded.sourcePortals().stream().toList();
+        List<PortalRecord> portals = reloaded.portals().stream().toList();
 
         assertEquals(1, portals.size());
-        assertEquals(portal.sourceAnchor(), portals.get(0).sourceAnchor());
+        assertEquals(portal.anchor(), portals.get(0).anchor());
         assertEquals(portal.destinationAnchor(), portals.get(0).destinationAnchor());
     }
 
@@ -62,44 +62,44 @@ class ForeverWorldPortalRegistryDataTest {
         DataResult<ForeverWorldPortalRegistryData> parsed = ForeverWorldPortalRegistryData.TYPE.codec().parse(NbtOps.INSTANCE, root);
         ForeverWorldPortalRegistryData data = parsed.getOrThrow();
 
-        assertEquals(0, data.sourcePortals().size());
+        assertEquals(0, data.portals().size());
     }
 
     @Test
-    void sourcePortalInsideFrameMatchesThatFrame() {
+    void portalInsideFrameMatchesThatFrame() {
         TestBootstrap.ensureBootstrapped();
 
         ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
-        BlockPos sourceAnchor = identity.computeAnchorBlock(frame);
+        BlockPos portalAnchor = identity.computeAnchorBlock(frame);
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        data.createSourcePortal(new SourcePortalRecord(
+        data.createPortal(new PortalRecord(
                 Level.OVERWORLD,
-                sourceAnchor,
+                portalAnchor,
                 Level.OVERWORLD,
                 new BlockPos(100, 80, 100)
         ));
 
-        List<SourcePortalRecord> matches = data.findSourcePortalsContainedBy(Level.OVERWORLD, frame);
+        List<PortalRecord> matches = data.findPortalsContainedBy(Level.OVERWORLD, frame);
         assertEquals(1, matches.size());
-        assertEquals(sourceAnchor, matches.get(0).sourceAnchor());
+        assertEquals(portalAnchor, matches.get(0).anchor());
     }
 
     @Test
-    void sourcePortalOutsideFrameDoesNotMatch() {
+    void portalOutsideFrameDoesNotMatch() {
         TestBootstrap.ensureBootstrapped();
 
         ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        data.createSourcePortal(new SourcePortalRecord(
+        data.createPortal(new PortalRecord(
                 Level.OVERWORLD,
                 new BlockPos(100, 100, 100),
                 Level.OVERWORLD,
                 new BlockPos(200, 80, 200)
         ));
 
-        assertTrue(data.findSourcePortalsContainedBy(Level.OVERWORLD, frame).isEmpty());
+        assertTrue(data.findPortalsContainedBy(Level.OVERWORLD, frame).isEmpty());
     }
 
     @Test
@@ -108,18 +108,18 @@ class ForeverWorldPortalRegistryDataTest {
 
         ForeverWorldPortalFrame smaller = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
         ForeverWorldPortalFrame larger = buildAxisZFrame(new BlockPos(0, 0, 0), 3, 4);
-        BlockPos sourceAnchor = identity.computeAnchorBlock(smaller);
+        BlockPos portalAnchor = identity.computeAnchorBlock(smaller);
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        data.createSourcePortal(new SourcePortalRecord(
+        data.createPortal(new PortalRecord(
                 Level.OVERWORLD,
-                sourceAnchor,
+                portalAnchor,
                 Level.OVERWORLD,
                 new BlockPos(500, 80, 500)
         ));
 
-        assertEquals(1, data.findSourcePortalsContainedBy(Level.OVERWORLD, smaller).size());
-        assertEquals(1, data.findSourcePortalsContainedBy(Level.OVERWORLD, larger).size());
+        assertEquals(1, data.findPortalsContainedBy(Level.OVERWORLD, smaller).size());
+        assertEquals(1, data.findPortalsContainedBy(Level.OVERWORLD, larger).size());
     }
 
     @Test
@@ -127,7 +127,7 @@ class ForeverWorldPortalRegistryDataTest {
         TestBootstrap.ensureBootstrapped();
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        data.createSourcePortal(new SourcePortalRecord(
+        data.createPortal(new PortalRecord(
                 Level.OVERWORLD,
                 new BlockPos(0, 64, 0),
                 Level.OVERWORLD,

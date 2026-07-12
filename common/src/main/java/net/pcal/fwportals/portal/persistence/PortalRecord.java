@@ -10,9 +10,9 @@ import net.minecraft.world.level.Level;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-public record SourcePortalRecord(
-        ResourceKey<Level> sourceDimension,
-        BlockPos sourceAnchor,
+public record PortalRecord(
+        ResourceKey<Level> dimension,
+        BlockPos anchor,
         ResourceKey<Level> destinationDimension,
         BlockPos destinationAnchor
 ) {
@@ -20,47 +20,47 @@ public record SourcePortalRecord(
 
     public CompoundTag toTag() {
         CompoundTag tag = new CompoundTag();
-        tag.store("sourceDimension", DIMENSION_CODEC, sourceDimension);
-        tag.store("sourceAnchor", BlockPos.CODEC, sourceAnchor);
+        tag.store("sourceDimension", DIMENSION_CODEC, dimension);
+        tag.store("sourceAnchor", BlockPos.CODEC, anchor);
         tag.store("destinationDimension", DIMENSION_CODEC, destinationDimension);
         tag.store("destinationAnchor", BlockPos.CODEC, destinationAnchor);
         return tag;
     }
 
-    public static Optional<SourcePortalRecord> fromTag(CompoundTag tag, Consumer<String> warn) {
-        Optional<ResourceKey<Level>> sourceDimension = PortalPersistenceHelper.required(
+    public static Optional<PortalRecord> fromTag(CompoundTag tag, Consumer<String> warn) {
+        Optional<ResourceKey<Level>> dimension = PortalPersistenceHelper.required(
                 tag,
                 "sourceDimension",
                 DIMENSION_CODEC,
-                "source portal",
+                "portal",
                 warn
         );
-        Optional<BlockPos> sourceAnchor = PortalPersistenceHelper.required(tag, "sourceAnchor", BlockPos.CODEC, "source portal", warn);
+        Optional<BlockPos> anchor = PortalPersistenceHelper.required(tag, "sourceAnchor", BlockPos.CODEC, "portal", warn);
         Optional<ResourceKey<Level>> destinationDimension = PortalPersistenceHelper.required(
                 tag,
                 "destinationDimension",
                 DIMENSION_CODEC,
-                "source portal",
+                "portal",
                 warn
         );
         Optional<BlockPos> destinationAnchor = PortalPersistenceHelper.required(
                 tag,
                 "destinationAnchor",
                 BlockPos.CODEC,
-                "source portal",
+                "portal",
                 warn
         );
 
-        if (sourceDimension.isEmpty()
-                || sourceAnchor.isEmpty()
+        if (dimension.isEmpty()
+                || anchor.isEmpty()
                 || destinationDimension.isEmpty()
                 || destinationAnchor.isEmpty()) {
             return Optional.empty();
         }
 
-        return Optional.of(new SourcePortalRecord(
-                sourceDimension.get(),
-                sourceAnchor.get(),
+        return Optional.of(new PortalRecord(
+                dimension.get(),
+                anchor.get(),
                 destinationDimension.get(),
                 destinationAnchor.get()
         ));

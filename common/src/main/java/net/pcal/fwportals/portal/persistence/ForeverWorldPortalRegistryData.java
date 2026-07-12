@@ -31,17 +31,17 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
     );
 
     private static final Logger LOGGER = LogManager.getLogger("fwportals");
-    private static final Comparator<SourcePortalRecord> PORTAL_ORDER = Comparator
-            .comparing((SourcePortalRecord portal) -> portal.sourceDimension().identifier().toString())
-            .thenComparingInt(portal -> portal.sourceAnchor().getX())
-            .thenComparingInt(portal -> portal.sourceAnchor().getY())
-            .thenComparingInt(portal -> portal.sourceAnchor().getZ())
+    private static final Comparator<PortalRecord> PORTAL_ORDER = Comparator
+            .comparing((PortalRecord portal) -> portal.dimension().identifier().toString())
+            .thenComparingInt(portal -> portal.anchor().getX())
+            .thenComparingInt(portal -> portal.anchor().getY())
+            .thenComparingInt(portal -> portal.anchor().getZ())
             .thenComparing(portal -> portal.destinationDimension().identifier().toString())
             .thenComparingInt(portal -> portal.destinationAnchor().getX())
             .thenComparingInt(portal -> portal.destinationAnchor().getY())
             .thenComparingInt(portal -> portal.destinationAnchor().getZ());
 
-    private final Map<SourcePortalKey, SourcePortalRecord> sourcePortalsByKey = new LinkedHashMap<>();
+    private final Map<PortalKey, PortalRecord> portalsByKey = new LinkedHashMap<>();
 
     public static ForeverWorldPortalRegistryData get(ServerLevel level) {
         ServerLevel overworld = level.getServer().overworld();
@@ -51,55 +51,55 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
     private static ForeverWorldPortalRegistryData fromTag(CompoundTag root) {
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
 
-        ListTag sourcePortals = root.get("sourcePortals") instanceof ListTag list ? list : new ListTag();
-        for (int i = 0; i < sourcePortals.size(); i++) {
-            if (!(sourcePortals.get(i) instanceof CompoundTag portalTag)) {
-                LOGGER.warn("[fwportals] Skipping malformed source portal entry at index {}: not a compound tag", i);
+        ListTag portals = root.get("sourcePortals") instanceof ListTag list ? list : new ListTag();
+        for (int i = 0; i < portals.size(); i++) {
+            if (!(portals.get(i) instanceof CompoundTag portalTag)) {
+                LOGGER.warn("[fwportals] Skipping malformed portal entry at index {}: not a compound tag", i);
                 continue;
             }
-            SourcePortalRecord.fromTag(portalTag, message -> LOGGER.warn("[fwportals] {}", message))
-                    .ifPresent(record -> data.sourcePortalsByKey.put(SourcePortalKey.of(record), record));
+            PortalRecord.fromTag(portalTag, message -> LOGGER.warn("[fwportals] {}", message))
+                    .ifPresent(record -> data.portalsByKey.put(PortalKey.of(record), record));
         }
 
         LOGGER.info(
-                "[fwportals] Loaded Forever World portal registry: sourcePortals={}",
-                data.sourcePortalsByKey.size()
+                "[fwportals] Loaded Forever World portal registry: portals={}",
+                data.portalsByKey.size()
         );
         return data;
     }
 
     private CompoundTag toTag() {
         CompoundTag root = new CompoundTag();
-        ListTag sourcePortals = new ListTag();
-        for (SourcePortalRecord record : orderedSourcePortals()) {
-            sourcePortals.add(record.toTag());
+        ListTag portals = new ListTag();
+        for (PortalRecord record : orderedPortals()) {
+            portals.add(record.toTag());
         }
-        root.put("sourcePortals", sourcePortals);
+        root.put("sourcePortals", portals);
         return root;
     }
 
-    public List<SourcePortalRecord> findSourcePortalsContainedBy(ResourceKey<Level> dimension, ForeverWorldPortalFrame frame) {
-        return orderedSourcePortals().stream()
-                .filter(portal -> portal.sourceDimension().equals(dimension))
-                .filter(portal -> frame.containsInterior(portal.sourceAnchor()))
+    public List<PortalRecord> findPortalsContainedBy(ResourceKey<Level> dimension, ForeverWorldPortalFrame frame) {
+        return orderedPortals().stream()
+                .filter(portal -> portal.dimension().equals(dimension))
+                .filter(portal -> frame.containsInterior(portal.anchor()))
                 .toList();
     }
 
-    public void createSourcePortal(SourcePortalRecord portal) {
-        SourcePortalKey key = SourcePortalKey.of(portal);
-        if (sourcePortalsByKey.containsKey(key)) {
-            throw new IllegalStateException("Source portal already exists for " + key.dimension.identifier() + " at " + key.anchor);
+    public void createPortal(PortalRecord portal) {
+        PortalKey key = PortalKey.of(portal);
+        if (portalsByKey.containsKey(key)) {
+            throw new IllegalStateException("Portal already exists for " + key.dimension.identifier() + " at " + key.anchor);
         }
-        sourcePortalsByKey.put(key, portal);
+        portalsByKey.put(key, portal);
         setDirty();
     }
 
-    public Optional<SourcePortalRecord> getSourcePortal(ResourceKey<Level> dimension, BlockPos sourceAnchor) {
-        return Optional.ofNullable(sourcePortalsByKey.get(new SourcePortalKey(dimension, sourceAnchor.immutable())));
+    public Optional<PortalRecord> getPortal(ResourceKey<Level> dimension, BlockPos portalAnchor) {
+        return Optional.ofNullable(portalsByKey.get(new PortalKey(dimension, portalAnchor.immutable())));
     }
 
-    public void removeSourcePortal(ResourceKey<Level> dimension, BlockPos sourceAnchor) {
-        if (sourcePortalsByKey.remove(new SourcePortalKey(dimension, sourceAnchor.immutable())) != null) {
+    public void removePortal(ResourceKey<Level> dimension, BlockPos portalAnchor) {
+        if (portalsByKey.remove(new PortalKey(dimension, portalAnchor.immutable())) != null) {
             setDirty();
         }
     }
@@ -107,21 +107,21 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
     public boolean isSeparated(ResourceKey<Level> dimension, BlockPos position, int minimumPortalSeparationBlocks) {
         long minimumDistanceSquared = (long) minimumPortalSeparationBlocks * (long) minimumPortalSeparationBlocks;
 
-        for (SourcePortalRecord portal : sourcePortalsByKey.values()) {
-            if (portal.sourceDimension().equals(dimension)
-                    && horizontalDistanceSquared(portal.sourceAnchor(), position) < minimumDistanceSquared) {
+        for (PortalRecord portal : portalsByKey.values()) {
+            if (portal.dimension().equals(dimension)
+                    && horizontalDistanceSquared(portal.anchor(), position) < minimumDistanceSquared) {
                 return false;
             }
         }
         return true;
     }
 
-    public Collection<SourcePortalRecord> sourcePortals() {
-        return orderedSourcePortals();
+    public Collection<PortalRecord> portals() {
+        return orderedPortals();
     }
 
-    private List<SourcePortalRecord> orderedSourcePortals() {
-        return sourcePortalsByKey.values().stream().sorted(PORTAL_ORDER).toList();
+    private List<PortalRecord> orderedPortals() {
+        return portalsByKey.values().stream().sorted(PORTAL_ORDER).toList();
     }
 
     private static long horizontalDistanceSquared(BlockPos a, BlockPos b) {
@@ -130,9 +130,9 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
         return dx * dx + dz * dz;
     }
 
-    private record SourcePortalKey(ResourceKey<Level> dimension, BlockPos anchor) {
-        private static SourcePortalKey of(SourcePortalRecord record) {
-            return new SourcePortalKey(record.sourceDimension(), record.sourceAnchor().immutable());
+    private record PortalKey(ResourceKey<Level> dimension, BlockPos anchor) {
+        private static PortalKey of(PortalRecord record) {
+            return new PortalKey(record.dimension(), record.anchor().immutable());
         }
     }
 }

@@ -24,13 +24,13 @@ public final class PortalDestinationSelector {
 
     public Optional<DestinationPortalCandidate> findCandidateAnchor(
             ServerLevel level,
-            BlockPos sourceAnchor,
+            BlockPos portalAnchor,
             ForeverWorldPortalRegistryData registry,
             int attempt
     ) {
         RandomSource random = RandomSource.create(
                 level.getSeed()
-                        ^ sourceAnchor.asLong()
+                        ^ portalAnchor.asLong()
                         ^ level.getGameTime()
                         ^ ((long) attempt * 0x9E3779B97F4A7C15L)
         );
@@ -39,8 +39,8 @@ public final class PortalDestinationSelector {
         double angle = random.nextDouble() * (Math.PI * 2.0);
         int extraDistance = random.nextInt(Math.max(1024, minimumSeparation));
         int distance = minimumSeparation + extraDistance;
-        int x = sourceAnchor.getX() + (int) Math.round(Math.cos(angle) * distance);
-        int z = sourceAnchor.getZ() + (int) Math.round(Math.sin(angle) * distance);
+        int x = portalAnchor.getX() + (int) Math.round(Math.cos(angle) * distance);
+        int z = portalAnchor.getZ() + (int) Math.round(Math.sin(angle) * distance);
         BlockPos candidate = candidateAnchorAt(level, x, z);
         if (candidate == null) {
             return Optional.empty();

@@ -67,20 +67,20 @@ public final class PortalPlacementService {
                     }
 
                     ForeverWorldPortalFrame frame = detectedFrame.get();
-                    BlockPos generatedAnchor = portalIdentity.computeAnchorBlock(frame);
-                    if (!generatedAnchor.equals(candidateAnchor)) {
+                    BlockPos generatedPortalAnchor = portalIdentity.computeAnchorBlock(frame);
+                    if (!generatedPortalAnchor.equals(candidateAnchor)) {
                         logger.warn(
                                 "[fwportals] Rejecting generated portal at frame base {} in {} because computed anchor {} did not match candidate anchor {}",
                                 frame.frameBasePos(),
                                 level.dimension().identifier(),
-                                generatedAnchor,
+                                generatedPortalAnchor,
                                 candidateAnchor
                         );
                         transaction.rollback();
                         continue;
                     }
 
-                    if (!safeLandingFinder.canArriveAtAnchor(level, player, generatedAnchor)) {
+                    if (!safeLandingFinder.canArriveAtAnchor(level, player, generatedPortalAnchor)) {
                         transaction.rollback();
                         continue;
                     }
@@ -89,11 +89,11 @@ public final class PortalPlacementService {
                     logger.info(
                             "[fwportals] Generated portal near requested anchor {} using actual anchor {} with axis {} in {}",
                             requestedAnchor,
-                            generatedAnchor,
+                            generatedPortalAnchor,
                             frame.axis(),
                             level.dimension().identifier()
                     );
-                    return Optional.of(new GeneratedPortal(frame, generatedAnchor, transaction));
+                    return Optional.of(new GeneratedPortal(frame, generatedPortalAnchor, transaction));
                 } catch (RuntimeException ex) {
                     if (!committed) {
                         transaction.rollback();
