@@ -23,13 +23,13 @@ class ForeverWorldPortalsConfigParserTest {
         );
         ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
                 properties("""
-                        requireEmptyInventory=false
+                        server.requireEmptyInventory=false
                         server.destinationPortalMode=COMPLETE
-                        destinationSpiralSpacingBlocks=23456
-                        maximumSpiralSearchPositions=123
-                        maximumBiomeSearches=45
-                        maximumPortalPlacementAttemptsPerBiome=67
-                        minimumGeneratedTerrainDistanceBlocks=12345
+                        server.destinationSpiralSpacingBlocks=23456
+                        server.maximumSpiralSearchPositions=123
+                        server.maximumBiomeSearches=45
+                        server.maximumPortalPlacementAttemptsPerBiome=67
+                        server.minimumGeneratedTerrainDistanceBlocks=12345
                         """),
                 defaults,
                 null
@@ -53,8 +53,8 @@ class ForeverWorldPortalsConfigParserTest {
         );
         ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
                 properties("""
-                        requireEmptyInventory=false
-                        maximumBiomeSearches=45
+                        server.requireEmptyInventory=false
+                        server.maximumBiomeSearches=45
                         """),
                 defaults,
                 null
@@ -80,17 +80,17 @@ class ForeverWorldPortalsConfigParserTest {
         );
         ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
                 properties("""
-                        enabled=maybe
-                        requireEmptyInventory=not_boolean
-                        logLevel=LOUD
-                        frameBlock=not a block id
-                        activationItem=minecraft:not_an_item
+                        server.enabled=maybe
+                        server.requireEmptyInventory=not_boolean
+                        server.logLevel=LOUD
+                        server.frameBlock=not a block id
+                        server.activationItem=minecraft:not_an_item
                         server.destinationPortalMode=glitched
-                        destinationSpiralSpacingBlocks=0
-                        maximumSpiralSearchPositions=-1
-                        maximumBiomeSearches=zero
-                        maximumPortalPlacementAttemptsPerBiome=-2
-                        minimumGeneratedTerrainDistanceBlocks=-100
+                        server.destinationSpiralSpacingBlocks=0
+                        server.maximumSpiralSearchPositions=-1
+                        server.maximumBiomeSearches=zero
+                        server.maximumPortalPlacementAttemptsPerBiome=-2
+                        server.minimumGeneratedTerrainDistanceBlocks=-100
                         """),
                 defaults,
                 null
@@ -113,7 +113,7 @@ class ForeverWorldPortalsConfigParserTest {
     void missingExpectedBundledDefaultKeyFailsClearly() throws IOException {
         TestBootstrap.ensureBootstrapped();
         Properties bundledDefaults = loadBundledDefaults();
-        bundledDefaults.remove("maximumBiomeSearches");
+        bundledDefaults.remove("server.maximumBiomeSearches");
 
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
@@ -123,7 +123,7 @@ class ForeverWorldPortalsConfigParserTest {
                 )
         );
 
-        assertTrue(exception.getMessage().contains("maximumBiomeSearches"));
+        assertTrue(exception.getMessage().contains("server.maximumBiomeSearches"));
         assertTrue(exception.getMessage().contains("test-defaults.properties"));
     }
 

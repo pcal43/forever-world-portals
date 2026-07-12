@@ -15,17 +15,17 @@ import java.util.Set;
 final class ForeverWorldPortalsConfigParser {
 
     private static final Set<String> EXPECTED_KEYS = Set.of(
-            "enabled",
-            "requireEmptyInventory",
-            "logLevel",
-            "frameBlock",
-            "activationItem",
+            "server.enabled",
+            "server.requireEmptyInventory",
+            "server.logLevel",
+            "server.frameBlock",
+            "server.activationItem",
             "server.destinationPortalMode",
-            "destinationSpiralSpacingBlocks",
-            "maximumSpiralSearchPositions",
-            "maximumBiomeSearches",
-            "maximumPortalPlacementAttemptsPerBiome",
-            "minimumGeneratedTerrainDistanceBlocks"
+            "server.destinationSpiralSpacingBlocks",
+            "server.maximumSpiralSearchPositions",
+            "server.maximumBiomeSearches",
+            "server.maximumPortalPlacementAttemptsPerBiome",
+            "server.minimumGeneratedTerrainDistanceBlocks"
     );
 
     static ForeverWorldPortalsConfig parseBundledDefaults(Properties bundledDefaults, String defaultResourceName) {
@@ -47,21 +47,21 @@ final class ForeverWorldPortalsConfigParser {
     ) {
         boolean enabled = parseBoolean(
                 properties,
-                "enabled",
+                "server.enabled",
                 defaults.enabled(),
                 logger
         );
         boolean requireEmptyInventory = parseBoolean(
                 properties,
-                "requireEmptyInventory",
+                "server.requireEmptyInventory",
                 defaults.requireEmptyInventory(),
                 logger
         );
-        Level logLevel = parseLevel(properties, "logLevel", defaults.logLevel(), logger);
-        Block frameBlock = parseBlock(properties, "frameBlock", defaults.frameBlock(), logger);
+        Level logLevel = parseLevel(properties, "server.logLevel", defaults.logLevel(), logger);
+        Block frameBlock = parseBlock(properties, "server.frameBlock", defaults.frameBlock(), logger);
         Item activationItem = parseItem(
                 properties,
-                "activationItem",
+                "server.activationItem",
                 defaults.activationItem(),
                 logger
         );
@@ -73,31 +73,31 @@ final class ForeverWorldPortalsConfigParser {
         );
         int destinationSpiralSpacingBlocks = parsePositiveInt(
                 properties,
-                "destinationSpiralSpacingBlocks",
+                "server.destinationSpiralSpacingBlocks",
                 defaults.destinationSpiralSpacingBlocks(),
                 logger
         );
         int maximumSpiralSearchPositions = parsePositiveInt(
                 properties,
-                "maximumSpiralSearchPositions",
+                "server.maximumSpiralSearchPositions",
                 defaults.maximumSpiralSearchPositions(),
                 logger
         );
         int maximumBiomeSearches = parsePositiveInt(
                 properties,
-                "maximumBiomeSearches",
+                "server.maximumBiomeSearches",
                 defaults.maximumBiomeSearches(),
                 logger
         );
         int maximumPortalPlacementAttemptsPerBiome = parsePositiveInt(
                 properties,
-                "maximumPortalPlacementAttemptsPerBiome",
+                "server.maximumPortalPlacementAttemptsPerBiome",
                 defaults.maximumPortalPlacementAttemptsPerBiome(),
                 logger
         );
         int minimumGeneratedTerrainDistanceBlocks = parsePositiveInt(
                 properties,
-                "minimumGeneratedTerrainDistanceBlocks",
+                "server.minimumGeneratedTerrainDistanceBlocks",
                 defaults.minimumGeneratedTerrainDistanceBlocks(),
                 logger
         );
@@ -298,28 +298,44 @@ final class ForeverWorldPortalsConfigParser {
 
     private static ForeverWorldPortalsConfig buildInternalDefaults(Properties bundledDefaults, String defaultResourceName) {
         return new ForeverWorldPortalsConfig(
-                requireParsedBooleanDefault(defaultResourceName, "enabled", requireDefaultValue(bundledDefaults, defaultResourceName, "enabled")),
                 requireParsedBooleanDefault(
                         defaultResourceName,
-                        "requireEmptyInventory",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "requireEmptyInventory")
+                        "server.enabled",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.enabled")
                 ),
-                requireParsedLevelDefault(defaultResourceName, "logLevel", requireDefaultValue(bundledDefaults, defaultResourceName, "logLevel")),
+                requireParsedBooleanDefault(
+                        defaultResourceName,
+                        "server.requireEmptyInventory",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.requireEmptyInventory")
+                ),
+                requireParsedLevelDefault(
+                        defaultResourceName,
+                        "server.logLevel",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.logLevel")
+                ),
                 BuiltInRegistries.BLOCK.getKey(
-                        requireParsedBlockDefault(defaultResourceName, "frameBlock", requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock"))
+                        requireParsedBlockDefault(
+                                defaultResourceName,
+                                "server.frameBlock",
+                                requireDefaultValue(bundledDefaults, defaultResourceName, "server.frameBlock")
+                        )
                 ),
-                requireParsedBlockDefault(defaultResourceName, "frameBlock", requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock")),
+                requireParsedBlockDefault(
+                        defaultResourceName,
+                        "server.frameBlock",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.frameBlock")
+                ),
                 BuiltInRegistries.ITEM.getKey(
                         requireParsedItemDefault(
                                 defaultResourceName,
-                                "activationItem",
-                                requireDefaultValue(bundledDefaults, defaultResourceName, "activationItem")
+                                "server.activationItem",
+                                requireDefaultValue(bundledDefaults, defaultResourceName, "server.activationItem")
                         )
                 ),
                 requireParsedItemDefault(
                         defaultResourceName,
-                        "activationItem",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "activationItem")
+                        "server.activationItem",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.activationItem")
                 ),
                 requireParsedDestinationPortalModeDefault(
                         defaultResourceName,
@@ -328,28 +344,28 @@ final class ForeverWorldPortalsConfigParser {
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "destinationSpiralSpacingBlocks",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "destinationSpiralSpacingBlocks")
+                        "server.destinationSpiralSpacingBlocks",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.destinationSpiralSpacingBlocks")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "maximumSpiralSearchPositions",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumSpiralSearchPositions")
+                        "server.maximumSpiralSearchPositions",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.maximumSpiralSearchPositions")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "maximumBiomeSearches",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumBiomeSearches")
+                        "server.maximumBiomeSearches",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.maximumBiomeSearches")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "maximumPortalPlacementAttemptsPerBiome",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumPortalPlacementAttemptsPerBiome")
+                        "server.maximumPortalPlacementAttemptsPerBiome",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.maximumPortalPlacementAttemptsPerBiome")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "minimumGeneratedTerrainDistanceBlocks",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "minimumGeneratedTerrainDistanceBlocks")
+                        "server.minimumGeneratedTerrainDistanceBlocks",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.minimumGeneratedTerrainDistanceBlocks")
                 )
         );
     }
