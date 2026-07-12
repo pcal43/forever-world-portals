@@ -98,8 +98,12 @@ public final class ForeverWorldPortalsService {
         return portalActivationService().isForeverWorldPortal(level, pos);
     }
 
-    public void onEntityInsidePortal(Level level, BlockPos pos, Entity entity) {
-        portalActivationService().onEntityInsidePortal(level, pos, entity);
+    public boolean handleEntityInsidePortal(Level level, BlockPos pos, Entity entity) {
+        return portalActivationService().handleEntityInsidePortal(level, pos, entity);
+    }
+
+    public boolean canPlayerUseForeverWorldPortal(net.minecraft.server.level.ServerPlayer player) {
+        return portalActivationService().canPlayerUseForeverWorldPortal(player);
     }
 
     public @Nullable net.minecraft.world.level.portal.TeleportTransition getTeleportTransitionForPortal(ServerLevel level, Entity entity, BlockPos portalEntryPos) {

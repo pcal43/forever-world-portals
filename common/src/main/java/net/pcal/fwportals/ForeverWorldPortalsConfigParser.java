@@ -21,6 +21,12 @@ final class ForeverWorldPortalsConfigParser {
         properties.load(new InputStreamReader(in, StandardCharsets.UTF_8));
 
         boolean enabled = parseBoolean(properties, "enabled", defaults.enabled(), logger);
+        boolean requireEmptyInventory = parseBoolean(
+                properties,
+                "requireEmptyInventory",
+                defaults.requireEmptyInventory(),
+                logger
+        );
         Level logLevel = parseLevel(properties, "logLevel", defaults.logLevel(), logger);
         Block frameBlock = parseBlock(properties, "frameBlock", defaults.frameBlock(), logger);
         Item activationItem = parseItem(properties, "activationItem", defaults.activationItem(), logger);
@@ -44,6 +50,7 @@ final class ForeverWorldPortalsConfigParser {
         );
         return new ForeverWorldPortalsConfig(
                 enabled,
+                requireEmptyInventory,
                 logLevel,
                 BuiltInRegistries.BLOCK.getKey(frameBlock),
                 frameBlock,

@@ -40,7 +40,7 @@ public class NetherPortalBlockMixin {
         }
     }
 
-    @Inject(method = "entityInside", at = @At("HEAD"))
+    @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
     private void recordForeverWorldPortalEntry(
             BlockState state,
             Level level,
@@ -50,7 +50,9 @@ public class NetherPortalBlockMixin {
             boolean isPrecise,
             org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci
     ) {
-        ForeverWorldPortalsService.getInstance().onEntityInsidePortal(level, pos, entity);
+        if (!ForeverWorldPortalsService.getInstance().handleEntityInsidePortal(level, pos, entity)) {
+            ci.cancel();
+        }
     }
 
     @Inject(method = "getPortalTransitionTime", at = @At("RETURN"), cancellable = true)
@@ -65,6 +67,12 @@ public class NetherPortalBlockMixin {
 
         BlockPos entryPos = entity.portalProcess.getEntryPosition();
         if (!ForeverWorldPortalsService.getInstance().isForeverWorldPortal(level, entryPos)) {
+            return;
+        }
+
+        if (entity instanceof net.minecraft.server.level.ServerPlayer player
+                && !ForeverWorldPortalsService.getInstance().canPlayerUseForeverWorldPortal(player)) {
+            cir.setReturnValue(Integer.MAX_VALUE);
             return;
         }
 

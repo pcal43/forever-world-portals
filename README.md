@@ -112,14 +112,16 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 - A rebuilt frame keeps the same identity if it still encloses that stored portal anchor
 - Moving the frame so it no longer encloses that anchor creates a new portal
 - Teleportation always derives arrival from the stored destination anchor and does not use a separate persisted landing position
+- By default, players must carry absolutely nothing to enter a Forever World portal; this can be disabled with `requireEmptyInventory=false`
 
 ## Configuration
 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `enabled`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `destinationSearchAttempts`, and `minimumGeneratedTerrainDistanceBlocks`
+- Current settings: `enabled`, `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `destinationSearchAttempts`, and `minimumGeneratedTerrainDistanceBlocks`
 - Behavior: defaults are documented and written automatically if the file does not exist
+- `requireEmptyInventory=true` prevents portal activation unless the player's main inventory, hotbar, armor slots, and offhand are all empty
 - `minimumGeneratedTerrainDistanceBlocks` is also used as the square-spiral spacing and the built-in nearest-biome search radius for each spiral anchor
 
 `returnPortalMode` currently supports these values:

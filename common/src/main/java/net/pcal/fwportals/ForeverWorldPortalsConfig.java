@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Level;
 
 public record ForeverWorldPortalsConfig(
         boolean enabled,
+        boolean requireEmptyInventory,
         Level logLevel,
         Identifier frameBlockId,
         Block frameBlock,
@@ -21,6 +22,7 @@ public record ForeverWorldPortalsConfig(
         Block frameBlock = net.minecraft.world.level.block.Blocks.DIAMOND_BLOCK;
         Item activationItem = net.minecraft.world.item.Items.FLINT_AND_STEEL;
         return new ForeverWorldPortalsConfig(
+                true,
                 true,
                 Level.INFO,
                 Identifier.parse("minecraft:diamond_block"),

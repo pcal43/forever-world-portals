@@ -3,8 +3,11 @@ package net.pcal.fwportals.portal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -27,6 +30,9 @@ import java.util.UUID;
 public final class PortalActivationService {
 
     private static final long ENTRY_LOG_COOLDOWN_TICKS = 40L;
+    private static final long INVENTORY_WARNING_COOLDOWN_TICKS = 40L;
+    private static final Component INVENTORY_WARNING_MESSAGE =
+            Component.literal("You cannot enter a Forever World Portal while carrying items.");
 
     private final ForeverWorldPortalsConfig config;
     private final Logger logger;
@@ -34,6 +40,7 @@ public final class PortalActivationService {
     private final PortalFrameDetector detector = new PortalFrameDetector();
     private final PortalIdentity portalIdentity = new PortalIdentity();
     private final Map<UUID, PortalEntryRecord> recentEntries = new HashMap<>();
+    private final Map<UUID, Long> recentInventoryWarnings = new HashMap<>();
 
     public PortalActivationService(ForeverWorldPortalsConfig config, Logger logger, PortalAttunementService portalAttunementService) {
         this.config = config;
@@ -101,16 +108,20 @@ public final class PortalActivationService {
         return findForeverWorldPortal(level, pos).isPresent();
     }
 
-    public void onEntityInsidePortal(Level level, BlockPos pos, Entity entity) {
+    public boolean handleEntityInsidePortal(Level level, BlockPos pos, Entity entity) {
         if (level.isClientSide() || !level.getBlockState(pos).is(Blocks.NETHER_PORTAL)) {
-            return;
+            return true;
         }
         Optional<ForeverWorldPortalFrame> maybeFrame = findForeverWorldPortal(level, pos);
         if (maybeFrame.isEmpty()) {
-            return;
+            return true;
         }
 
         ForeverWorldPortalFrame frame = maybeFrame.get();
+        if (entity instanceof ServerPlayer player && shouldRejectPlayerEntry(player, level.getGameTime())) {
+            return false;
+        }
+
         if (entity instanceof ItemEntity itemEntity && level instanceof ServerLevel serverLevel) {
             portalAttunementService.onItemInsidePortal(serverLevel, frame, itemEntity);
         }
@@ -123,7 +134,7 @@ public final class PortalActivationService {
                 && previous.anchor().equals(anchorBlock)
                 && gameTime - previous.lastSeenGameTime() <= ENTRY_LOG_COOLDOWN_TICKS) {
             recentEntries.put(entity.getUUID(), new PortalEntryRecord(previous.dimension(), previous.anchor(), gameTime));
-            return;
+            return true;
         }
 
         recentEntries.put(entity.getUUID(), new PortalEntryRecord(level.dimension(), anchorBlock, gameTime));
@@ -133,6 +144,7 @@ public final class PortalActivationService {
                 BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()),
                 anchorBlock
         );
+        return true;
     }
 
     public boolean shouldSuppressTeleport(ServerLevel level, Entity entity, BlockPos portalEntryPos) {
@@ -152,6 +164,11 @@ public final class PortalActivationService {
 
     public void clearRuntimeState() {
         recentEntries.clear();
+        recentInventoryWarnings.clear();
+    }
+
+    public boolean canPlayerUseForeverWorldPortal(ServerPlayer player) {
+        return !config.requireEmptyInventory() || PortalInventoryAccess.isEmpty(player.getInventory());
     }
 
     private boolean isAdjacentToFrame(LevelAccessor level, BlockPos pos, BlockState frameState) {
@@ -165,6 +182,18 @@ public final class PortalActivationService {
 
     private boolean isPortalDimension(Level level) {
         return level.dimension() == Level.OVERWORLD || level.dimension() == Level.NETHER;
+    }
+
+    private boolean shouldRejectPlayerEntry(ServerPlayer player, long gameTime) {
+        if (canPlayerUseForeverWorldPortal(player)) {
+            return false;
+        }
+        Long previousWarning = recentInventoryWarnings.get(player.getUUID());
+        if (previousWarning == null || gameTime - previousWarning > INVENTORY_WARNING_COOLDOWN_TICKS) {
+            player.connection.send(new ClientboundSetActionBarTextPacket(INVENTORY_WARNING_MESSAGE));
+            recentInventoryWarnings.put(player.getUUID(), gameTime);
+        }
+        return true;
     }
 
     private record PortalEntryRecord(ResourceKey<Level> dimension, BlockPos anchor, long lastSeenGameTime) {

@@ -18,6 +18,7 @@ class ForeverWorldPortalsConfigParserTest {
         TestBootstrap.ensureBootstrapped();
         ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
                 new ByteArrayInputStream("""
+                        requireEmptyInventory=false
                         returnPortalMode=NONE
                         minimumGeneratedTerrainDistanceBlocks=12345
                         """.getBytes(StandardCharsets.UTF_8)),
@@ -25,6 +26,7 @@ class ForeverWorldPortalsConfigParserTest {
                 null
         );
 
+        assertEquals(false, config.requireEmptyInventory());
         assertEquals(ReturnPortalMode.NONE, config.returnPortalMode());
         assertEquals(12345, config.minimumGeneratedTerrainDistanceBlocks());
     }
@@ -35,6 +37,7 @@ class ForeverWorldPortalsConfigParserTest {
         ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
                 new ByteArrayInputStream("""
                         enabled=maybe
+                        requireEmptyInventory=not_boolean
                         logLevel=LOUD
                         frameBlock=not a block id
                         activationItem=minecraft:not_an_item
@@ -47,6 +50,7 @@ class ForeverWorldPortalsConfigParserTest {
         );
 
         assertEquals(true, config.enabled());
+        assertEquals(true, config.requireEmptyInventory());
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
         assertEquals(Items.FLINT_AND_STEEL, config.activationItem());

@@ -61,6 +61,9 @@ public final class PortalTravelService {
             logger.info("[fwportals] Suppressing Forever World portal travel for non-player entity {} at {}", entity.getName().getString(), portalEntryPos);
             return null;
         }
+        if (config.requireEmptyInventory() && !PortalInventoryAccess.isEmpty(player.getInventory())) {
+            return null;
+        }
 
         ForeverWorldPortalFrame frame = maybeFrame.get();
         ForeverWorldPortalRegistryData registry = ForeverWorldPortalRegistryData.get(level);
