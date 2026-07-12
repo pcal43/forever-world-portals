@@ -79,7 +79,7 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `enabled`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `minimumPortalSeparationBlocks`, and `destinationSearchAttempts`
+- Current settings: `enabled`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `destinationSearchAttempts`, and `minimumGeneratedTerrainDistanceBlocks`
 - Behavior: defaults are documented and written automatically if the file does not exist
 
 `returnPortalMode` currently supports these values:

@@ -19,12 +19,14 @@ class ForeverWorldPortalsConfigParserTest {
         ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
                 new ByteArrayInputStream("""
                         returnPortalMode=NONE
+                        minimumGeneratedTerrainDistanceBlocks=12345
                         """.getBytes(StandardCharsets.UTF_8)),
                 ForeverWorldPortalsConfig.defaults(),
                 null
         );
 
         assertEquals(ReturnPortalMode.NONE, config.returnPortalMode());
+        assertEquals(12345, config.minimumGeneratedTerrainDistanceBlocks());
     }
 
     @Test
@@ -37,8 +39,8 @@ class ForeverWorldPortalsConfigParserTest {
                         frameBlock=not a block id
                         activationItem=minecraft:not_an_item
                         returnPortalMode=NOT_A_REAL_MODE
-                        minimumPortalSeparationBlocks=-5
                         destinationSearchAttempts=zero
+                        minimumGeneratedTerrainDistanceBlocks=-100
                         """.getBytes(StandardCharsets.UTF_8)),
                 ForeverWorldPortalsConfig.defaults(),
                 null
@@ -49,7 +51,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
         assertEquals(Items.FLINT_AND_STEEL, config.activationItem());
         assertEquals(ReturnPortalMode.GENERATE, config.returnPortalMode());
-        assertEquals(25000, config.minimumPortalSeparationBlocks());
         assertEquals(64, config.destinationSearchAttempts());
+        assertEquals(10000, config.minimumGeneratedTerrainDistanceBlocks());
     }
 }

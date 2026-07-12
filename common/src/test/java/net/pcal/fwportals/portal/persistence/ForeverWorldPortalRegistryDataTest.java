@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ForeverWorldPortalRegistryDataTest {
@@ -120,22 +119,6 @@ class ForeverWorldPortalRegistryDataTest {
 
         assertEquals(1, data.findPortalsContainedBy(Level.OVERWORLD, smaller).size());
         assertEquals(1, data.findPortalsContainedBy(Level.OVERWORLD, larger).size());
-    }
-
-    @Test
-    void separationUsesOriginsAndDestinations() {
-        TestBootstrap.ensureBootstrapped();
-
-        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        data.createPortal(new PortalRecord(
-                Level.OVERWORLD,
-                new BlockPos(0, 64, 0),
-                Level.OVERWORLD,
-                new BlockPos(30000, 80, 0)
-        ));
-
-        assertFalse(data.isSeparated(Level.OVERWORLD, new BlockPos(100, 80, 0), 25000));
-        assertTrue(data.isSeparated(Level.OVERWORLD, new BlockPos(60000, 80, 0), 25000));
     }
 
     private static ForeverWorldPortalRegistryData roundTrip(ForeverWorldPortalRegistryData data) {

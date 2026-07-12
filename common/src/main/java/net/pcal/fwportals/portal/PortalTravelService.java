@@ -127,13 +127,10 @@ public final class PortalTravelService {
             return null;
         }
 
+        PortalDestinationSelector.SearchContext searchContext = destinationSelector.beginSearch(destinationLevel, portalAnchor);
+
         for (int attempt = 0; attempt < config.destinationSearchAttempts(); attempt++) {
-            Optional<DestinationPortalCandidate> maybeCandidate = destinationSelector.findCandidateAnchor(
-                    level,
-                    portalAnchor,
-                    registry,
-                    attempt
-            );
+            Optional<DestinationPortalCandidate> maybeCandidate = destinationSelector.findCandidateAnchor(searchContext, attempt);
             if (maybeCandidate.isEmpty()) {
                 continue;
             }

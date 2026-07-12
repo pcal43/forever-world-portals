@@ -30,16 +30,16 @@ final class ForeverWorldPortalsConfigParser {
                 defaults.returnPortalMode(),
                 logger
         );
-        int minimumPortalSeparationBlocks = parsePositiveInt(
-                properties,
-                "minimumPortalSeparationBlocks",
-                defaults.minimumPortalSeparationBlocks(),
-                logger
-        );
         int destinationSearchAttempts = parsePositiveInt(
                 properties,
                 "destinationSearchAttempts",
                 defaults.destinationSearchAttempts(),
+                logger
+        );
+        int minimumGeneratedTerrainDistanceBlocks = parsePositiveInt(
+                properties,
+                "minimumGeneratedTerrainDistanceBlocks",
+                defaults.minimumGeneratedTerrainDistanceBlocks(),
                 logger
         );
         return new ForeverWorldPortalsConfig(
@@ -50,8 +50,8 @@ final class ForeverWorldPortalsConfigParser {
                 BuiltInRegistries.ITEM.getKey(activationItem),
                 activationItem,
                 returnPortalMode,
-                minimumPortalSeparationBlocks,
-                destinationSearchAttempts
+                destinationSearchAttempts,
+                minimumGeneratedTerrainDistanceBlocks
         );
     }
 

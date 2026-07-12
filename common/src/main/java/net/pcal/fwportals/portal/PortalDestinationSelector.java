@@ -7,9 +7,9 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
-import net.pcal.fwportals.portal.persistence.ForeverWorldPortalRegistryData;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.Optional;
 
 public final class PortalDestinationSelector {
@@ -22,36 +22,56 @@ public final class PortalDestinationSelector {
         this.logger = logger;
     }
 
-    public Optional<DestinationPortalCandidate> findCandidateAnchor(
+    public SearchContext beginSearch(
             ServerLevel level,
-            BlockPos portalAnchor,
-            ForeverWorldPortalRegistryData registry,
+            BlockPos portalAnchor
+    ) {
+        return new SearchContext(
+                level,
+                portalAnchor.immutable(),
+                List.of(
+                        GeneratedTerrainDistanceConstraint.snapshot(
+                                level,
+                                config.minimumGeneratedTerrainDistanceBlocks(),
+                                logger
+                        )
+                )
+        );
+    }
+
+    public Optional<DestinationPortalCandidate> findCandidateAnchor(
+            SearchContext searchContext,
             int attempt
     ) {
         RandomSource random = RandomSource.create(
-                level.getSeed()
-                        ^ portalAnchor.asLong()
-                        ^ level.getGameTime()
+                searchContext.level().getSeed()
+                        ^ searchContext.portalAnchor().asLong()
+                        ^ searchContext.level().getGameTime()
                         ^ ((long) attempt * 0x9E3779B97F4A7C15L)
         );
-        int minimumSeparation = config.minimumPortalSeparationBlocks();
+        int minimumGeneratedTerrainDistanceBlocks = config.minimumGeneratedTerrainDistanceBlocks();
 
         double angle = random.nextDouble() * (Math.PI * 2.0);
-        int extraDistance = random.nextInt(Math.max(1024, minimumSeparation));
-        int distance = minimumSeparation + extraDistance;
-        int x = portalAnchor.getX() + (int) Math.round(Math.cos(angle) * distance);
-        int z = portalAnchor.getZ() + (int) Math.round(Math.sin(angle) * distance);
-        BlockPos candidate = candidateAnchorAt(level, x, z);
+        int extraDistance = random.nextInt(Math.max(1024, minimumGeneratedTerrainDistanceBlocks));
+        int distance = minimumGeneratedTerrainDistanceBlocks + extraDistance;
+        int x = searchContext.portalAnchor().getX() + (int) Math.round(Math.cos(angle) * distance);
+        int z = searchContext.portalAnchor().getZ() + (int) Math.round(Math.sin(angle) * distance);
+        BlockPos candidate = candidateAnchorAt(searchContext.level(), x, z);
         if (candidate == null) {
             return Optional.empty();
         }
-        if (!registry.isSeparated(level.dimension(), candidate, minimumSeparation)) {
-            logger.info(
-                    "[fwportals] Rejecting candidate anchor {} in {} because it is too close to an existing registered source anchor",
-                    candidate,
-                    level.dimension().identifier()
-            );
-            return Optional.empty();
+
+        for (DestinationConstraint constraint : searchContext.constraints()) {
+            String rejectionReason = constraint.rejectionReason(candidate);
+            if (rejectionReason != null) {
+                logger.info(
+                        "[fwportals] Rejecting candidate anchor {} in {} because {}",
+                        candidate,
+                        searchContext.level().dimension().identifier(),
+                        rejectionReason
+                );
+                return Optional.empty();
+            }
         }
         return Optional.of(new DestinationPortalCandidate(candidate));
     }
@@ -76,6 +96,13 @@ public final class PortalDestinationSelector {
         ChunkPos chunkPos = ChunkPos.containing(probe);
         if (level.getChunkSource().getChunkNow(chunkPos.x(), chunkPos.z()) == null) {
             level.getChunk(chunkPos.x(), chunkPos.z(), ChunkStatus.FULL, true);
+        }
+    }
+
+    public record SearchContext(ServerLevel level, BlockPos portalAnchor, List<DestinationConstraint> constraints) {
+        public SearchContext {
+            portalAnchor = portalAnchor.immutable();
+            constraints = List.copyOf(constraints);
         }
     }
 }

@@ -104,30 +104,12 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
         }
     }
 
-    public boolean isSeparated(ResourceKey<Level> dimension, BlockPos position, int minimumPortalSeparationBlocks) {
-        long minimumDistanceSquared = (long) minimumPortalSeparationBlocks * (long) minimumPortalSeparationBlocks;
-
-        for (PortalRecord portal : portalsByKey.values()) {
-            if (portal.dimension().equals(dimension)
-                    && horizontalDistanceSquared(portal.anchor(), position) < minimumDistanceSquared) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     public Collection<PortalRecord> portals() {
         return orderedPortals();
     }
 
     private List<PortalRecord> orderedPortals() {
         return portalsByKey.values().stream().sorted(PORTAL_ORDER).toList();
-    }
-
-    private static long horizontalDistanceSquared(BlockPos a, BlockPos b) {
-        long dx = (long) a.getX() - b.getX();
-        long dz = (long) a.getZ() - b.getZ();
-        return dx * dx + dz * dz;
     }
 
     private record PortalKey(ResourceKey<Level> dimension, BlockPos anchor) {

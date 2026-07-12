@@ -13,8 +13,8 @@ public record ForeverWorldPortalsConfig(
         Identifier activationItemId,
         Item activationItem,
         ReturnPortalMode returnPortalMode,
-        int minimumPortalSeparationBlocks,
-        int destinationSearchAttempts
+        int destinationSearchAttempts,
+        int minimumGeneratedTerrainDistanceBlocks
 ) {
 
     static ForeverWorldPortalsConfig defaults() {
@@ -28,8 +28,8 @@ public record ForeverWorldPortalsConfig(
                 Identifier.parse("minecraft:flint_and_steel"),
                 activationItem,
                 ReturnPortalMode.GENERATE,
-                25000,
-                64
+                64,
+                10000
         );
     }
 }
