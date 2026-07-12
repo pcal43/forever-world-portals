@@ -8,8 +8,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
+import net.pcal.fwportals.DestinationPortalMode;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
 import net.pcal.fwportals.ReturnPortalMode;
 import net.pcal.fwportals.attunement.AttunementDefinition;
@@ -136,6 +138,12 @@ public final class PortalTravelService {
         player.connection.send(new ClientboundSetActionBarTextPacket(
                 PortalFeedbackText.seekingFrontierMessage(selectedAttunement)
         ));
+        logger.info(
+                "[fwportals] Selected destination portal mode {} for portal anchor {} in {}",
+                config.destinationPortalMode(),
+                portalAnchor,
+                level.dimension().identifier()
+        );
 
         PortalDestinationSelector.SearchContext searchContext = destinationSelector.beginSearch(
                 destinationLevel,
@@ -151,11 +159,14 @@ public final class PortalTravelService {
             }
 
             DestinationPortalCandidate candidate = maybeCandidate.get();
+            BlockState destinationFrameState = config.destinationPortalMode() == DestinationPortalMode.BROKEN
+                    ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
+                    : config.frameBlock().defaultBlockState();
             PortalPlacementService.LayoutSearchResult layoutSearchResult = portalPlacementService.findValidLayoutNearAnchor(
                     destinationLevel,
                     candidate.requestedAnchor(),
                     config.maximumPortalPlacementAttemptsPerBiome(),
-                    config.frameBlock().defaultBlockState()
+                    destinationFrameState
             );
             if (layoutSearchResult.layout().isEmpty()) {
                 if (layoutSearchResult.failureReason()
@@ -204,6 +215,31 @@ public final class PortalTravelService {
                 continue;
             }
 
+            if (config.destinationPortalMode() == DestinationPortalMode.NONE) {
+                FoundingRegistration registration = buildFoundingRegistration(
+                        config.destinationPortalMode(),
+                        level.dimension(),
+                        portalAnchor.immutable(),
+                        destinationLevel.dimension(),
+                        generatedPortalAnchor
+                );
+                PortalRecord outboundPortal = registration.outboundPortal();
+                registry.putPortal(outboundPortal);
+                logger.info(
+                        "[fwportals] Registered outbound-only portal route {} in {} -> {} in {} with destination portal mode none",
+                        outboundPortal.anchor(),
+                        outboundPortal.dimension().identifier(),
+                        outboundPortal.destinationAnchor().orElseThrow(),
+                        outboundPortal.destinationDimension().orElseThrow().identifier()
+                );
+                logger.info(
+                        "[fwportals] No destination portal generated or registered at validated anchor {} in {}",
+                        generatedPortalAnchor,
+                        destinationLevel.dimension().identifier()
+                );
+                return buildTransition(destinationLevel, Vec3.atBottomCenterOf(generatedPortalAnchor), player);
+            }
+
             PortalKey generatedKey = new PortalKey(destinationLevel.dimension(), generatedPortalAnchor);
             if (!inProgressPortals.add(generatedKey)) {
                 player.sendSystemMessage(PortalFeedbackText.returnPortalFoundingInProgressMessage());
@@ -212,23 +248,21 @@ public final class PortalTravelService {
             }
 
             try {
-                GeneratedPortal generatedPortal = portalPlacementService.placeValidatedLayout(
+                GeneratedPortal generatedPortal = portalPlacementService.placeDestinationPortal(
                         destinationLevel,
                         layout,
+                        config.destinationPortalMode(),
                         config.frameBlock().defaultBlockState()
                 );
-                PortalRecord outboundPortal = PortalRecord.resolved(
+                FoundingRegistration registration = buildFoundingRegistration(
+                        config.destinationPortalMode(),
                         level.dimension(),
                         portalAnchor.immutable(),
                         destinationLevel.dimension(),
                         generatedPortalAnchor
                 );
-                PortalRecord reversePortal = PortalRecord.resolved(
-                        destinationLevel.dimension(),
-                        generatedPortalAnchor,
-                        level.dimension(),
-                        portalAnchor.immutable()
-                );
+                PortalRecord outboundPortal = registration.outboundPortal();
+                PortalRecord reversePortal = registration.reversePortal().orElseThrow();
                 PortalRecord previousOutboundPortal = existingPortal;
                 registry.putPortal(outboundPortal);
                 try {
@@ -255,6 +289,12 @@ public final class PortalTravelService {
                     reversePortal.dimension().identifier(),
                     reversePortal.destinationAnchor().orElseThrow(),
                     reversePortal.destinationDimension().orElseThrow().identifier()
+                );
+                logger.info(
+                        "[fwportals] Destination portal {} generated at anchor {} with axis {} and registered for return travel",
+                        config.destinationPortalMode().name().toLowerCase(java.util.Locale.ROOT),
+                        layout.anchorBlock(),
+                        layout.axis()
                 );
 
                 return buildTransition(destinationLevel, Vec3.atBottomCenterOf(generatedPortal.anchorBlock()), player);
@@ -322,6 +362,32 @@ public final class PortalTravelService {
         return "attunement " + attunementDefinition.id();
     }
 
+    static FoundingRegistration buildFoundingRegistration(
+            DestinationPortalMode destinationPortalMode,
+            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> sourceDimension,
+            BlockPos sourceAnchor,
+            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> destinationDimension,
+            BlockPos destinationAnchor
+    ) {
+        PortalRecord outboundPortal = PortalRecord.resolved(
+                sourceDimension,
+                sourceAnchor,
+                destinationDimension,
+                destinationAnchor
+        );
+        if (destinationPortalMode == DestinationPortalMode.NONE) {
+            return new FoundingRegistration(outboundPortal, Optional.empty());
+        }
+
+        PortalRecord reversePortal = PortalRecord.resolved(
+                destinationDimension,
+                destinationAnchor,
+                sourceDimension,
+                sourceAnchor
+        );
+        return new FoundingRegistration(outboundPortal, Optional.of(reversePortal));
+    }
+
     private PortalRecord selectDeterministicMatch(ServerLevel level, List<PortalRecord> matches) {
         if (matches.isEmpty()) {
             return null;
@@ -366,5 +432,8 @@ public final class PortalTravelService {
     }
 
     private record PortalKey(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension, BlockPos anchor) {
+    }
+
+    record FoundingRegistration(PortalRecord outboundPortal, Optional<PortalRecord> reversePortal) {
     }
 }

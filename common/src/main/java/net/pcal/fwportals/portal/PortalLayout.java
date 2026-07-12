@@ -118,6 +118,15 @@ public record PortalLayout(
         return blocks;
     }
 
+    public List<BlockPos> subfoundationBlocks() {
+        List<BlockPos> blocks = new ArrayList<>(STANDARD_FRAME_WIDTH);
+        Direction horizontalDirection = horizontalDirection();
+        for (int widthOffset = 0; widthOffset < STANDARD_FRAME_WIDTH; widthOffset++) {
+            blocks.add(frameBasePos.relative(horizontalDirection, widthOffset).below().immutable());
+        }
+        return blocks;
+    }
+
     public ForeverWorldPortalFrame frame() {
         return new ForeverWorldPortalFrame(
                 axis,

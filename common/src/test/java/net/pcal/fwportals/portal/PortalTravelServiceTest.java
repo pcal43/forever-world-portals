@@ -2,6 +2,7 @@ package net.pcal.fwportals.portal;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
+import net.pcal.fwportals.DestinationPortalMode;
 import net.pcal.fwportals.attunement.AttunementDefinition;
 import net.pcal.fwportals.attunement.AttunementLookup;
 import net.pcal.fwportals.attunement.BiomeDestinationTarget;
@@ -14,6 +15,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PortalTravelServiceTest {
 
@@ -98,5 +100,36 @@ class PortalTravelServiceTest {
 
         assertEquals(Optional.of(net.minecraft.resources.Identifier.parse("minecraft:sunflower")), pendingPortal.attunementItemId());
         assertEquals(Optional.empty(), pendingPortal.destinationAnchor());
+    }
+
+    @Test
+    void noneModeBuildsOutboundOnlyRegistration() {
+        PortalTravelService.FoundingRegistration registration = PortalTravelService.buildFoundingRegistration(
+                DestinationPortalMode.NONE,
+                Level.OVERWORLD,
+                new net.minecraft.core.BlockPos(0, 64, 0),
+                Level.OVERWORLD,
+                new net.minecraft.core.BlockPos(100, 70, 100)
+        );
+
+        assertEquals(Optional.empty(), registration.reversePortal());
+        assertEquals(Optional.of(new net.minecraft.core.BlockPos(100, 70, 100)), registration.outboundPortal().destinationAnchor());
+    }
+
+    @Test
+    void brokenAndCompleteModesBuildLinkedReverseRegistrations() {
+        for (DestinationPortalMode mode : new DestinationPortalMode[]{DestinationPortalMode.BROKEN, DestinationPortalMode.COMPLETE}) {
+            PortalTravelService.FoundingRegistration registration = PortalTravelService.buildFoundingRegistration(
+                    mode,
+                    Level.OVERWORLD,
+                    new net.minecraft.core.BlockPos(0, 64, 0),
+                    Level.OVERWORLD,
+                    new net.minecraft.core.BlockPos(100, 70, 100)
+            );
+
+            assertTrue(registration.reversePortal().isPresent());
+            assertEquals(Optional.of(new net.minecraft.core.BlockPos(100, 70, 100)), registration.outboundPortal().destinationAnchor());
+            assertEquals(Optional.of(new net.minecraft.core.BlockPos(0, 64, 0)), registration.reversePortal().orElseThrow().destinationAnchor());
+        }
     }
 }

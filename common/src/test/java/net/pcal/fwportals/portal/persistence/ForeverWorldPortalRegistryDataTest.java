@@ -143,6 +143,26 @@ class ForeverWorldPortalRegistryDataTest {
         assertEquals(1, data.findPortalsContainedBy(Level.OVERWORLD, larger).size());
     }
 
+    @Test
+    void repairedBrokenPortalMatchesExistingRegisteredAnchor() {
+        TestBootstrap.ensureBootstrapped();
+
+        ForeverWorldPortalFrame repairedDiamondFrame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+        BlockPos registeredAnchor = identity.computeAnchorBlock(repairedDiamondFrame);
+
+        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        data.createPortal(PortalRecord.resolved(
+                Level.OVERWORLD,
+                registeredAnchor,
+                Level.OVERWORLD,
+                new BlockPos(500, 80, 500)
+        ));
+
+        List<PortalRecord> matches = data.findPortalsContainedBy(Level.OVERWORLD, repairedDiamondFrame);
+        assertEquals(1, matches.size());
+        assertEquals(registeredAnchor, matches.get(0).anchor());
+    }
+
     private static ForeverWorldPortalRegistryData roundTrip(ForeverWorldPortalRegistryData data) {
         CompoundTag encoded = (CompoundTag) ForeverWorldPortalRegistryData.TYPE.codec()
                 .encodeStart(NbtOps.INSTANCE, data)

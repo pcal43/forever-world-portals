@@ -2,6 +2,7 @@ package net.pcal.fwportals.portal;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -217,6 +218,8 @@ class PortalPlacementServiceTest {
         PortalPlacementService.applyLayout(
                 layout,
                 Blocks.DIAMOND_BLOCK.defaultBlockState(),
+                true,
+                false,
                 (pos, state) -> {
                     writes.incrementAndGet();
                     level.setBlock(pos, state);
@@ -299,8 +302,78 @@ class PortalPlacementServiceTest {
         );
     }
 
+    @Test
+    void brokenDestinationPortalUsesWeatheredDeepslateMixNoPortalBlocksAndSubfoundation() {
+        TestBootstrap.ensureBootstrapped();
+        PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, new BlockPos(100, 70, -50));
+        MutableTestBlockGetter level = new MutableTestBlockGetter();
+        RandomSource random = RandomSource.create(12345L);
+
+        PortalPlacementService.applyLayout(
+                layout,
+                Blocks.DEEPSLATE_TILES.defaultBlockState(),
+                false,
+                true,
+                level::setBlock
+        );
+        for (BlockPos framePos : layout.frameBlocks()) {
+            level.setBlock(framePos, PortalPlacementService.brokenFrameState(random));
+        }
+
+        for (BlockPos framePos : layout.frameBlocks()) {
+            BlockState state = level.getBlockState(framePos);
+            assertTrue(state.is(Blocks.DEEPSLATE_TILES) || state.is(Blocks.CRACKED_DEEPSLATE_TILES));
+        }
+        for (BlockPos interiorPos : layout.interiorBlocks()) {
+            assertTrue(level.getBlockState(interiorPos).isAir());
+        }
+        assertEquals(4, layout.subfoundationBlocks().size());
+        for (BlockPos subfoundationPos : layout.subfoundationBlocks()) {
+            assertTrue(level.getBlockState(subfoundationPos).is(Blocks.CRYING_OBSIDIAN));
+        }
+    }
+
+    @Test
+    void completeDestinationPortalGeneratesDiamondFrameActivePortalAndSubfoundationForBothAxes() {
+        TestBootstrap.ensureBootstrapped();
+        assertCompletePortalForAxis(Direction.Axis.X);
+        assertCompletePortalForAxis(Direction.Axis.Z);
+    }
+
     private static IntBinaryOperator constantSurfaceAirY(int surfaceAirY) {
         return (x, z) -> surfaceAirY;
+    }
+
+    private static void assertCompletePortalForAxis(Direction.Axis axis) {
+        MutableTestBlockGetter level = new MutableTestBlockGetter();
+        PortalLayout layout = PortalLayout.createStandardForAnchorBlock(axis, new BlockPos(0, 70, 0));
+        PortalPlacementService.applyLayout(
+                layout,
+                Blocks.DIAMOND_BLOCK.defaultBlockState(),
+                true,
+                true,
+                level::setBlock
+        );
+
+        for (BlockPos framePos : layout.frameBlocks()) {
+            assertTrue(level.getBlockState(framePos).is(Blocks.DIAMOND_BLOCK));
+        }
+        for (BlockPos interiorPos : layout.interiorBlocks()) {
+            assertTrue(level.getBlockState(interiorPos).is(Blocks.NETHER_PORTAL));
+        }
+        assertEquals(4, layout.subfoundationBlocks().size());
+        for (BlockPos subfoundationPos : layout.subfoundationBlocks()) {
+            assertTrue(level.getBlockState(subfoundationPos).is(Blocks.CRYING_OBSIDIAN));
+        }
+        BlockPos first = layout.subfoundationBlocks().get(0);
+        BlockPos last = layout.subfoundationBlocks().get(3);
+        if (axis == Direction.Axis.X) {
+            assertEquals(first.getX() + 3, last.getX());
+            assertEquals(first.getZ(), last.getZ());
+        } else {
+            assertEquals(first.getZ() + 3, last.getZ());
+            assertEquals(first.getX(), last.getX());
+        }
     }
 
     private static void primeSurface(MutableTestBlockGetter level, BlockPos anchor, int surfaceBlockY) {

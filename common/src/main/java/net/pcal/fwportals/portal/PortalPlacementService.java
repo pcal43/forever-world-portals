@@ -1,12 +1,14 @@
 package net.pcal.fwportals.portal;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.util.RandomSource;
+import net.pcal.fwportals.DestinationPortalMode;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
@@ -19,6 +21,9 @@ import java.util.function.Predicate;
 public final class PortalPlacementService {
 
     private static final int ANCHOR_SEARCH_RADIUS = 8;
+    private static final BlockState BROKEN_FRAME_PRIMARY_STATE = Blocks.DEEPSLATE_TILES.defaultBlockState();
+    private static final BlockState BROKEN_FRAME_ACCENT_STATE = Blocks.CRACKED_DEEPSLATE_TILES.defaultBlockState();
+    private static final BlockState SUBFOUNDATION_STATE = Blocks.CRYING_OBSIDIAN.defaultBlockState();
 
     private final Logger logger;
     private final SafeLandingFinder safeLandingFinder;
@@ -70,6 +75,28 @@ public final class PortalPlacementService {
             int maximumPlacementAttempts,
             BlockState frameState
     ) {
+        return findValidLayoutNearAnchor(
+                level,
+                minY,
+                withinBounds,
+                surfaceAirYAt,
+                requestedAnchor,
+                maximumPlacementAttempts,
+                frameState,
+                false
+        );
+    }
+
+    LayoutSearchResult findValidLayoutNearAnchor(
+            BlockGetter level,
+            int minY,
+            Predicate<BlockPos> withinBounds,
+            IntBinaryOperator surfaceAirYAt,
+            BlockPos requestedAnchor,
+            int maximumPlacementAttempts,
+            BlockState frameState,
+            boolean includeSubfoundation
+    ) {
         int placementAttempts = 0;
         for (BlockPos candidateColumn : candidateColumns(requestedAnchor)) {
             int surfaceAirY = surfaceAirYAt.applyAsInt(candidateColumn.getX(), candidateColumn.getZ());
@@ -91,7 +118,7 @@ public final class PortalPlacementService {
                 if (!layout.anchorBlock().equals(candidateAnchor)) {
                     continue;
                 }
-                if (!canPlaceLayout(level, minY, withinBounds, layout, frameState)) {
+                if (!canPlaceLayout(level, minY, withinBounds, layout, frameState, includeSubfoundation)) {
                     continue;
                 }
                 return LayoutSearchResult.found(layout, placementAttempts);
@@ -101,7 +128,7 @@ public final class PortalPlacementService {
     }
 
     public GeneratedPortal placeValidatedLayout(ServerLevel level, PortalLayout layout, BlockState frameState) {
-        applyLayout(layout, frameState, (pos, state) -> level.setBlock(pos, state, 18));
+        applyLayout(layout, frameState, true, false, (pos, state) -> level.setBlock(pos, state, 18));
         GeneratedPortal generatedPortal = new GeneratedPortal(layout.anchorBlock());
         logger.info(
                 "[fwportals] Generated portal at anchor {} with axis {} in {}",
@@ -112,21 +139,83 @@ public final class PortalPlacementService {
         return generatedPortal;
     }
 
-    static void applyLayout(PortalLayout layout, BlockState frameState, BiConsumer<BlockPos, BlockState> blockSetter) {
+    public GeneratedPortal placeDestinationPortal(
+            ServerLevel level,
+            PortalLayout layout,
+            DestinationPortalMode mode,
+            BlockState completeFrameState
+    ) {
+        return switch (mode) {
+            case NONE -> throw new IllegalArgumentException("NONE does not place a destination portal");
+            case BROKEN -> {
+                applyBrokenLayout(level, layout);
+                logger.info(
+                        "[fwportals] Generated broken destination portal at anchor {} with axis {} in {}",
+                        layout.anchorBlock(),
+                        layout.axis(),
+                        level.dimension().identifier()
+                );
+                logger.info(
+                        "[fwportals] Placed crying-obsidian subfoundation beneath destination portal at {} with axis {}",
+                        layout.frameBasePos(),
+                        layout.axis()
+                );
+                yield new GeneratedPortal(layout.anchorBlock());
+            }
+            case COMPLETE -> {
+                applyLayout(layout, completeFrameState, true, true, (pos, state) -> level.setBlock(pos, state, 18));
+                logger.info(
+                        "[fwportals] Generated complete destination portal at anchor {} with axis {} in {}",
+                        layout.anchorBlock(),
+                        layout.axis(),
+                        level.dimension().identifier()
+                );
+                logger.info(
+                        "[fwportals] Placed crying-obsidian subfoundation beneath destination portal at {} with axis {}",
+                        layout.frameBasePos(),
+                        layout.axis()
+                );
+                yield new GeneratedPortal(layout.anchorBlock());
+            }
+        };
+    }
+
+    static void applyBrokenLayout(ServerLevel level, PortalLayout layout) {
+        applyLayout(layout, BROKEN_FRAME_PRIMARY_STATE, false, true, (pos, state) -> level.setBlock(pos, state, 18));
+        for (BlockPos framePos : layout.frameBlocks()) {
+            level.setBlock(framePos, brokenFrameState(level.getRandom()), 18);
+        }
+    }
+
+    static void applyLayout(
+            PortalLayout layout,
+            BlockState frameState,
+            boolean activatePortal,
+            boolean includeSubfoundation,
+            BiConsumer<BlockPos, BlockState> blockSetter
+    ) {
         for (BlockPos clearancePos : layout.clearanceBlocks()) {
             blockSetter.accept(clearancePos, Blocks.AIR.defaultBlockState());
+        }
+
+        if (includeSubfoundation) {
+            for (BlockPos subfoundationPos : layout.subfoundationBlocks()) {
+                blockSetter.accept(subfoundationPos, SUBFOUNDATION_STATE);
+            }
         }
 
         for (BlockPos framePos : layout.frameBlocks()) {
             blockSetter.accept(framePos, frameState);
         }
 
-        BlockState portalState = Blocks.NETHER_PORTAL.defaultBlockState().setValue(
-                net.minecraft.world.level.block.NetherPortalBlock.AXIS,
-                layout.axis()
-        );
-        for (BlockPos interiorPos : layout.interiorBlocks()) {
-            blockSetter.accept(interiorPos, portalState);
+        if (activatePortal) {
+            BlockState portalState = Blocks.NETHER_PORTAL.defaultBlockState().setValue(
+                    net.minecraft.world.level.block.NetherPortalBlock.AXIS,
+                    layout.axis()
+            );
+            for (BlockPos interiorPos : layout.interiorBlocks()) {
+                blockSetter.accept(interiorPos, portalState);
+            }
         }
     }
 
@@ -151,11 +240,20 @@ public final class PortalPlacementService {
             int minY,
             Predicate<BlockPos> withinBounds,
             PortalLayout layout,
-            BlockState frameState
+            BlockState frameState,
+            boolean includeSubfoundation
     ) {
         for (BlockPos pos : layout.foundationBlocks()) {
             if (!withinBounds.test(pos) || !isSafeFoundationBlock(level, pos)) {
                 return false;
+            }
+        }
+
+        if (includeSubfoundation) {
+            for (BlockPos pos : layout.subfoundationBlocks()) {
+                if (!withinBounds.test(pos) || !canReplaceSubfoundationBlock(level, pos)) {
+                    return false;
+                }
             }
         }
 
@@ -200,6 +298,18 @@ public final class PortalPlacementService {
         return state.is(Blocks.NETHER_PORTAL)
                 || state.is(Blocks.END_PORTAL)
                 || state.is(Blocks.END_GATEWAY);
+    }
+
+    static BlockState brokenFrameState(RandomSource random) {
+        return random.nextInt(10) < 2 ? BROKEN_FRAME_ACCENT_STATE : BROKEN_FRAME_PRIMARY_STATE;
+    }
+
+    private boolean canReplaceSubfoundationBlock(BlockGetter level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return !state.hasBlockEntity()
+                && !isPortalState(state)
+                && !isHazardous(state)
+                && !state.is(Blocks.BEDROCK);
     }
 
     public record LayoutSearchResult(

@@ -119,7 +119,7 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `enabled`, `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, and `minimumGeneratedTerrainDistanceBlocks`
+- Current settings: `enabled`, `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `server.destinationPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, and `minimumGeneratedTerrainDistanceBlocks`
 - Behavior: defaults are documented and written automatically if the file does not exist
 - `requireEmptyInventory=true` prevents portal activation unless the player's main inventory, hotbar, armor slots, and offhand are all empty
 - `destinationSpiralSpacingBlocks` controls square-spiral search-center spacing
@@ -128,12 +128,19 @@ The mod writes and loads `config/fwportals.properties`.
 - `maximumBiomeSearches` independently limits expensive biome-locator calls across one destination search
 - `maximumPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
 - `minimumGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
+- `server.destinationPortalMode` accepts `none`, `broken`, or `complete` and defaults to `broken`
 
 `returnPortalMode` currently supports these values:
 
 - `GENERATE`: fully implemented; automatically generates and links the destination-side return portal
 - `REQUIRE_PLAYER_BUILD`: parsed but not implemented yet
 - `NONE`: parsed but not implemented yet
+
+`server.destinationPortalMode` currently supports these values:
+
+- `none`: no destination portal is generated and no reverse portal is registered
+- `broken`: a cobbled-deepslate placeholder frame plus buried crying-obsidian footing is generated and registered
+- `complete`: a complete diamond Forever World portal plus buried crying-obsidian footing is generated and registered
 
 ## Status
 

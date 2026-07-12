@@ -36,6 +36,12 @@ final class ForeverWorldPortalsConfigParser {
                 defaults.returnPortalMode(),
                 logger
         );
+        DestinationPortalMode destinationPortalMode = parseDestinationPortalMode(
+                properties,
+                "server.destinationPortalMode",
+                defaults.destinationPortalMode(),
+                logger
+        );
         int destinationSpiralSpacingBlocks = parsePositiveInt(
                 properties,
                 "destinationSpiralSpacingBlocks",
@@ -75,6 +81,7 @@ final class ForeverWorldPortalsConfigParser {
                 BuiltInRegistries.ITEM.getKey(activationItem),
                 activationItem,
                 returnPortalMode,
+                destinationPortalMode,
                 destinationSpiralSpacingBlocks,
                 maximumSpiralSearchPositions,
                 maximumBiomeSearches,
@@ -227,6 +234,34 @@ final class ForeverWorldPortalsConfigParser {
                     value,
                     key,
                     defaultValue
+            );
+        }
+        return defaultValue;
+    }
+
+    private static DestinationPortalMode parseDestinationPortalMode(
+            Properties properties,
+            String key,
+            DestinationPortalMode defaultValue,
+            Logger logger
+    ) {
+        String value = properties.getProperty(key);
+        if (value == null) {
+            return defaultValue;
+        }
+
+        try {
+            return DestinationPortalMode.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        if (logger != null) {
+            logger.warn(
+                    ForeverWorldPortalsService.LOG_PREFIX
+                            + "Invalid destination portal mode '{}' for '{}'; using default {}. Accepted values: none, broken, complete",
+                    value,
+                    key,
+                    defaultValue.name().toLowerCase(Locale.ROOT)
             );
         }
         return defaultValue;

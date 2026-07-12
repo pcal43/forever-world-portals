@@ -20,6 +20,7 @@ class ForeverWorldPortalsConfigParserTest {
                 new ByteArrayInputStream("""
                         requireEmptyInventory=false
                         returnPortalMode=NONE
+                        server.destinationPortalMode=CoMpLeTe
                         destinationSpiralSpacingBlocks=23456
                         maximumSpiralSearchPositions=123
                         maximumBiomeSearches=45
@@ -32,6 +33,7 @@ class ForeverWorldPortalsConfigParserTest {
 
         assertEquals(false, config.requireEmptyInventory());
         assertEquals(ReturnPortalMode.NONE, config.returnPortalMode());
+        assertEquals(DestinationPortalMode.COMPLETE, config.destinationPortalMode());
         assertEquals(23456, config.destinationSpiralSpacingBlocks());
         assertEquals(123, config.maximumSpiralSearchPositions());
         assertEquals(45, config.maximumBiomeSearches());
@@ -50,6 +52,7 @@ class ForeverWorldPortalsConfigParserTest {
                         frameBlock=not a block id
                         activationItem=minecraft:not_an_item
                         returnPortalMode=NOT_A_REAL_MODE
+                        server.destinationPortalMode=glitched
                         destinationSpiralSpacingBlocks=0
                         maximumSpiralSearchPositions=-1
                         maximumBiomeSearches=zero
@@ -66,6 +69,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
         assertEquals(Items.FLINT_AND_STEEL, config.activationItem());
         assertEquals(ReturnPortalMode.GENERATE, config.returnPortalMode());
+        assertEquals(DestinationPortalMode.BROKEN, config.destinationPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
         assertEquals(512, config.maximumSpiralSearchPositions());
         assertEquals(64, config.maximumBiomeSearches());
