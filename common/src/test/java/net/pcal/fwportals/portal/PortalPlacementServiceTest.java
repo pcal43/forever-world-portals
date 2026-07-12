@@ -7,15 +7,18 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Fluids;
 import net.pcal.fwportals.TestBootstrap;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntBinaryOperator;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,22 +31,39 @@ class PortalPlacementServiceTest {
     private final PortalIdentity identity = new PortalIdentity();
 
     @Test
+    void generatedPortalsAlwaysUseStandardDimensions() {
+        TestBootstrap.ensureBootstrapped();
+        PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, new BlockPos(100, 70, -50));
+
+        assertEquals(PortalLayout.STANDARD_INTERIOR_WIDTH, layout.width());
+        assertEquals(PortalLayout.STANDARD_INTERIOR_HEIGHT, layout.height());
+        assertEquals(14, layout.frameBlocks().size());
+        assertEquals(6, layout.interiorBlocks().size());
+        assertEquals(12, layout.foundationBlocks().size());
+        assertEquals(60, layout.clearanceBlocks().size());
+    }
+
+    @Test
     void validCandidateCausesNoWorldMutationDuringValidation() {
         TestBootstrap.ensureBootstrapped();
         MutableTestBlockGetter level = new MutableTestBlockGetter();
+        BlockPos requestedAnchor = new BlockPos(100, 70, -50);
+        BlockPos expectedAnchor = new BlockPos(100, 70, -50);
+        primeSurface(level, requestedAnchor, 69);
+        PortalLayout expectedLayout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, expectedAnchor);
 
         Optional<PortalLayout> layout = service.findValidLayoutNearAnchor(
                 level,
                 level.getMinY(),
-                pos -> true,
-                new BlockPos(100, 70, -50),
-                2,
-                3,
+                withinLayoutBounds(expectedLayout),
+                constantSurfaceAirY(70),
+                requestedAnchor,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
         );
 
         assertTrue(layout.isPresent());
-        assertEquals(0, level.blockCount());
+        assertEquals(expectedAnchor, layout.orElseThrow().anchorBlock());
+        assertEquals(0, level.mutationCount());
     }
 
     @Test
@@ -51,54 +71,138 @@ class PortalPlacementServiceTest {
         TestBootstrap.ensureBootstrapped();
         MutableTestBlockGetter level = new MutableTestBlockGetter();
         BlockPos requestedAnchor = new BlockPos(100, 70, -50);
-        level.setBlock(requestedAnchor, Blocks.LAVA.defaultBlockState());
-
-        Optional<PortalLayout> layout = service.findValidLayoutNearAnchor(
-                level,
-                level.getMinY(),
-                pos -> false,
-                requestedAnchor,
-                2,
-                3,
-                Blocks.DIAMOND_BLOCK.defaultBlockState()
-        );
-
-        assertTrue(layout.isEmpty());
-        assertEquals(1, level.blockCount());
-        assertTrue(level.getBlockState(requestedAnchor).is(Blocks.LAVA));
-    }
-
-    @Test
-    void landingPositionIsValidatedBeforePlacement() {
-        TestBootstrap.ensureBootstrapped();
-        MutableTestBlockGetter level = new MutableTestBlockGetter();
 
         Optional<PortalLayout> layout = service.findValidLayoutNearAnchor(
                 level,
                 level.getMinY(),
                 pos -> true,
-                new BlockPos(0, level.getMinY() + 1, 0),
-                2,
-                3,
+                constantSurfaceAirY(70),
+                requestedAnchor,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
         );
 
         assertTrue(layout.isEmpty());
-        assertEquals(0, level.blockCount());
+        assertEquals(0, level.mutationCount());
     }
 
     @Test
-    void successfullyValidatedCandidateIsPlacedOnceAndStillDetected() {
+    void nearbyCandidatesRecomputeSurfaceY() {
         TestBootstrap.ensureBootstrapped();
         MutableTestBlockGetter level = new MutableTestBlockGetter();
-        BlockPos requestedAnchor = new BlockPos(100, 70, -50);
+        BlockPos requestedAnchor = new BlockPos(100, 0, -50);
+        BlockPos requestedColumn = new BlockPos(100, 0, -50);
+        BlockPos fallbackColumn = new BlockPos(99, 0, -51);
+
+        primeSurface(level, new BlockPos(requestedColumn.getX(), 0, requestedColumn.getZ()), 69);
+        primeSurface(level, new BlockPos(fallbackColumn.getX(), 0, fallbackColumn.getZ()), 75);
+        level.setInitialBlock(new BlockPos(requestedColumn.getX(), 71, requestedColumn.getZ()), Blocks.STONE.defaultBlockState());
+
+        List<BlockPos> queriedColumns = new ArrayList<>();
+        IntBinaryOperator surfaceYAt = (x, z) -> {
+            queriedColumns.add(new BlockPos(x, 0, z));
+            if (x == requestedColumn.getX() && z == requestedColumn.getZ()) {
+                return 70;
+            }
+            if (x == fallbackColumn.getX() && z == fallbackColumn.getZ()) {
+                return 76;
+            }
+            return 70;
+        };
+
         PortalLayout layout = service.findValidLayoutNearAnchor(
                 level,
                 level.getMinY(),
                 pos -> true,
+                surfaceYAt,
                 requestedAnchor,
-                2,
-                3,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        ).orElseThrow();
+
+        assertTrue(queriedColumns.contains(requestedColumn));
+        assertTrue(queriedColumns.contains(fallbackColumn));
+        assertEquals(new BlockPos(fallbackColumn.getX(), 76, fallbackColumn.getZ()), layout.anchorBlock());
+    }
+
+    @Test
+    void slopedTerrainCanSucceedAtNearbyCandidate() {
+        TestBootstrap.ensureBootstrapped();
+        MutableTestBlockGetter level = new MutableTestBlockGetter();
+        BlockPos requestedAnchor = new BlockPos(0, 0, 0);
+        BlockPos higherColumn = new BlockPos(-1, 0, -1);
+
+        primeSurface(level, higherColumn, 83);
+
+        PortalLayout layout = service.findValidLayoutNearAnchor(
+                level,
+                level.getMinY(),
+                pos -> true,
+                (x, z) -> (x == higherColumn.getX() && z == higherColumn.getZ()) ? 84 : level.getMinY(),
+                requestedAnchor,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        ).orElseThrow();
+
+        assertEquals(new BlockPos(-1, 84, -1), layout.anchorBlock());
+    }
+
+    @Test
+    void unsafeFoundationBlockRejectsCandidateWithoutMutation() {
+        TestBootstrap.ensureBootstrapped();
+        MutableTestBlockGetter level = new MutableTestBlockGetter();
+        BlockPos requestedAnchor = new BlockPos(100, 70, -50);
+        BlockPos expectedAnchor = new BlockPos(100, 70, -50);
+        primeSurface(level, requestedAnchor, 69);
+        PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, expectedAnchor);
+        level.setInitialBlock(layout.foundationBlocks().get(0), Blocks.LAVA.defaultBlockState());
+
+        Optional<PortalLayout> maybeLayout = service.findValidLayoutNearAnchor(
+                level,
+                level.getMinY(),
+                withinLayoutBounds(layout),
+                constantSurfaceAirY(70),
+                requestedAnchor,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        );
+
+        assertTrue(maybeLayout.isEmpty());
+        assertEquals(0, level.mutationCount());
+    }
+
+    @Test
+    void nonReplaceableClearanceBlockRejectsCandidateWithoutMutation() {
+        TestBootstrap.ensureBootstrapped();
+        MutableTestBlockGetter level = new MutableTestBlockGetter();
+        BlockPos requestedAnchor = new BlockPos(100, 70, -50);
+        BlockPos expectedAnchor = new BlockPos(100, 70, -50);
+        primeSurface(level, requestedAnchor, 69);
+        PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, expectedAnchor);
+        level.setInitialBlock(layout.clearanceBlocks().get(0), Blocks.STONE.defaultBlockState());
+
+        Optional<PortalLayout> maybeLayout = service.findValidLayoutNearAnchor(
+                level,
+                level.getMinY(),
+                withinLayoutBounds(layout),
+                constantSurfaceAirY(70),
+                requestedAnchor,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        );
+
+        assertTrue(maybeLayout.isEmpty());
+        assertEquals(0, level.mutationCount());
+    }
+
+    @Test
+    void successfullyValidatedCandidateClearsVolumePlacesOneStandardPortalAndStillDetects() {
+        TestBootstrap.ensureBootstrapped();
+        MutableTestBlockGetter level = new MutableTestBlockGetter();
+        BlockPos requestedAnchor = new BlockPos(100, 70, -50);
+        BlockPos expectedAnchor = new BlockPos(100, 70, -50);
+        primeSurface(level, requestedAnchor, 69);
+        PortalLayout layout = service.findValidLayoutNearAnchor(
+                level,
+                level.getMinY(),
+                withinLayoutBounds(PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, expectedAnchor)),
+                constantSurfaceAirY(70),
+                requestedAnchor,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
         ).orElseThrow();
 
@@ -112,28 +216,62 @@ class PortalPlacementServiceTest {
                 }
         );
 
-        assertEquals(layout.frameBlocks().size() + layout.interiorBlocks().size(), writes.get());
-        assertEquals(requestedAnchor, layout.anchorBlock());
+        assertEquals(60 + layout.frameBlocks().size() + layout.interiorBlocks().size(), writes.get());
+        assertEquals(expectedAnchor, layout.anchorBlock());
+        assertEquals(PortalLayout.STANDARD_INTERIOR_WIDTH, layout.width());
+        assertEquals(PortalLayout.STANDARD_INTERIOR_HEIGHT, layout.height());
+        assertEquals(expectedAnchor, identity.computeAnchorBlock(layout.frame()));
+        assertTrue(level.getBlockState(layout.foundationBlocks().get(0)).is(Blocks.STONE));
+        assertTrue(level.getBlockState(layout.foundationBlocks().get(8)).is(Blocks.STONE));
+        assertTrue(level.getBlockState(layout.frameBasePos()).is(Blocks.DIAMOND_BLOCK));
 
         Optional<ForeverWorldPortalFrame> detected = detector.findPortalFrame(
                 level,
-                requestedAnchor,
+                expectedAnchor,
                 Direction.Axis.Z,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
         );
         assertTrue(detected.isPresent());
-        assertEquals(requestedAnchor, identity.computeAnchorBlock(detected.orElseThrow()));
+        assertEquals(expectedAnchor, identity.computeAnchorBlock(detected.orElseThrow()));
+        assertEquals(layout.frame().width(), detected.orElseThrow().width());
+        assertEquals(layout.frame().height(), detected.orElseThrow().height());
+    }
+
+    private static IntBinaryOperator constantSurfaceAirY(int surfaceAirY) {
+        return (x, z) -> surfaceAirY;
+    }
+
+    private static void primeSurface(MutableTestBlockGetter level, BlockPos anchor, int surfaceBlockY) {
+        primeSurface(level, anchor, surfaceBlockY, 6);
+    }
+
+    private static void primeSurface(MutableTestBlockGetter level, BlockPos anchor, int surfaceBlockY, int radius) {
+        for (int x = anchor.getX() - radius; x <= anchor.getX() + radius; x++) {
+            for (int z = anchor.getZ() - radius; z <= anchor.getZ() + radius; z++) {
+                level.setInitialBlock(new BlockPos(x, surfaceBlockY, z), Blocks.STONE.defaultBlockState());
+            }
+        }
+    }
+
+    private static Predicate<BlockPos> withinLayoutBounds(PortalLayout layout) {
+        return pos -> layout.foundationBlocks().contains(pos) || layout.clearanceBlocks().contains(pos);
     }
 
     private static final class MutableTestBlockGetter implements BlockGetter {
         private final Map<BlockPos, BlockState> blocks = new HashMap<>();
+        private int mutationCount;
 
-        void setBlock(BlockPos pos, BlockState state) {
+        void setInitialBlock(BlockPos pos, BlockState state) {
             blocks.put(pos.immutable(), state);
         }
 
-        int blockCount() {
-            return blocks.size();
+        void setBlock(BlockPos pos, BlockState state) {
+            mutationCount++;
+            blocks.put(pos.immutable(), state);
+        }
+
+        int mutationCount() {
+            return mutationCount;
         }
 
         @Override
@@ -148,7 +286,7 @@ class PortalPlacementServiceTest {
 
         @Override
         public FluidState getFluidState(BlockPos pos) {
-            return Fluids.EMPTY.defaultFluidState();
+            return getBlockState(pos).getFluidState();
         }
 
         @Override

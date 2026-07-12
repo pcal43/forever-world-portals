@@ -37,11 +37,13 @@ class PortalLayoutTest {
     void buildsPortalGeometryForRequestedAnchorBlock() {
         TestBootstrap.ensureBootstrapped();
 
-        PortalLayout layout = PortalLayout.createForAnchorBlock(Direction.Axis.Z, new BlockPos(100, 70, -50), 2, 3);
+        PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, new BlockPos(100, 70, -50));
 
         assertEquals(new BlockPos(100, 69, -51), layout.frameBasePos());
         assertEquals(new BlockPos(100, 70, -50), layout.interiorBlocks().get(0));
         assertEquals(new BlockPos(100, 70, -50), layout.anchorBlock());
+        assertEquals(12, layout.foundationBlocks().size());
+        assertEquals(60, layout.clearanceBlocks().size());
     }
 
     @Test
@@ -49,7 +51,7 @@ class PortalLayoutTest {
         TestBootstrap.ensureBootstrapped();
 
         BlockPos requestedAnchor = new BlockPos(100, 70, -50);
-        PortalLayout layout = PortalLayout.createForAnchorBlock(Direction.Axis.Z, requestedAnchor, 2, 3);
+        PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, requestedAnchor);
         ForeverWorldPortalFrame frame = layout.frame();
 
         assertEquals(requestedAnchor, identity.computeAnchorBlock(frame));
@@ -60,7 +62,7 @@ class PortalLayoutTest {
         TestBootstrap.ensureBootstrapped();
 
         BlockPos requestedAnchor = new BlockPos(100, 70, -50);
-        PortalLayout layout = PortalLayout.createForAnchorBlock(Direction.Axis.X, requestedAnchor, 2, 3);
+        PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.X, requestedAnchor);
         ForeverWorldPortalFrame frame = layout.frame();
 
         assertEquals(requestedAnchor, identity.computeAnchorBlock(frame));

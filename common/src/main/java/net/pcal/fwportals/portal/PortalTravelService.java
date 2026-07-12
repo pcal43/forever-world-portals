@@ -154,8 +154,6 @@ public final class PortalTravelService {
             Optional<PortalLayout> maybeLayout = portalPlacementService.findValidLayoutNearAnchor(
                     destinationLevel,
                     candidate.requestedAnchor(),
-                    sourceFrame.width(),
-                    sourceFrame.height(),
                     config.frameBlock().defaultBlockState()
             );
             if (maybeLayout.isEmpty()) {

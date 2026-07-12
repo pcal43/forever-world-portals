@@ -5,11 +5,15 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.IntBinaryOperator;
 import java.util.function.Predicate;
 
 public final class PortalPlacementService {
@@ -27,17 +31,17 @@ public final class PortalPlacementService {
     public Optional<PortalLayout> findValidLayoutNearAnchor(
             ServerLevel level,
             BlockPos requestedAnchor,
-            int width,
-            int height,
             BlockState frameState
     ) {
         return findValidLayoutNearAnchor(
                 level,
                 level.getMinY(),
                 level.getWorldBorder()::isWithinBounds,
+                (x, z) -> level.getHeightmapPos(
+                        net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                        new BlockPos(x, 0, z)
+                ).getY(),
                 requestedAnchor,
-                width,
-                height,
                 frameState
         );
     }
@@ -46,18 +50,23 @@ public final class PortalPlacementService {
             BlockGetter level,
             int minY,
             Predicate<BlockPos> withinBounds,
+            IntBinaryOperator surfaceAirYAt,
             BlockPos requestedAnchor,
-            int width,
-            int height,
             BlockState frameState
     ) {
-        for (BlockPos candidateAnchor : candidateAnchors(requestedAnchor)) {
+        for (BlockPos candidateColumn : candidateColumns(requestedAnchor)) {
+            int surfaceAirY = surfaceAirYAt.applyAsInt(candidateColumn.getX(), candidateColumn.getZ());
+            BlockPos candidateAnchor = new BlockPos(
+                    candidateColumn.getX(),
+                    surfaceAirY,
+                    candidateColumn.getZ()
+            );
             for (Direction.Axis axis : Direction.Axis.values()) {
                 if (axis == Direction.Axis.Y) {
                     continue;
                 }
 
-                PortalLayout layout = PortalLayout.createForAnchorBlock(axis, candidateAnchor, width, height);
+                PortalLayout layout = PortalLayout.createStandardForAnchorBlock(axis, candidateAnchor);
                 if (!layout.anchorBlock().equals(candidateAnchor)) {
                     continue;
                 }
@@ -72,17 +81,21 @@ public final class PortalPlacementService {
 
     public GeneratedPortal placeValidatedLayout(ServerLevel level, PortalLayout layout, BlockState frameState) {
         applyLayout(layout, frameState, (pos, state) -> level.setBlock(pos, state, 18));
-        GeneratedPortal generatedPortal = new GeneratedPortal(layout.frame(), layout.anchorBlock());
+        GeneratedPortal generatedPortal = new GeneratedPortal(layout.anchorBlock());
         logger.info(
                 "[fwportals] Generated portal at anchor {} with axis {} in {}",
                 generatedPortal.anchorBlock(),
-                generatedPortal.frame().axis(),
+                layout.axis(),
                 level.dimension().identifier()
         );
         return generatedPortal;
     }
 
     static void applyLayout(PortalLayout layout, BlockState frameState, BiConsumer<BlockPos, BlockState> blockSetter) {
+        for (BlockPos clearancePos : layout.clearanceBlocks()) {
+            blockSetter.accept(clearancePos, Blocks.AIR.defaultBlockState());
+        }
+
         for (BlockPos framePos : layout.frameBlocks()) {
             blockSetter.accept(framePos, frameState);
         }
@@ -96,20 +109,20 @@ public final class PortalPlacementService {
         }
     }
 
-    private Iterable<BlockPos> candidateAnchors(BlockPos requestedAnchor) {
-        java.util.List<BlockPos> anchors = new java.util.ArrayList<>();
-        anchors.add(requestedAnchor);
+    private Iterable<BlockPos> candidateColumns(BlockPos requestedAnchor) {
+        List<BlockPos> columns = new ArrayList<>();
+        columns.add(new BlockPos(requestedAnchor.getX(), 0, requestedAnchor.getZ()));
         for (int radius = 1; radius <= ANCHOR_SEARCH_RADIUS; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) {
                         continue;
                     }
-                    anchors.add(requestedAnchor.offset(dx, 0, dz));
+                    columns.add(new BlockPos(requestedAnchor.getX() + dx, 0, requestedAnchor.getZ() + dz));
                 }
             }
         }
-        return anchors;
+        return columns;
     }
 
     private boolean canPlaceLayout(
@@ -119,31 +132,14 @@ public final class PortalPlacementService {
             PortalLayout layout,
             BlockState frameState
     ) {
-        int frameBaseY = layout.frameBasePos().getY();
-
-        for (BlockPos pos : layout.interiorBlocks()) {
-            if (!withinBounds.test(pos) || !isReplaceableForPortal(level.getBlockState(pos))) {
+        for (BlockPos pos : layout.foundationBlocks()) {
+            if (!withinBounds.test(pos) || !isSafeFoundationBlock(level, pos)) {
                 return false;
             }
         }
-        for (BlockPos pos : layout.frameBlocks()) {
-            if (!withinBounds.test(pos)) {
-                return false;
-            }
 
-            BlockState state = level.getBlockState(pos);
-            if (state.is(frameState.getBlock())) {
-                continue;
-            }
-
-            if (pos.getY() == frameBaseY) {
-                if (!canUseAsFoundation(level, pos, state)) {
-                    return false;
-                }
-                continue;
-            }
-
-            if (!isReplaceableForPortal(state) || isHazardous(state)) {
+        for (BlockPos pos : layout.clearanceBlocks()) {
+            if (!withinBounds.test(pos) || !isClearableVolumeBlock(level, pos)) {
                 return false;
             }
         }
@@ -151,22 +147,24 @@ public final class PortalPlacementService {
         return safeLandingFinder.validateGeneratedLandingSpot(level, minY, withinBounds, layout, frameState) == null;
     }
 
-    private boolean isReplaceableForPortal(BlockState state) {
-        return state.isAir()
-                || state.canBeReplaced()
-                || state.is(Blocks.SHORT_GRASS)
-                || state.is(Blocks.TALL_GRASS)
-                || state.is(Blocks.FERN)
-                || state.is(Blocks.LARGE_FERN)
-                || state.is(Blocks.DEAD_BUSH)
-                || state.is(Blocks.FIRE);
+    private boolean isClearableVolumeBlock(BlockGetter level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return !state.hasBlockEntity()
+                && !isPortalState(state)
+                && !isHazardous(state)
+                && (state.isAir() || state.canBeReplaced());
     }
 
-    private boolean canUseAsFoundation(BlockGetter level, BlockPos pos, BlockState state) {
-        if (state.isAir() || state.canBeReplaced()) {
-            return true;
-        }
-        return !isHazardous(state) && state.blocksMotion() && state.isFaceSturdy(level, pos, Direction.UP);
+    private boolean isSafeFoundationBlock(BlockGetter level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return !state.isAir()
+                && !state.canBeReplaced()
+                && !state.hasBlockEntity()
+                && !isPortalState(state)
+                && !isHazardous(state)
+                && !(state.getBlock() instanceof FallingBlock)
+                && state.blocksMotion()
+                && state.isFaceSturdy(level, pos, Direction.UP);
     }
 
     private boolean isHazardous(BlockState state) {
@@ -175,5 +173,11 @@ public final class PortalPlacementService {
                 || state.is(Blocks.WATER)
                 || state.is(Blocks.FIRE)
                 || state.is(Blocks.POWDER_SNOW);
+    }
+
+    private boolean isPortalState(BlockState state) {
+        return state.is(Blocks.NETHER_PORTAL)
+                || state.is(Blocks.END_PORTAL)
+                || state.is(Blocks.END_GATEWAY);
     }
 }
