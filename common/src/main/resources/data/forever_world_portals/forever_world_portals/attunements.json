@@ -1,37 +1,308 @@
 {
   "default": {
     "dimension": "minecraft:overworld",
-    "color": "#f2b84b",
-    "particle": "minecraft:happy_villager",
     "biomes": [
+      "minecraft:plains",
+      "minecraft:forest",
+      "minecraft:birch_forest",
+      "minecraft:flower_forest",
+      "minecraft:meadow",
+      "minecraft:taiga",
       "minecraft:cherry_grove"
-    ]
+    ],
+    "color": "#7FCF6B"
   },
-  "sunflower_plains": {
-    "item": "minecraft:sunflower",
+  "plains": {
+    "item": "minecraft:wheat_seeds",
     "dimension": "minecraft:overworld",
-    "color": "#f7d13d",
-    "particle": "minecraft:happy_villager",
     "biomes": [
+      "minecraft:plains",
       "minecraft:sunflower_plains"
-    ]
+    ],
+    "color": "#9DBA63"
+  },
+  "snowy_plains": {
+    "item": "minecraft:snowball",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:snowy_plains",
+      "minecraft:snowy_slopes"
+    ],
+    "color": "#E8F3F8"
+  },
+  "ice_spikes": {
+    "item": "minecraft:packed_ice",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:ice_spikes",
+      "minecraft:frozen_peaks"
+    ],
+    "color": "#9FC7E8"
+  },
+  "desert": {
+    "item": "minecraft:cactus",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:desert"
+    ],
+    "color": "#E8C66A"
+  },
+  "swamp": {
+    "item": "minecraft:lily_pad",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:swamp"
+    ],
+    "color": "#5B7F4A"
+  },
+  "mangrove_swamp": {
+    "item": "minecraft:mangrove_propagule",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:mangrove_swamp"
+    ],
+    "color": "#4C7A3D"
+  },
+  "forest": {
+    "item": "minecraft:oak_sapling",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:forest"
+    ],
+    "color": "#4F7D45"
   },
   "flower_forest": {
     "item": "minecraft:allium",
     "dimension": "minecraft:overworld",
-    "color": "#c58cff",
-    "particle": "minecraft:enchant",
     "biomes": [
-      "minecraft:flower_forest"
-    ]
+      "minecraft:flower_forest",
+      "minecraft:meadow"
+    ],
+    "color": "#9B7CC1"
+  },
+  "birch_forest": {
+    "item": "minecraft:birch_sapling",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:birch_forest",
+      "minecraft:old_growth_birch_forest"
+    ],
+    "color": "#8FAF72"
+  },
+  "dark_forest": {
+    "item": "minecraft:dark_oak_sapling",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:dark_forest"
+    ],
+    "color": "#31452C"
   },
   "pale_garden": {
     "item": "minecraft:pale_oak_sapling",
     "dimension": "minecraft:overworld",
-    "color": "#d8e2dc",
-    "particle": "minecraft:poof",
     "biomes": [
       "minecraft:pale_garden"
-    ]
+    ],
+    "color": "#A9B3A7"
+  },
+  "dappled_forest": {
+    "item": "minecraft:poplar_sapling",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:dappled_forest"
+    ],
+    "color": "#6F956A"
+  },
+  "taiga": {
+    "item": "minecraft:spruce_sapling",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:taiga",
+      "minecraft:old_growth_pine_taiga",
+      "minecraft:old_growth_spruce_taiga"
+    ],
+    "color": "#3F6B5A"
+  },
+  "snowy_taiga": {
+    "item": "minecraft:sweet_berries",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:snowy_taiga",
+      "minecraft:grove"
+    ],
+    "color": "#536E63"
+  },
+  "savanna": {
+    "item": "minecraft:acacia_sapling",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:savanna",
+      "minecraft:savanna_plateau",
+      "minecraft:windswept_savanna"
+    ],
+    "color": "#B9AA62"
+  },
+  "windswept_hills": {
+    "item": "minecraft:gravel",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:windswept_hills",
+      "minecraft:windswept_gravelly_hills",
+      "minecraft:windswept_forest"
+    ],
+    "color": "#747474"
+  },
+  "jungle": {
+    "item": "minecraft:jungle_sapling",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:jungle",
+      "minecraft:sparse_jungle"
+    ],
+    "color": "#5B861F"
+  },
+  "bamboo_jungle": {
+    "item": "minecraft:bamboo",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:bamboo_jungle"
+    ],
+    "color": "#7B9C32"
+  },
+  "badlands": {
+    "item": "minecraft:red_sand",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:badlands",
+      "minecraft:eroded_badlands",
+      "minecraft:wooded_badlands"
+    ],
+    "color": "#C96A3D"
+  },
+  "cherry_grove": {
+    "item": "minecraft:cherry_sapling",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:cherry_grove"
+    ],
+    "color": "#E9AFC7"
+  },
+  "jagged_peaks": {
+    "item": "minecraft:goat_horn",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:jagged_peaks"
+    ],
+    "color": "#9D9D9D"
+  },
+  "stony_peaks": {
+    "item": "minecraft:calcite",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:stony_peaks",
+      "minecraft:stony_shore"
+    ],
+    "color": "#B5B1A7"
+  },
+  "river": {
+    "item": "minecraft:clay_ball",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:river"
+    ],
+    "color": "#4F86C6"
+  },
+  "frozen_river": {
+    "item": "minecraft:ice",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:frozen_river"
+    ],
+    "color": "#9AC4E8"
+  },
+  "beach": {
+    "item": "minecraft:sand",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:beach",
+      "minecraft:snowy_beach"
+    ],
+    "color": "#D9C884"
+  },
+  "warm_ocean": {
+    "item": "minecraft:brain_coral_block",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:warm_ocean"
+    ],
+    "color": "#3EA6C8"
+  },
+  "lukewarm_ocean": {
+    "item": "minecraft:tube_coral_block",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:lukewarm_ocean",
+      "minecraft:deep_lukewarm_ocean"
+    ],
+    "color": "#2C7FA3"
+  },
+  "ocean": {
+    "item": "minecraft:kelp",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:ocean",
+      "minecraft:deep_ocean"
+    ],
+    "color": "#285A87"
+  },
+  "cold_ocean": {
+    "item": "minecraft:cod",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:cold_ocean",
+      "minecraft:deep_cold_ocean"
+    ],
+    "color": "#345678"
+  },
+  "frozen_ocean": {
+    "item": "minecraft:salmon",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:frozen_ocean",
+      "minecraft:deep_frozen_ocean"
+    ],
+    "color": "#5777A8"
+  },
+  "mushroom_fields": {
+    "item": "minecraft:red_mushroom",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:mushroom_fields"
+    ],
+    "color": "#A85BA8"
+  },
+  "dripstone_caves": {
+    "item": "minecraft:pointed_dripstone",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:dripstone_caves"
+    ],
+    "color": "#775A45"
+  },
+  "lush_caves": {
+    "item": "minecraft:spore_blossom",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:lush_caves"
+    ],
+    "color": "#5FAF69"
+  },
+  "deep_dark": {
+    "item": "minecraft:sculk",
+    "dimension": "minecraft:overworld",
+    "biomes": [
+      "minecraft:deep_dark"
+    ],
+    "color": "#173D43"
   }
 }
