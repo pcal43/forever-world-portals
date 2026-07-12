@@ -1,10 +1,11 @@
 package net.pcal.fwportals.attunement;
 
 import net.minecraft.world.item.Item;
+import org.jetbrains.annotations.Nullable;
 
 public record AttunementDefinition(
         String id,
-        Item item,
+        @Nullable Item item,
         DestinationTarget target
 ) {
 

@@ -7,7 +7,6 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
 import net.pcal.fwportals.attunement.BiomeDestinationTarget;
-import net.pcal.fwportals.attunement.DestinationTargets;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
@@ -32,18 +31,6 @@ public final class PortalDestinationSelector {
         this.config = config;
         this.logger = logger;
         this.destinationBiomeLocator = destinationBiomeLocator;
-    }
-
-    public SearchContext beginSearch(
-            ServerLevel level,
-            BlockPos portalAnchor
-    ) {
-        return beginSearch(
-                level,
-                portalAnchor,
-                DestinationTargets.defaultBiomeTarget(),
-                DestinationTargets.defaultTargetLabel()
-        );
     }
 
     SearchContext beginSearch(

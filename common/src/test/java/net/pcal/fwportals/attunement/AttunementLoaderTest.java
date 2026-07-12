@@ -10,8 +10,10 @@ import net.minecraft.world.level.biome.Biomes;
 import net.pcal.fwportals.TestBootstrap;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -21,10 +23,95 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AttunementLoaderTest {
 
     @Test
+    void loadsBuiltInDefaultDefinitionFromResource() throws IOException {
+        AttunementLookup lookup = AttunementLoader.load(
+                List.of(source("forever_world_portals", "builtin", 0, builtInAttunementsJson())),
+                registryLookup()
+        );
+
+        assertEquals("default", lookup.defaultAttunement().id());
+        assertEquals(4, lookup.size());
+        assertEquals(Level.OVERWORLD, lookup.defaultTarget().dimension());
+        assertTrue(lookup.defaultTarget().biomes().contains(Biomes.SUNFLOWER_PLAINS));
+        assertTrue(lookup.defaultTarget().biomes().contains(Biomes.FLOWER_FOREST));
+        assertTrue(lookup.defaultTarget().biomes().contains(Biomes.PALE_GARDEN));
+    }
+
+    @Test
+    void failsWhenNoEffectiveDefaultExists() {
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> AttunementLoader.load(
+                        List.of(source("forever_world_portals", "builtin", 0, """
+                                {
+                                  "sunflower_plains": {
+                                    "item": "minecraft:sunflower",
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  }
+                                }
+                                """)),
+                        registryLookup()
+                )
+        );
+
+        assertEquals("Missing required 'default' attunement.", ex.getMessage());
+    }
+
+    @Test
+    void failsWhenDefaultContainsItem() {
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> AttunementLoader.load(
+                        List.of(source("forever_world_portals", "builtin", 0, """
+                                {
+                                  "default": {
+                                    "item": "minecraft:sunflower",
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  }
+                                }
+                                """)),
+                        registryLookup()
+                )
+        );
+
+        assertEquals("The 'default' attunement must not specify an item.", ex.getMessage());
+    }
+
+    @Test
+    void failsWhenNonDefaultOmitsItem() {
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> AttunementLoader.load(
+                        List.of(source("forever_world_portals", "builtin", 0, """
+                                {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  },
+                                  "desert": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:plains"]
+                                  }
+                                }
+                                """)),
+                        registryLookup()
+                )
+        );
+
+        assertEquals("Attunement 'desert' must specify an item.", ex.getMessage());
+    }
+
+    @Test
     void parsesSeveralDefinitionsFromOneFile() {
         AttunementLookup lookup = AttunementLoader.load(
                 List.of(source("forever_world_portals", "builtin", 0, """
                         {
+                          "default": {
+                            "dimension": "minecraft:overworld",
+                            "biomes": ["minecraft:sunflower_plains", "minecraft:flower_forest"]
+                          },
                           "sunflower_plains": {
                             "item": "minecraft:sunflower",
                             "dimension": "minecraft:overworld",
@@ -40,9 +127,34 @@ class AttunementLoaderTest {
                 registryLookup()
         );
 
-        assertEquals(2, lookup.size());
+        assertEquals(3, lookup.size());
         assertTrue(lookup.resolve(Items.SUNFLOWER).isPresent());
         assertTrue(lookup.resolve(Items.ALLIUM).isPresent());
+    }
+
+    @Test
+    void retrievesEffectiveDefaultAttunement() {
+        AttunementLookup lookup = AttunementLoader.load(
+                List.of(source("forever_world_portals", "builtin", 0, """
+                        {
+                          "default": {
+                            "dimension": "minecraft:overworld",
+                            "biomes": ["minecraft:flower_forest"]
+                          },
+                          "flower_forest": {
+                            "item": "minecraft:allium",
+                            "dimension": "minecraft:overworld",
+                            "biomes": ["minecraft:flower_forest"]
+                          }
+                        }
+                        """)),
+                registryLookup()
+        );
+
+        assertEquals("default", lookup.defaultAttunement().id());
+        assertEquals(Level.OVERWORLD, lookup.defaultTarget().dimension());
+        assertEquals(1, lookup.defaultTarget().biomes().size());
+        assertTrue(lookup.defaultTarget().biomes().contains(Biomes.FLOWER_FOREST));
     }
 
     @Test
@@ -51,6 +163,10 @@ class AttunementLoaderTest {
                 List.of(
                         source("forever_world_portals", "builtin", 0, """
                                 {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  },
                                   "sunflower_plains": {
                                     "item": "minecraft:sunflower",
                                     "dimension": "minecraft:overworld",
@@ -71,7 +187,7 @@ class AttunementLoaderTest {
                 registryLookup()
         );
 
-        assertEquals(2, lookup.size());
+        assertEquals(3, lookup.size());
         assertTrue(lookup.resolve(Items.SUNFLOWER).isPresent());
         assertTrue(lookup.resolve(Items.ALLIUM).isPresent());
     }
@@ -82,6 +198,10 @@ class AttunementLoaderTest {
                 List.of(
                         source("forever_world_portals", "builtin", 0, """
                                 {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  },
                                   "flower_forest": {
                                     "item": "minecraft:allium",
                                     "dimension": "minecraft:overworld",
@@ -107,11 +227,50 @@ class AttunementLoaderTest {
     }
 
     @Test
-    void preservesUnrelatedLowerPriorityDefinitions() {
+    void higherPriorityDefaultReplacesOnlyDefaultDefinition() {
         AttunementLookup lookup = AttunementLoader.load(
                 List.of(
                         source("forever_world_portals", "builtin", 0, """
                                 {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains", "minecraft:flower_forest"]
+                                  },
+                                  "sunflower_plains": {
+                                    "item": "minecraft:sunflower",
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  }
+                                }
+                                """),
+                        source("my_modpack", "modpack", 1, """
+                                {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:plains", "minecraft:forest"]
+                                  }
+                                }
+                                """)
+                ),
+                registryLookup()
+        );
+
+        assertEquals(2, lookup.defaultTarget().biomes().size());
+        assertTrue(lookup.defaultTarget().biomes().contains(Biomes.PLAINS));
+        assertTrue(lookup.defaultTarget().biomes().contains(Biomes.FOREST));
+        assertFalse(lookup.defaultTarget().biomes().contains(Biomes.SUNFLOWER_PLAINS));
+    }
+
+    @Test
+    void preservesUnrelatedDefinitionsWhenDefaultIsReplaced() {
+        AttunementLookup lookup = AttunementLoader.load(
+                List.of(
+                        source("forever_world_portals", "builtin", 0, """
+                                {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  },
                                   "sunflower_plains": {
                                     "item": "minecraft:sunflower",
                                     "dimension": "minecraft:overworld",
@@ -126,10 +285,9 @@ class AttunementLoaderTest {
                                 """),
                         source("my_modpack", "modpack", 1, """
                                 {
-                                  "flower_forest": {
-                                    "item": "minecraft:dandelion",
+                                  "default": {
                                     "dimension": "minecraft:overworld",
-                                    "biomes": ["minecraft:flower_forest"]
+                                    "biomes": ["minecraft:plains"]
                                   }
                                 }
                                 """)
@@ -138,7 +296,8 @@ class AttunementLoaderTest {
         );
 
         assertTrue(lookup.resolve(Items.SUNFLOWER).isPresent());
-        assertTrue(lookup.resolve(Items.DANDELION).isPresent());
+        assertTrue(lookup.resolve(Items.ALLIUM).isPresent());
+        assertTrue(lookup.defaultTarget().biomes().contains(Biomes.PLAINS));
     }
 
     @Test
@@ -148,6 +307,10 @@ class AttunementLoaderTest {
                 () -> AttunementLoader.load(
                         List.of(source("forever_world_portals", "builtin", 0, """
                                 {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  },
                                   "bad_item": {
                                     "item": "minecraft:not_an_item",
                                     "dimension": "minecraft:overworld",
@@ -170,6 +333,10 @@ class AttunementLoaderTest {
                 () -> AttunementLoader.load(
                         List.of(source("forever_world_portals", "builtin", 0, """
                                 {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  },
                                   "bad_biome": {
                                     "item": "minecraft:sunflower",
                                     "dimension": "minecraft:overworld",
@@ -186,14 +353,34 @@ class AttunementLoaderTest {
     }
 
     @Test
-    void rejectsEmptyBiomeList() {
+    void rejectsInvalidDefaultDimension() {
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
                 () -> AttunementLoader.load(
                         List.of(source("forever_world_portals", "builtin", 0, """
                                 {
-                                  "empty_biomes": {
-                                    "item": "minecraft:sunflower",
+                                  "default": {
+                                    "dimension": "minecraft:the_nether",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  }
+                                }
+                                """)),
+                        registryLookup()
+                )
+        );
+
+        assertTrue(ex.getMessage().contains("default"));
+        assertTrue(ex.getMessage().contains("minecraft:the_nether"));
+    }
+
+    @Test
+    void rejectsInvalidOrEmptyDefaultBiomeList() {
+        IllegalStateException emptyList = assertThrows(
+                IllegalStateException.class,
+                () -> AttunementLoader.load(
+                        List.of(source("forever_world_portals", "builtin", 0, """
+                                {
+                                  "default": {
                                     "dimension": "minecraft:overworld",
                                     "biomes": []
                                   }
@@ -202,9 +389,25 @@ class AttunementLoaderTest {
                         registryLookup()
                 )
         );
+        assertTrue(emptyList.getMessage().contains("default"));
+        assertTrue(emptyList.getMessage().contains("must not be empty"));
 
-        assertTrue(ex.getMessage().contains("empty_biomes"));
-        assertTrue(ex.getMessage().contains("must not be empty"));
+        IllegalStateException unknownBiome = assertThrows(
+                IllegalStateException.class,
+                () -> AttunementLoader.load(
+                        List.of(source("forever_world_portals", "builtin", 0, """
+                                {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:not_a_biome"]
+                                  }
+                                }
+                                """)),
+                        registryLookup()
+                )
+        );
+        assertTrue(unknownBiome.getMessage().contains("default"));
+        assertTrue(unknownBiome.getMessage().contains("minecraft:not_a_biome"));
     }
 
     @Test
@@ -214,6 +417,10 @@ class AttunementLoaderTest {
                 () -> AttunementLoader.load(
                         List.of(source("forever_world_portals", "builtin", 0, """
                                 {
+                                  "default": {
+                                    "dimension": "minecraft:overworld",
+                                    "biomes": ["minecraft:sunflower_plains"]
+                                  },
                                   "first": {
                                     "item": "minecraft:sunflower",
                                     "dimension": "minecraft:overworld",
@@ -240,6 +447,10 @@ class AttunementLoaderTest {
         AttunementLookup lookup = AttunementLoader.load(
                 List.of(source("forever_world_portals", "builtin", 0, """
                         {
+                          "default": {
+                            "dimension": "minecraft:overworld",
+                            "biomes": ["minecraft:sunflower_plains"]
+                          },
                           "sunflower_plains": {
                             "item": "minecraft:sunflower",
                             "dimension": "minecraft:overworld",
@@ -257,6 +468,17 @@ class AttunementLoaderTest {
         assertEquals(Level.OVERWORLD, target.dimension());
         assertTrue(target.asBiomePredicate().test(biomes.getOrThrow(Biomes.SUNFLOWER_PLAINS)));
         assertFalse(target.asBiomePredicate().test(biomes.getOrThrow(Biomes.PLAINS)));
+    }
+
+    private static String builtInAttunementsJson() throws IOException {
+        try (InputStream stream = AttunementLoaderTest.class.getClassLoader().getResourceAsStream(
+                "data/forever_world_portals/forever_world_portals/attunements.json"
+        )) {
+            if (stream == null) {
+                throw new IOException("Missing built-in attunements.json resource");
+            }
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     private static HolderLookup.Provider registryLookup() {

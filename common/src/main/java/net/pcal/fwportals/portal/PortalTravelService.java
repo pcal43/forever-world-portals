@@ -10,8 +10,9 @@ import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
 import net.pcal.fwportals.ReturnPortalMode;
+import net.pcal.fwportals.attunement.AttunementLookup;
+import net.pcal.fwportals.attunement.AttunementRegistry;
 import net.pcal.fwportals.attunement.BiomeDestinationTarget;
-import net.pcal.fwportals.attunement.DestinationTargets;
 import net.pcal.fwportals.portal.persistence.ForeverWorldPortalRegistryData;
 import net.pcal.fwportals.portal.persistence.PortalRecord;
 import org.apache.logging.log4j.Logger;
@@ -26,6 +27,7 @@ public final class PortalTravelService {
 
     private final ForeverWorldPortalsConfig config;
     private final Logger logger;
+    private final AttunementRegistry attunementRegistry;
     private final PortalFrameDetector detector = new PortalFrameDetector();
     private final PortalDestinationSelector destinationSelector;
     private final SafeLandingFinder safeLandingFinder;
@@ -33,9 +35,10 @@ public final class PortalTravelService {
     private final PortalIdentity portalIdentity = new PortalIdentity();
     private final Set<PortalKey> inProgressPortals = new HashSet<>();
 
-    public PortalTravelService(ForeverWorldPortalsConfig config, Logger logger) {
+    public PortalTravelService(ForeverWorldPortalsConfig config, Logger logger, AttunementRegistry attunementRegistry) {
         this.config = config;
         this.logger = logger;
+        this.attunementRegistry = attunementRegistry;
         this.destinationSelector = new PortalDestinationSelector(config, logger);
         this.safeLandingFinder = new SafeLandingFinder();
         this.portalPlacementService = new PortalPlacementService(logger, safeLandingFinder);
@@ -118,7 +121,9 @@ public final class PortalTravelService {
             ForeverWorldPortalRegistryData registry,
             BlockPos portalAnchor
     ) {
-        BiomeDestinationTarget destinationTarget = defaultFoundingDestinationTarget();
+        AttunementLookup attunementLookup = attunementRegistry.currentLookup();
+        BiomeDestinationTarget destinationTarget = defaultFoundingDestinationTarget(attunementLookup);
+        String targetLabel = "attunement " + attunementLookup.defaultAttunement().id();
         ServerLevel destinationLevel = level.getServer().getLevel(destinationTarget.dimension());
         if (destinationLevel == null) {
             player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
@@ -130,7 +135,12 @@ public final class PortalTravelService {
             return null;
         }
 
-        PortalDestinationSelector.SearchContext searchContext = destinationSelector.beginSearch(destinationLevel, portalAnchor);
+        PortalDestinationSelector.SearchContext searchContext = destinationSelector.beginSearch(
+                destinationLevel,
+                portalAnchor,
+                destinationTarget,
+                targetLabel
+        );
 
         for (int attempt = 0; attempt < config.destinationSearchAttempts(); attempt++) {
             Optional<DestinationPortalCandidate> maybeCandidate = destinationSelector.findCandidateAnchor(searchContext);
@@ -275,13 +285,13 @@ public final class PortalTravelService {
                 config.destinationSearchAttempts(),
                 portalAnchor,
                 level.dimension().identifier(),
-                DestinationTargets.defaultTargetLabel()
+                targetLabel
         );
         return null;
     }
 
-    static BiomeDestinationTarget defaultFoundingDestinationTarget() {
-        return DestinationTargets.defaultBiomeTarget();
+    static BiomeDestinationTarget defaultFoundingDestinationTarget(AttunementLookup attunementLookup) {
+        return attunementLookup.defaultTarget();
     }
 
     private @Nullable TeleportTransition failForUnimplementedReturnMode(ServerPlayer player, ForeverWorldPortalFrame frame) {

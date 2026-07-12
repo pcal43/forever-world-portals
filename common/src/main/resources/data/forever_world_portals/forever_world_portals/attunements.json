@@ -1,4 +1,10 @@
 {
+  "default": {
+    "dimension": "minecraft:overworld",
+    "biomes": [
+    "minecraft:cherry_grove"
+    ]
+  },
   "sunflower_plains": {
     "item": "minecraft:sunflower",
     "dimension": "minecraft:overworld",

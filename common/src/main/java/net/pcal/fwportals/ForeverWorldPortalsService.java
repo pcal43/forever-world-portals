@@ -46,7 +46,7 @@ public final class ForeverWorldPortalsService {
         this.logger = requireNonNull(logger);
         this.attunementRegistry = new AttunementRegistry(logger);
         this.portalActivationService = new PortalActivationService(config, logger);
-        this.portalTravelService = new PortalTravelService(config, logger);
+        this.portalTravelService = new PortalTravelService(config, logger, attunementRegistry);
         this.initialized = true;
     }
 

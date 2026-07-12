@@ -80,8 +80,11 @@ common/src/main/resources/data/forever_world_portals/forever_world_portals/attun
 
 Definitions are merged by logical attunement ID in pack-priority order. A higher-priority definition replaces the entire lower-priority definition with the same logical ID. Definitions with other IDs remain in place.
 
+The built-in file includes a required reserved `default` definition. After merge, there must be exactly one effective `default` entry, it must not specify an `item`, and all non-`default` entries must specify one.
+
 Current built-in mappings:
 
+- `default` -> `minecraft:sunflower_plains`, `minecraft:flower_forest`, `minecraft:pale_garden`
 - `minecraft:sunflower` -> `minecraft:sunflower_plains`
 - `minecraft:allium` -> `minecraft:flower_forest`
 - `minecraft:pale_oak_sapling` -> `minecraft:pale_garden`
@@ -91,7 +94,7 @@ Current scope:
 - item-to-target mappings are loaded and validated from data packs
 - biome targets only
 - `minecraft:overworld` only
-- portal founding currently ignores attunements and uses the default biome target
+- portal founding currently ignores non-default attunements and uses the effective data-driven `default` target
 
 ## Portal Anchor Identity
 
@@ -127,7 +130,7 @@ The mod writes and loads `config/fwportals.properties`.
 - Entering a new Forever World portal permanently creates an anchor-to-anchor route in world saved data.
 - Generated return travel works by creating a second independent source portal route from the generated destination anchor back to the original source anchor.
 - Teleportation currently supports only `minecraft:overworld` destination targets.
-- Destination selection currently always uses the default `sunflower_plains` / `flower_forest` / `pale_garden` target set for new portals.
+- Destination selection currently always uses the effective data-pack `default` target for new portals.
 - Inventory stripping, player-built return-portal matching, commands, custom content, and other later gameplay systems are not implemented yet.
 
 ## Known Limitations

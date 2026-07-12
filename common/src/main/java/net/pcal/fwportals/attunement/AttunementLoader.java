@@ -6,16 +6,15 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -30,6 +29,7 @@ final class AttunementLoader {
 
     private static final String ATTUNEMENT_DIRECTORY = "forever_world_portals";
     private static final String ATTUNEMENT_FILE_PATH = "forever_world_portals/attunements.json";
+    private static final String DEFAULT_ATTUNEMENT_ID = "default";
 
     static AttunementLookup load(ResourceManager resourceManager, HolderLookup.Provider registryLookup) {
         return load(readSources(resourceManager), registryLookup);
@@ -55,10 +55,23 @@ final class AttunementLoader {
 
         HolderLookup.RegistryLookup<Item> items = registryLookup.lookupOrThrow(Registries.ITEM);
         HolderLookup.RegistryLookup<Biome> biomes = registryLookup.lookupOrThrow(Registries.BIOME);
+        RawDefinition defaultRawDefinition = merged.get(DEFAULT_ATTUNEMENT_ID);
+        if (defaultRawDefinition == null) {
+            throw new IllegalStateException("Missing required 'default' attunement.");
+        }
+
+        AttunementDefinition defaultAttunement = new AttunementDefinition(
+                defaultRawDefinition.id(),
+                null,
+                resolveBiomeTarget(defaultRawDefinition, biomes)
+        );
         Map<Item, AttunementDefinition> byItem = new LinkedHashMap<>();
         Map<Item, String> idsByItem = new LinkedHashMap<>();
 
         for (RawDefinition rawDefinition : merged.values()) {
+            if (rawDefinition.id().equals(DEFAULT_ATTUNEMENT_ID)) {
+                continue;
+            }
             Item item = resolveItem(rawDefinition, items);
             BiomeDestinationTarget target = resolveBiomeTarget(rawDefinition, biomes);
             String previousId = idsByItem.putIfAbsent(item, rawDefinition.id());
@@ -73,7 +86,7 @@ final class AttunementLoader {
             byItem.put(item, new AttunementDefinition(rawDefinition.id(), item, target));
         }
 
-        return AttunementLookup.of(byItem);
+        return AttunementLookup.of(defaultAttunement, byItem);
     }
 
     private static List<ResourceSource> readSources(ResourceManager resourceManager) {
@@ -127,7 +140,14 @@ final class AttunementLoader {
     }
 
     private static RawDefinition parseRawDefinition(String id, ResourceSource source, JsonObject object) {
-        Identifier itemId = parseIdentifier(source, id, object, "item");
+        @Nullable Identifier itemId = parseOptionalIdentifier(source, id, object, "item");
+        if (id.equals(DEFAULT_ATTUNEMENT_ID)) {
+            if (itemId != null) {
+                throw new IllegalStateException("The 'default' attunement must not specify an item.");
+            }
+        } else if (itemId == null) {
+            throw new IllegalStateException("Attunement '" + id + "' must specify an item.");
+        }
         Identifier dimensionId = parseIdentifier(source, id, object, "dimension");
         JsonArray biomeArray = requiredArray(source, id, object, "biomes");
         if (biomeArray.isEmpty()) {
@@ -146,6 +166,9 @@ final class AttunementLoader {
     }
 
     private static Item resolveItem(RawDefinition rawDefinition, HolderLookup.RegistryLookup<Item> items) {
+        if (rawDefinition.itemId() == null) {
+            throw invalid(rawDefinition.source(), rawDefinition.id(), "missing field 'item'");
+        }
         ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, rawDefinition.itemId());
         return items.get(itemKey)
                 .orElseThrow(() -> invalid(rawDefinition.source(), rawDefinition.id(), "unknown item '" + rawDefinition.itemId() + "'"))
@@ -174,9 +197,17 @@ final class AttunementLoader {
     }
 
     private static Identifier parseIdentifier(ResourceSource source, String attunementId, JsonObject object, String field) {
+        Identifier identifier = parseOptionalIdentifier(source, attunementId, object, field);
+        if (identifier == null) {
+            throw invalid(source, attunementId, "missing field '" + field + "'");
+        }
+        return identifier;
+    }
+
+    private static @Nullable Identifier parseOptionalIdentifier(ResourceSource source, String attunementId, JsonObject object, String field) {
         JsonElement element = object.get(field);
         if (element == null) {
-            throw invalid(source, attunementId, "missing field '" + field + "'");
+            return null;
         }
         if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
             throw invalid(source, attunementId, "field '" + field + "' must be a string");
@@ -225,7 +256,7 @@ final class AttunementLoader {
 
     private record RawDefinition(
             String id,
-            Identifier itemId,
+            @Nullable Identifier itemId,
             Identifier dimensionId,
             List<Identifier> biomeIds,
             ResourceSource source
