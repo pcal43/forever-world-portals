@@ -54,15 +54,15 @@ Build a standard vertical Nether-portal rectangle, but use `minecraft:diamond_bl
 The first time a player enters a valid diamond-frame portal:
 
 - the complete portal is detected and assigned one canonical anchor block in the lowest interior row
-- if no registered source portal anchor is enclosed by that physical portal, the mod walks a deterministic square spiral of distant search anchors
+- if no registered portal anchor is enclosed by that physical portal, the mod walks a deterministic square spiral of distant search anchors
 - at each eligible spiral anchor, the mod uses Minecraft's built-in worldgen biome search for the current default biome target
 - the mod attempts to generate a destination portal whose canonical anchor is exactly the requested candidate block
-- after generation succeeds, two independent source-portal routes are stored persistently:
-  - original source anchor -> generated destination anchor
-  - generated destination anchor -> original source anchor
+- after generation succeeds, two independent portal routes are stored persistently:
+  - original portal anchor -> generated destination anchor
+  - generated destination anchor -> original portal anchor
 - the player is teleported to `Vec3.atBottomCenterOf(destinationAnchor)`
 
-Later entries through any physical Forever World portal that still encloses the same stored source anchor reuse the same exact destination anchor without rerolling anything.
+Later entries through any physical Forever World portal that still encloses the same stored portal anchor reuse the same exact destination anchor without rerolling anything.
 
 ## Attunements
 
@@ -84,17 +84,20 @@ The built-in file includes a required reserved `default` definition. After merge
 
 Current built-in mappings:
 
-- `default` -> `minecraft:sunflower_plains`, `minecraft:flower_forest`, `minecraft:pale_garden`
+- `default` -> `minecraft:cherry_grove`
 - `minecraft:sunflower` -> `minecraft:sunflower_plains`
 - `minecraft:allium` -> `minecraft:flower_forest`
 - `minecraft:pale_oak_sapling` -> `minecraft:pale_garden`
 
 Current scope:
 
-- item-to-target mappings are loaded and validated from data packs
+- item-to-target mappings plus color and optional vanilla particle metadata are loaded and validated from data packs
 - biome targets only
 - `minecraft:overworld` only
-- portal founding currently ignores non-default attunements and uses the effective data-driven `default` target
+- attunement is applied by throwing one recognized item into an unresolved portal before first use
+- the most recently accepted offering replaces any previous portal attunement
+- accepted offerings are consumed immediately and established portals cannot be re-attuned
+- portal founding uses the stored portal attunement when present and otherwise falls back to the effective data-driven `default` target
 
 ## Portal Anchor Identity
 
@@ -103,8 +106,8 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 - Every physical Forever World portal has one canonical `anchorBlock`
 - The anchor is inside the portal interior, in the lowest interior row, as close as possible to the horizontal center
 - Even-width portals break ties toward the more-negative world coordinate along the portal axis
-- A rebuilt frame keeps the same identity if it still encloses that stored source anchor
-- Moving the frame so it no longer encloses that anchor creates a new source portal
+- A rebuilt frame keeps the same identity if it still encloses that stored portal anchor
+- Moving the frame so it no longer encloses that anchor creates a new portal
 - Teleportation always derives arrival from the stored destination anchor and does not use a separate persisted landing position
 
 ## Configuration
@@ -125,12 +128,12 @@ The mod writes and loads `config/fwportals.properties`.
 ## Status
 
 - The mod is intended to remain server-side-only so vanilla clients can connect.
-- Diamond-block Forever World portal activation, anchor-based route identity, first-entry teleportation, generated return portals, and data-pack-driven attunement loading are implemented.
+- Diamond-block Forever World portal activation, anchor-based route identity, first-entry teleportation, generated return portals, thrown-item portal attunement, and data-pack-driven attunement loading are implemented.
 - Ordinary obsidian Nether portals are left to vanilla behavior.
 - Entering a new Forever World portal permanently creates an anchor-to-anchor route in world saved data.
 - Generated return travel works by creating a second independent source portal route from the generated destination anchor back to the original source anchor.
 - Teleportation currently supports only `minecraft:overworld` destination targets.
-- Destination selection currently always uses the effective data-pack `default` target for new portals.
+- Destination selection uses a stored thrown-item portal attunement when present and otherwise uses the effective data-pack `default` target for new portals.
 - Inventory stripping, player-built return-portal matching, commands, custom content, and other later gameplay systems are not implemented yet.
 
 ## Known Limitations

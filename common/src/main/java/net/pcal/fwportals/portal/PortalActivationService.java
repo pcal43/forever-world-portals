@@ -6,6 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
@@ -29,13 +30,15 @@ public final class PortalActivationService {
 
     private final ForeverWorldPortalsConfig config;
     private final Logger logger;
+    private final PortalAttunementService portalAttunementService;
     private final PortalFrameDetector detector = new PortalFrameDetector();
     private final PortalIdentity portalIdentity = new PortalIdentity();
     private final Map<UUID, PortalEntryRecord> recentEntries = new HashMap<>();
 
-    public PortalActivationService(ForeverWorldPortalsConfig config, Logger logger) {
+    public PortalActivationService(ForeverWorldPortalsConfig config, Logger logger, PortalAttunementService portalAttunementService) {
         this.config = config;
         this.logger = logger;
+        this.portalAttunementService = portalAttunementService;
     }
 
     public boolean tryActivatePortal(Level level, BlockPos firePos, ItemStack activationStack, Player player) {
@@ -108,6 +111,10 @@ public final class PortalActivationService {
         }
 
         ForeverWorldPortalFrame frame = maybeFrame.get();
+        if (entity instanceof ItemEntity itemEntity && level instanceof ServerLevel serverLevel) {
+            portalAttunementService.onItemInsidePortal(serverLevel, frame, itemEntity);
+        }
+
         BlockPos anchorBlock = portalIdentity.computeAnchorBlock(frame);
         PortalEntryRecord previous = recentEntries.get(entity.getUUID());
         long gameTime = level.getGameTime();

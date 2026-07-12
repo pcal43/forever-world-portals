@@ -11,6 +11,7 @@ import net.minecraft.world.level.Level;
 import net.pcal.fwportals.attunement.AttunementRegistry;
 import net.pcal.fwportals.portal.ForeverWorldPortalFrame;
 import net.pcal.fwportals.portal.PortalActivationService;
+import net.pcal.fwportals.portal.PortalAttunementService;
 import net.pcal.fwportals.portal.PortalTravelService;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -31,6 +32,7 @@ public final class ForeverWorldPortalsService {
     private boolean initialized;
     private MinecraftServer currentServer;
     private PortalActivationService portalActivationService;
+    private PortalAttunementService portalAttunementService;
     private PortalTravelService portalTravelService;
     private AttunementRegistry attunementRegistry;
 
@@ -45,7 +47,8 @@ public final class ForeverWorldPortalsService {
         this.config = requireNonNull(config);
         this.logger = requireNonNull(logger);
         this.attunementRegistry = new AttunementRegistry(logger);
-        this.portalActivationService = new PortalActivationService(config, logger);
+        this.portalAttunementService = new PortalAttunementService(logger, attunementRegistry);
+        this.portalActivationService = new PortalActivationService(config, logger, portalAttunementService);
         this.portalTravelService = new PortalTravelService(config, logger, attunementRegistry);
         this.initialized = true;
     }
@@ -123,6 +126,9 @@ public final class ForeverWorldPortalsService {
         currentServer = null;
         if (portalActivationService != null) {
             portalActivationService.clearRuntimeState();
+        }
+        if (portalAttunementService != null) {
+            portalAttunementService.clearRuntimeState();
         }
         if (portalTravelService != null) {
             portalTravelService.clearRuntimeState();

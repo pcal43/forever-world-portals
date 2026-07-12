@@ -1,13 +1,17 @@
 {
   "default": {
     "dimension": "minecraft:overworld",
+    "color": "#f2b84b",
+    "particle": "minecraft:happy_villager",
     "biomes": [
-    "minecraft:cherry_grove"
+      "minecraft:cherry_grove"
     ]
   },
   "sunflower_plains": {
     "item": "minecraft:sunflower",
     "dimension": "minecraft:overworld",
+    "color": "#f7d13d",
+    "particle": "minecraft:happy_villager",
     "biomes": [
       "minecraft:sunflower_plains"
     ]
@@ -15,6 +19,8 @@
   "flower_forest": {
     "item": "minecraft:allium",
     "dimension": "minecraft:overworld",
+    "color": "#c58cff",
+    "particle": "minecraft:enchant",
     "biomes": [
       "minecraft:flower_forest"
     ]
@@ -22,6 +28,8 @@
   "pale_garden": {
     "item": "minecraft:pale_oak_sapling",
     "dimension": "minecraft:overworld",
+    "color": "#d8e2dc",
+    "particle": "minecraft:poof",
     "biomes": [
       "minecraft:pale_garden"
     ]

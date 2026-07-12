@@ -36,10 +36,11 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
             .thenComparingInt(portal -> portal.anchor().getX())
             .thenComparingInt(portal -> portal.anchor().getY())
             .thenComparingInt(portal -> portal.anchor().getZ())
-            .thenComparing(portal -> portal.destinationDimension().identifier().toString())
-            .thenComparingInt(portal -> portal.destinationAnchor().getX())
-            .thenComparingInt(portal -> portal.destinationAnchor().getY())
-            .thenComparingInt(portal -> portal.destinationAnchor().getZ());
+            .thenComparing(portal -> portal.destinationDimension().map(value -> value.identifier().toString()).orElse(""))
+            .thenComparingInt(portal -> portal.destinationAnchor().map(BlockPos::getX).orElse(Integer.MIN_VALUE))
+            .thenComparingInt(portal -> portal.destinationAnchor().map(BlockPos::getY).orElse(Integer.MIN_VALUE))
+            .thenComparingInt(portal -> portal.destinationAnchor().map(BlockPos::getZ).orElse(Integer.MIN_VALUE))
+            .thenComparing(portal -> portal.attunementItemId().map(Object::toString).orElse(""));
 
     private final Map<PortalKey, PortalRecord> portalsByKey = new LinkedHashMap<>();
 
@@ -91,6 +92,11 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
             throw new IllegalStateException("Portal already exists for " + key.dimension.identifier() + " at " + key.anchor);
         }
         portalsByKey.put(key, portal);
+        setDirty();
+    }
+
+    public void putPortal(PortalRecord portal) {
+        portalsByKey.put(PortalKey.of(portal), portal);
         setDirty();
     }
 

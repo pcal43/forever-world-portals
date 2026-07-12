@@ -1,5 +1,7 @@
 package net.pcal.fwportals.attunement;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -14,6 +16,7 @@ public final class AttunementLookup {
 
     private final @Nullable AttunementDefinition defaultAttunement;
     private final Map<Item, AttunementDefinition> byItem;
+    private final Map<Identifier, AttunementDefinition> byItemId;
 
     public static AttunementLookup empty() {
         return EMPTY;
@@ -26,6 +29,11 @@ public final class AttunementLookup {
     private AttunementLookup(@Nullable AttunementDefinition defaultAttunement, Map<Item, AttunementDefinition> byItem) {
         this.defaultAttunement = defaultAttunement;
         this.byItem = Map.copyOf(new LinkedHashMap<>(byItem));
+        Map<Identifier, AttunementDefinition> byItemId = new LinkedHashMap<>();
+        for (Map.Entry<Item, AttunementDefinition> entry : byItem.entrySet()) {
+            byItemId.put(BuiltInRegistries.ITEM.getKey(entry.getKey()), entry.getValue());
+        }
+        this.byItemId = Map.copyOf(byItemId);
     }
 
     public AttunementDefinition defaultAttunement() {
@@ -52,6 +60,10 @@ public final class AttunementLookup {
 
     public Optional<AttunementDefinition> resolve(Item item) {
         return Optional.ofNullable(byItem.get(item));
+    }
+
+    public Optional<AttunementDefinition> resolve(Identifier itemId) {
+        return Optional.ofNullable(byItemId.get(itemId));
     }
 
     public int size() {

@@ -2,6 +2,7 @@ package net.pcal.fwportals.portal;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -10,6 +11,7 @@ import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
 import net.pcal.fwportals.ReturnPortalMode;
+import net.pcal.fwportals.attunement.AttunementDefinition;
 import net.pcal.fwportals.attunement.AttunementLookup;
 import net.pcal.fwportals.attunement.AttunementRegistry;
 import net.pcal.fwportals.attunement.BiomeDestinationTarget;
@@ -62,15 +64,16 @@ public final class PortalTravelService {
         ForeverWorldPortalFrame frame = maybeFrame.get();
         ForeverWorldPortalRegistryData registry = ForeverWorldPortalRegistryData.get(level);
         List<PortalRecord> matches = registry.findPortalsContainedBy(level.dimension(), frame);
-        if (!matches.isEmpty()) {
-            return handleRegisteredPortalTravel(level, player, matches);
+        PortalRecord matchedPortal = selectDeterministicMatch(level, matches);
+        if (matchedPortal != null && matchedPortal.isResolved()) {
+            return handleRegisteredPortalTravel(level, player, matchedPortal);
         }
 
         if (config.returnPortalMode() != ReturnPortalMode.GENERATE) {
             return failForUnimplementedReturnMode(player, frame);
         }
 
-        BlockPos portalAnchor = portalIdentity.computeAnchorBlock(frame);
+        BlockPos portalAnchor = matchedPortal != null ? matchedPortal.anchor() : portalIdentity.computeAnchorBlock(frame);
         PortalKey inProgressKey = new PortalKey(level.dimension(), portalAnchor);
         if (!inProgressPortals.add(inProgressKey)) {
             player.sendSystemMessage(Component.literal("Forever World portal founding is already in progress."));
@@ -79,7 +82,7 @@ public final class PortalTravelService {
         }
 
         try {
-            return handleFoundingTravel(level, player, frame, registry, portalAnchor);
+            return handleFoundingTravel(level, player, frame, registry, matchedPortal, portalAnchor);
         } finally {
             inProgressPortals.remove(inProgressKey);
         }
@@ -89,29 +92,19 @@ public final class PortalTravelService {
         inProgressPortals.clear();
     }
 
-    private @Nullable TeleportTransition handleRegisteredPortalTravel(ServerLevel level, ServerPlayer player, List<PortalRecord> matches) {
-        PortalRecord selected = matches.get(0);
-        if (matches.size() > 1) {
-            logger.warn(
-                    "[fwportals] Multiple portals matched one physical portal in {}: {}. Using first deterministic match {}",
-                    level.dimension().identifier(),
-                    matches.stream().map(PortalRecord::anchor).toList(),
-                    selected.anchor()
-            );
-        }
-
-        ServerLevel destinationLevel = level.getServer().getLevel(selected.destinationDimension());
+    private @Nullable TeleportTransition handleRegisteredPortalTravel(ServerLevel level, ServerPlayer player, PortalRecord selected) {
+        ServerLevel destinationLevel = level.getServer().getLevel(selected.destinationDimension().orElseThrow());
         if (destinationLevel == null) {
             logger.warn(
                     "[fwportals] Destination dimension {} is unavailable for portal anchor {}",
-                    selected.destinationDimension().identifier(),
+                    selected.destinationDimension().orElseThrow().identifier(),
                     selected.anchor()
             );
             player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
             return null;
         }
 
-        return buildTransition(destinationLevel, Vec3.atBottomCenterOf(selected.destinationAnchor()), player);
+        return buildTransition(destinationLevel, Vec3.atBottomCenterOf(selected.destinationAnchor().orElseThrow()), player);
     }
 
     private @Nullable TeleportTransition handleFoundingTravel(
@@ -119,11 +112,12 @@ public final class PortalTravelService {
             ServerPlayer player,
             ForeverWorldPortalFrame sourceFrame,
             ForeverWorldPortalRegistryData registry,
+            @Nullable PortalRecord existingPortal,
             BlockPos portalAnchor
     ) {
         AttunementLookup attunementLookup = attunementRegistry.currentLookup();
-        BiomeDestinationTarget destinationTarget = defaultFoundingDestinationTarget(attunementLookup);
-        String targetLabel = "attunement " + attunementLookup.defaultAttunement().id();
+        BiomeDestinationTarget destinationTarget = foundingDestinationTarget(attunementLookup, existingPortal, logger);
+        String targetLabel = foundingTargetLabel(attunementLookup, existingPortal);
         ServerLevel destinationLevel = level.getServer().getLevel(destinationTarget.dimension());
         if (destinationLevel == null) {
             player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
@@ -206,24 +200,28 @@ public final class PortalTravelService {
             boolean success = false;
             boolean rolledBack = false;
             try {
-                PortalRecord outboundPortal = new PortalRecord(
+                PortalRecord outboundPortal = PortalRecord.resolved(
                         level.dimension(),
                         portalAnchor.immutable(),
                         destinationLevel.dimension(),
                         generatedPortalAnchor
                 );
-                PortalRecord reversePortal = new PortalRecord(
+                PortalRecord reversePortal = PortalRecord.resolved(
                         destinationLevel.dimension(),
                         generatedPortalAnchor,
                         level.dimension(),
                         portalAnchor.immutable()
                 );
-
-                registry.createPortal(outboundPortal);
+                PortalRecord previousOutboundPortal = existingPortal;
+                registry.putPortal(outboundPortal);
                 try {
                     registry.createPortal(reversePortal);
                 } catch (RuntimeException ex) {
-                    registry.removePortal(outboundPortal.dimension(), outboundPortal.anchor());
+                    if (previousOutboundPortal != null) {
+                        registry.putPortal(previousOutboundPortal);
+                    } else {
+                        registry.removePortal(outboundPortal.dimension(), outboundPortal.anchor());
+                    }
                     throw ex;
                 }
 
@@ -231,15 +229,15 @@ public final class PortalTravelService {
                         "[fwportals] Registered portal route {} in {} -> {} in {}",
                         outboundPortal.anchor(),
                         outboundPortal.dimension().identifier(),
-                        outboundPortal.destinationAnchor(),
-                        outboundPortal.destinationDimension().identifier()
+                        outboundPortal.destinationAnchor().orElseThrow(),
+                        outboundPortal.destinationDimension().orElseThrow().identifier()
                 );
                 logger.info(
                     "[fwportals] Registered reverse portal route {} in {} -> {} in {}",
                     reversePortal.anchor(),
                     reversePortal.dimension().identifier(),
-                    reversePortal.destinationAnchor(),
-                    reversePortal.destinationDimension().identifier()
+                    reversePortal.destinationAnchor().orElseThrow(),
+                    reversePortal.destinationDimension().orElseThrow().identifier()
                 );
 
                 success = true;
@@ -292,6 +290,56 @@ public final class PortalTravelService {
 
     static BiomeDestinationTarget defaultFoundingDestinationTarget(AttunementLookup attunementLookup) {
         return attunementLookup.defaultTarget();
+    }
+
+    static BiomeDestinationTarget foundingDestinationTarget(
+            AttunementLookup attunementLookup,
+            @Nullable PortalRecord portal,
+            Logger logger
+    ) {
+        if (portal != null && portal.attunementItemId().isPresent()) {
+            Identifier itemId = portal.attunementItemId().orElseThrow();
+            Optional<AttunementDefinition> attunement = attunementLookup.resolve(itemId);
+            if (attunement.isPresent() && attunement.get().target() instanceof BiomeDestinationTarget biomeTarget) {
+                return biomeTarget;
+            }
+
+            logger.warn(
+                    "[fwportals] Pending portal {} in {} has unresolved attunement item {}. Falling back to default target.",
+                    portal.anchor(),
+                    portal.dimension().identifier(),
+                    itemId
+            );
+        }
+        return defaultFoundingDestinationTarget(attunementLookup);
+    }
+
+    static String foundingTargetLabel(AttunementLookup attunementLookup, @Nullable PortalRecord portal) {
+        if (portal != null && portal.attunementItemId().isPresent()) {
+            Identifier itemId = portal.attunementItemId().orElseThrow();
+            Optional<AttunementDefinition> attunement = attunementLookup.resolve(itemId);
+            if (attunement.isPresent()) {
+                return "attunement " + attunement.get().id();
+            }
+            return "stored attunement " + itemId;
+        }
+        return "attunement " + attunementLookup.defaultAttunement().id();
+    }
+
+    private PortalRecord selectDeterministicMatch(ServerLevel level, List<PortalRecord> matches) {
+        if (matches.isEmpty()) {
+            return null;
+        }
+        PortalRecord selected = matches.get(0);
+        if (matches.size() > 1) {
+            logger.warn(
+                    "[fwportals] Multiple portals matched one physical portal in {}: {}. Using first deterministic match {}",
+                    level.dimension().identifier(),
+                    matches.stream().map(PortalRecord::anchor).toList(),
+                    selected.anchor()
+            );
+        }
+        return selected;
     }
 
     private @Nullable TeleportTransition failForUnimplementedReturnMode(ServerPlayer player, ForeverWorldPortalFrame frame) {

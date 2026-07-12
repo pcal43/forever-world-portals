@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -63,7 +64,9 @@ final class AttunementLoader {
         AttunementDefinition defaultAttunement = new AttunementDefinition(
                 defaultRawDefinition.id(),
                 null,
-                resolveBiomeTarget(defaultRawDefinition, biomes)
+                resolveBiomeTarget(defaultRawDefinition, biomes),
+                defaultRawDefinition.colorRgb(),
+                defaultRawDefinition.particleId()
         );
         Map<Item, AttunementDefinition> byItem = new LinkedHashMap<>();
         Map<Item, String> idsByItem = new LinkedHashMap<>();
@@ -83,7 +86,13 @@ final class AttunementLoader {
                 );
             }
 
-            byItem.put(item, new AttunementDefinition(rawDefinition.id(), item, target));
+            byItem.put(item, new AttunementDefinition(
+                    rawDefinition.id(),
+                    item,
+                    target,
+                    rawDefinition.colorRgb(),
+                    rawDefinition.particleId()
+            ));
         }
 
         return AttunementLookup.of(defaultAttunement, byItem);
@@ -153,6 +162,11 @@ final class AttunementLoader {
         if (biomeArray.isEmpty()) {
             throw invalid(source, id, "field 'biomes' must not be empty");
         }
+        int colorRgb = parseColorRgb(source, id, object, "color");
+        @Nullable Identifier particleId = parseOptionalIdentifier(source, id, object, "particle");
+        if (particleId != null && !BuiltInRegistries.PARTICLE_TYPE.containsKey(particleId)) {
+            throw invalid(source, id, "unknown particle '" + particleId + "'");
+        }
 
         List<Identifier> biomeIds = new ArrayList<>();
         for (JsonElement element : biomeArray) {
@@ -162,7 +176,7 @@ final class AttunementLoader {
             biomeIds.add(parseIdentifier(source, id, element.getAsString(), "biomes"));
         }
 
-        return new RawDefinition(id, itemId, dimensionId, biomeIds, source);
+        return new RawDefinition(id, itemId, dimensionId, biomeIds, colorRgb, particleId, source);
     }
 
     private static Item resolveItem(RawDefinition rawDefinition, HolderLookup.RegistryLookup<Item> items) {
@@ -234,6 +248,22 @@ final class AttunementLoader {
         return element.getAsJsonArray();
     }
 
+    private static int parseColorRgb(ResourceSource source, String attunementId, JsonObject object, String field) {
+        JsonElement element = object.get(field);
+        if (element == null) {
+            throw invalid(source, attunementId, "missing field '" + field + "'");
+        }
+        if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+            throw invalid(source, attunementId, "field '" + field + "' must be a string");
+        }
+
+        String value = element.getAsString().trim();
+        if (!value.matches("^#[0-9a-fA-F]{6}$")) {
+            throw invalid(source, attunementId, "field '" + field + "' must be a hex RGB string like '#A1B2C3'");
+        }
+        return Integer.parseInt(value.substring(1), 16);
+    }
+
     private static IllegalStateException invalid(ResourceSource source, String attunementId, String message) {
         return new IllegalStateException(
                 "Invalid attunement '" + attunementId + "' in " + describeSource(source.resourceId(), source.sourcePackId()) + ": " + message
@@ -259,6 +289,8 @@ final class AttunementLoader {
             @Nullable Identifier itemId,
             Identifier dimensionId,
             List<Identifier> biomeIds,
+            int colorRgb,
+            @Nullable Identifier particleId,
             ResourceSource source
     ) {
     }

@@ -6,6 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.pcal.fwportals.TestBootstrap;
@@ -27,11 +28,11 @@ class ForeverWorldPortalRegistryDataTest {
     private final PortalIdentity identity = new PortalIdentity();
 
     @Test
-    void serializesAndDeserializesPortals() {
+    void serializesAndDeserializesResolvedPortals() {
         TestBootstrap.ensureBootstrapped();
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        PortalRecord portal = new PortalRecord(
+        PortalRecord portal = PortalRecord.resolved(
                 Level.OVERWORLD,
                 new BlockPos(0, 2, 1),
                 Level.OVERWORLD,
@@ -40,11 +41,32 @@ class ForeverWorldPortalRegistryDataTest {
         data.createPortal(portal);
 
         ForeverWorldPortalRegistryData reloaded = roundTrip(data);
-        List<PortalRecord> portals = reloaded.portals().stream().toList();
+        PortalRecord reloadedPortal = reloaded.portals().stream().findFirst().orElseThrow();
 
-        assertEquals(1, portals.size());
-        assertEquals(portal.anchor(), portals.get(0).anchor());
-        assertEquals(portal.destinationAnchor(), portals.get(0).destinationAnchor());
+        assertTrue(reloadedPortal.isResolved());
+        assertTrue(reloadedPortal.attunementItemId().isEmpty());
+        assertEquals(portal.anchor(), reloadedPortal.anchor());
+        assertEquals(portal.destinationAnchor(), reloadedPortal.destinationAnchor());
+    }
+
+    @Test
+    void serializesAndDeserializesPendingPortals() {
+        TestBootstrap.ensureBootstrapped();
+
+        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        PortalRecord portal = PortalRecord.pending(
+                Level.OVERWORLD,
+                new BlockPos(0, 2, 1),
+                Identifier.parse("minecraft:sunflower")
+        );
+        data.createPortal(portal);
+
+        ForeverWorldPortalRegistryData reloaded = roundTrip(data);
+        PortalRecord reloadedPortal = reloaded.portals().stream().findFirst().orElseThrow();
+
+        assertTrue(!reloadedPortal.isResolved());
+        assertEquals(Optional.of(Identifier.parse("minecraft:sunflower")), reloadedPortal.attunementItemId());
+        assertTrue(reloadedPortal.destinationAnchor().isEmpty());
     }
 
     @Test
@@ -72,7 +94,7 @@ class ForeverWorldPortalRegistryDataTest {
         BlockPos portalAnchor = identity.computeAnchorBlock(frame);
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        data.createPortal(new PortalRecord(
+        data.createPortal(PortalRecord.resolved(
                 Level.OVERWORLD,
                 portalAnchor,
                 Level.OVERWORLD,
@@ -91,7 +113,7 @@ class ForeverWorldPortalRegistryDataTest {
         ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        data.createPortal(new PortalRecord(
+        data.createPortal(PortalRecord.resolved(
                 Level.OVERWORLD,
                 new BlockPos(100, 100, 100),
                 Level.OVERWORLD,
@@ -102,7 +124,7 @@ class ForeverWorldPortalRegistryDataTest {
     }
 
     @Test
-    void multiplePhysicalFramesCanMatchSameStoredOrigin() {
+    void multiplePhysicalFramesCanMatchSameStoredPortalAnchor() {
         TestBootstrap.ensureBootstrapped();
 
         ForeverWorldPortalFrame smaller = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
@@ -110,7 +132,7 @@ class ForeverWorldPortalRegistryDataTest {
         BlockPos portalAnchor = identity.computeAnchorBlock(smaller);
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
-        data.createPortal(new PortalRecord(
+        data.createPortal(PortalRecord.resolved(
                 Level.OVERWORLD,
                 portalAnchor,
                 Level.OVERWORLD,
