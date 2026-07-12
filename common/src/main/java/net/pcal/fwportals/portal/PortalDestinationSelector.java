@@ -10,15 +10,26 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 public final class PortalDestinationSelector {
 
     private final ForeverWorldPortalsConfig config;
     private final Logger logger;
+    private final DestinationBiomeLocator destinationBiomeLocator;
 
     public PortalDestinationSelector(ForeverWorldPortalsConfig config, Logger logger) {
+        this(config, logger, new DestinationBiomeLocator());
+    }
+
+    PortalDestinationSelector(
+            ForeverWorldPortalsConfig config,
+            Logger logger,
+            DestinationBiomeLocator destinationBiomeLocator
+    ) {
         this.config = config;
         this.logger = logger;
+        this.destinationBiomeLocator = destinationBiomeLocator;
     }
 
     public SearchContext beginSearch(
@@ -42,25 +53,67 @@ public final class PortalDestinationSelector {
     public Optional<DestinationPortalCandidate> findCandidateAnchor(
             SearchContext searchContext
     ) {
-        BlockPos transientAnchor = searchContext.spiralAnchors().next();
-        for (DestinationConstraint constraint : searchContext.constraints()) {
-            String rejectionReason = constraint.rejectionReason(transientAnchor);
-            if (rejectionReason != null) {
-                logger.info(
-                        "[fwportals] Rejecting candidate anchor {} in {} because {}",
+        Optional<BlockPos> maybeBiomeAnchor = findNextBiomeSearchAnchor(
+                searchContext.spiralAnchors(),
+                searchContext.constraints(),
+                transientAnchor -> destinationBiomeLocator.findNearest(
+                        searchContext.level(),
                         transientAnchor,
-                        searchContext.level().dimension().identifier(),
-                        rejectionReason
-                );
-                return Optional.empty();
-            }
+                        config.minimumGeneratedTerrainDistanceBlocks()
+                ),
+                reason -> logger.info("[fwportals] {}", reason),
+                searchContext.level().dimension().identifier().toString()
+        );
+        if (maybeBiomeAnchor.isEmpty()) {
+            return Optional.empty();
         }
 
-        BlockPos candidate = candidateAnchorAt(searchContext.level(), transientAnchor.getX(), transientAnchor.getZ());
+        BlockPos biomeAnchor = maybeBiomeAnchor.get();
+        BlockPos candidate = candidateAnchorAt(searchContext.level(), biomeAnchor.getX(), biomeAnchor.getZ());
         if (candidate == null) {
             return Optional.empty();
         }
         return Optional.of(new DestinationPortalCandidate(candidate));
+    }
+
+    static Optional<BlockPos> findNextBiomeSearchAnchor(
+            SpiralAnchorIterator spiralAnchors,
+            List<DestinationConstraint> constraints,
+            Function<BlockPos, Optional<BlockPos>> biomeLocator,
+            java.util.function.Consumer<String> logSink,
+            String dimensionId
+    ) {
+        BlockPos transientAnchor = spiralAnchors.next();
+        String transientRejection = firstRejectionReason(constraints, transientAnchor);
+        if (transientRejection != null) {
+            logSink.accept("Rejecting spiral anchor " + transientAnchor + " in " + dimensionId + " because " + transientRejection);
+            return Optional.empty();
+        }
+
+        Optional<BlockPos> maybeBiomeAnchor = biomeLocator.apply(transientAnchor);
+        if (maybeBiomeAnchor.isEmpty()) {
+            logSink.accept("No target biome found near spiral anchor " + transientAnchor + " in " + dimensionId);
+            return Optional.empty();
+        }
+
+        BlockPos biomeAnchor = maybeBiomeAnchor.get();
+        String biomeRejection = firstRejectionReason(constraints, biomeAnchor);
+        if (biomeRejection != null) {
+            logSink.accept("Rejecting biome-targeted anchor " + biomeAnchor + " from spiral anchor " + transientAnchor + " in " + dimensionId + " because " + biomeRejection);
+            return Optional.empty();
+        }
+
+        return Optional.of(biomeAnchor.immutable());
+    }
+
+    private static String firstRejectionReason(List<DestinationConstraint> constraints, BlockPos anchor) {
+        for (DestinationConstraint constraint : constraints) {
+            String rejectionReason = constraint.rejectionReason(anchor);
+            if (rejectionReason != null) {
+                return rejectionReason;
+            }
+        }
+        return null;
     }
 
     private BlockPos candidateAnchorAt(ServerLevel level, int x, int z) {

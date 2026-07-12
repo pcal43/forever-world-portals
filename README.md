@@ -54,7 +54,8 @@ Build a standard vertical Nether-portal rectangle, but use `minecraft:diamond_bl
 The first time a player enters a valid diamond-frame portal:
 
 - the complete portal is detected and assigned one canonical anchor block in the lowest interior row
-- if no registered source portal anchor is enclosed by that physical portal, the mod chooses distant candidate destination anchors
+- if no registered source portal anchor is enclosed by that physical portal, the mod walks a deterministic square spiral of distant search anchors
+- at each eligible spiral anchor, the mod uses Minecraft's built-in worldgen biome search to look for `minecraft:sunflower_plains`, `minecraft:flower_forest`, or `minecraft:pale_garden`
 - the mod attempts to generate a destination portal whose canonical anchor is exactly the requested candidate block
 - after generation succeeds, two independent source-portal routes are stored persistently:
   - original source anchor -> generated destination anchor
@@ -81,6 +82,7 @@ The mod writes and loads `config/fwportals.properties`.
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
 - Current settings: `enabled`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `destinationSearchAttempts`, and `minimumGeneratedTerrainDistanceBlocks`
 - Behavior: defaults are documented and written automatically if the file does not exist
+- `minimumGeneratedTerrainDistanceBlocks` is also used as the square-spiral spacing and the built-in nearest-biome search radius for each spiral anchor
 
 `returnPortalMode` currently supports these values:
 
@@ -96,6 +98,7 @@ The mod writes and loads `config/fwportals.properties`.
 - Entering a new Forever World portal permanently creates an anchor-to-anchor route in world saved data.
 - Generated return travel works by creating a second independent source portal route from the generated destination anchor back to the original source anchor.
 - Teleportation currently stays within the same dimension as the origin portal.
+- Destination selection currently targets only `sunflower_plains`, `flower_forest`, and `pale_garden`.
 - Inventory stripping, player-built return-portal matching, commands, custom content, and other later gameplay systems are not implemented yet.
 
 ## Known Limitations
