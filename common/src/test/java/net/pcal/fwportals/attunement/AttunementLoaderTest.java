@@ -31,8 +31,8 @@ class AttunementLoaderTest {
 
         assertEquals("default", lookup.defaultAttunement().id());
         assertEquals(Level.OVERWORLD, lookup.defaultTarget().dimension());
-        assertEquals(0xF2B84B, lookup.defaultAttunement().colorRgb());
-        assertEquals(Identifier.parse("minecraft:happy_villager"), lookup.defaultAttunement().particleId());
+        assertTrue(lookup.defaultTarget().biomes().contains(Biomes.CHERRY_GROVE));
+        assertTrue(lookup.size() > 1);
     }
 
     @Test

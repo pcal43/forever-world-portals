@@ -2,6 +2,7 @@ package net.pcal.fwportals.portal;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -116,8 +117,9 @@ public final class PortalTravelService {
             BlockPos portalAnchor
     ) {
         AttunementLookup attunementLookup = attunementRegistry.currentLookup();
-        BiomeDestinationTarget destinationTarget = foundingDestinationTarget(attunementLookup, existingPortal, logger);
-        String targetLabel = foundingTargetLabel(attunementLookup, existingPortal);
+        AttunementDefinition selectedAttunement = foundingAttunement(attunementLookup, existingPortal, logger);
+        BiomeDestinationTarget destinationTarget = foundingDestinationTarget(selectedAttunement);
+        String targetLabel = foundingTargetLabel(selectedAttunement);
         ServerLevel destinationLevel = level.getServer().getLevel(destinationTarget.dimension());
         if (destinationLevel == null) {
             player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
@@ -128,6 +130,9 @@ public final class PortalTravelService {
             );
             return null;
         }
+        player.connection.send(new ClientboundSetActionBarTextPacket(
+                Component.literal(PortalFeedbackText.seekingFrontierMessage(selectedAttunement))
+        ));
 
         PortalDestinationSelector.SearchContext searchContext = destinationSelector.beginSearch(
                 destinationLevel,
@@ -292,7 +297,7 @@ public final class PortalTravelService {
         return attunementLookup.defaultTarget();
     }
 
-    static BiomeDestinationTarget foundingDestinationTarget(
+    static AttunementDefinition foundingAttunement(
             AttunementLookup attunementLookup,
             @Nullable PortalRecord portal,
             Logger logger
@@ -300,8 +305,8 @@ public final class PortalTravelService {
         if (portal != null && portal.attunementItemId().isPresent()) {
             Identifier itemId = portal.attunementItemId().orElseThrow();
             Optional<AttunementDefinition> attunement = attunementLookup.resolve(itemId);
-            if (attunement.isPresent() && attunement.get().target() instanceof BiomeDestinationTarget biomeTarget) {
-                return biomeTarget;
+            if (attunement.isPresent()) {
+                return attunement.get();
             }
 
             logger.warn(
@@ -311,19 +316,18 @@ public final class PortalTravelService {
                     itemId
             );
         }
-        return defaultFoundingDestinationTarget(attunementLookup);
+        return attunementLookup.defaultAttunement();
     }
 
-    static String foundingTargetLabel(AttunementLookup attunementLookup, @Nullable PortalRecord portal) {
-        if (portal != null && portal.attunementItemId().isPresent()) {
-            Identifier itemId = portal.attunementItemId().orElseThrow();
-            Optional<AttunementDefinition> attunement = attunementLookup.resolve(itemId);
-            if (attunement.isPresent()) {
-                return "attunement " + attunement.get().id();
-            }
-            return "stored attunement " + itemId;
+    static BiomeDestinationTarget foundingDestinationTarget(AttunementDefinition attunementDefinition) {
+        if (!(attunementDefinition.target() instanceof BiomeDestinationTarget biomeTarget)) {
+            throw new IllegalStateException("Unsupported destination target type " + attunementDefinition.target().getClass().getName());
         }
-        return "attunement " + attunementLookup.defaultAttunement().id();
+        return biomeTarget;
+    }
+
+    static String foundingTargetLabel(AttunementDefinition attunementDefinition) {
+        return "attunement " + attunementDefinition.id();
     }
 
     private PortalRecord selectDeterministicMatch(ServerLevel level, List<PortalRecord> matches) {

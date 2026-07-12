@@ -23,27 +23,27 @@ class PortalTravelServiceTest {
                 Level.OVERWORLD,
                 Set.of(Biomes.PLAINS, Biomes.FOREST)
         );
-        AttunementLookup lookup = AttunementLookup.of(
-                new AttunementDefinition("default", null, expected, 0x123456, null),
-                Map.of()
-        );
+        AttunementDefinition defaultAttunement = new AttunementDefinition("default", null, expected, 0x123456, null);
+        AttunementLookup lookup = AttunementLookup.of(defaultAttunement, Map.of());
 
         assertEquals(expected, PortalTravelService.defaultFoundingDestinationTarget(lookup));
+        assertEquals(expected, PortalTravelService.foundingDestinationTarget(defaultAttunement));
     }
 
     @Test
     void pendingPortalUsesStoredAttunementTargetWhenPresent() {
         BiomeDestinationTarget defaultTarget = new BiomeDestinationTarget(Level.OVERWORLD, Set.of(Biomes.PLAINS));
         BiomeDestinationTarget attunedTarget = new BiomeDestinationTarget(Level.OVERWORLD, Set.of(Biomes.PALE_GARDEN));
+        AttunementDefinition paleGarden = new AttunementDefinition(
+                "pale_garden",
+                net.minecraft.world.item.Items.PALE_OAK_SAPLING,
+                attunedTarget,
+                0x222222,
+                null
+        );
         AttunementLookup lookup = AttunementLookup.of(
                 new AttunementDefinition("default", null, defaultTarget, 0x111111, null),
-                Map.of(net.minecraft.world.item.Items.PALE_OAK_SAPLING, new AttunementDefinition(
-                        "pale_garden",
-                        net.minecraft.world.item.Items.PALE_OAK_SAPLING,
-                        attunedTarget,
-                        0x222222,
-                        null
-                ))
+                Map.of(net.minecraft.world.item.Items.PALE_OAK_SAPLING, paleGarden)
         );
 
         PortalRecord portal = PortalRecord.pending(
@@ -52,16 +52,16 @@ class PortalTravelServiceTest {
                 net.minecraft.resources.Identifier.parse("minecraft:pale_oak_sapling")
         );
 
-        assertEquals(attunedTarget, PortalTravelService.foundingDestinationTarget(lookup, portal, LogManager.getLogger("test")));
+        assertEquals(paleGarden, PortalTravelService.foundingAttunement(lookup, portal, LogManager.getLogger("test")));
+        assertEquals(attunedTarget, PortalTravelService.foundingDestinationTarget(paleGarden));
+        assertEquals("attunement pale_garden", PortalTravelService.foundingTargetLabel(paleGarden));
     }
 
     @Test
     void pendingPortalFallsBackToDefaultWhenNoStoredAttunementExists() {
         BiomeDestinationTarget defaultTarget = new BiomeDestinationTarget(Level.OVERWORLD, Set.of(Biomes.PLAINS));
-        AttunementLookup lookup = AttunementLookup.of(
-                new AttunementDefinition("default", null, defaultTarget, 0x111111, null),
-                Map.of()
-        );
+        AttunementDefinition defaultAttunement = new AttunementDefinition("default", null, defaultTarget, 0x111111, null);
+        AttunementLookup lookup = AttunementLookup.of(defaultAttunement, Map.of());
         PortalRecord portal = new PortalRecord(
                 Level.OVERWORLD,
                 new net.minecraft.core.BlockPos(0, 64, 0),
@@ -70,7 +70,8 @@ class PortalTravelServiceTest {
                 Optional.empty()
         );
 
-        assertEquals(defaultTarget, PortalTravelService.foundingDestinationTarget(lookup, portal, LogManager.getLogger("test")));
+        assertEquals(defaultAttunement, PortalTravelService.foundingAttunement(lookup, portal, LogManager.getLogger("test")));
+        assertEquals(defaultTarget, PortalTravelService.foundingDestinationTarget(defaultAttunement));
     }
 
     @Test

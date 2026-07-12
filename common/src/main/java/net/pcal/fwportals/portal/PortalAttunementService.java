@@ -1,9 +1,11 @@
 package net.pcal.fwportals.portal;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -80,12 +82,13 @@ public final class PortalAttunementService {
         consumeAcceptedItem(itemEntity);
         recentlyAcceptedOfferingTicks.put(itemEntity.getUUID(), gameTime);
 
-        level.playSound(null, portalAnchor, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.9F, 1.0F);
-        level.sendParticles(ParticleTypes.PORTAL, itemEntity.getX(), itemEntity.getY(0.5), itemEntity.getZ(), 12, 0.15, 0.25, 0.15, 0.01);
+        emitAcceptedOfferingFeedback(level, portalAnchor, itemEntity, offering.attunementDefinition());
 
         Entity owner = itemEntity.getOwner();
         if (owner instanceof ServerPlayer player && !player.isRemoved()) {
-            player.sendSystemMessage(Component.literal("Portal attuned"));
+            player.connection.send(new ClientboundSetActionBarTextPacket(
+                    Component.literal(PortalFeedbackText.acceptedAttunementMessage(offering.attunementDefinition()))
+            ));
         }
 
         logger.info(
@@ -130,7 +133,7 @@ public final class PortalAttunementService {
         PortalRecord updatedPortal = existingPortal == null
                 ? PortalRecord.pending(dimension, portalAnchor, itemId)
                 : existingPortal.withAttunementItem(itemId);
-        return Optional.of(new AcceptedOffering(updatedPortal, itemId));
+        return Optional.of(new AcceptedOffering(updatedPortal, itemId, definition.get()));
     }
 
     static void consumeAcceptedItem(ItemEntity itemEntity) {
@@ -152,6 +155,19 @@ public final class PortalAttunementService {
         return Math.max(0, count - 1);
     }
 
+    private void emitAcceptedOfferingFeedback(
+            ServerLevel level,
+            BlockPos portalAnchor,
+            ItemEntity itemEntity,
+            AttunementDefinition attunementDefinition
+    ) {
+        level.playSound(null, portalAnchor, SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.BLOCKS, 0.75F, 1.1F);
+        level.sendParticles(ParticleTypes.REVERSE_PORTAL, itemEntity.getX(), itemEntity.getY(0.5), itemEntity.getZ(), 8, 0.08, 0.18, 0.08, 0.02);
+        if (attunementDefinition.item() != null) {
+            level.sendParticles(new ItemParticleOption(ParticleTypes.ITEM, attunementDefinition.item()), itemEntity.getX(), itemEntity.getY(0.35), itemEntity.getZ(), 4, 0.05, 0.05, 0.05, 0.0);
+        }
+    }
+
     private PortalRecord selectDeterministicMatch(ResourceKey<Level> dimension, List<PortalRecord> matches) {
         if (matches.isEmpty()) {
             return null;
@@ -169,6 +185,6 @@ public final class PortalAttunementService {
         return selected;
     }
 
-    record AcceptedOffering(PortalRecord updatedPortal, Identifier attunementItemId) {
+    record AcceptedOffering(PortalRecord updatedPortal, Identifier attunementItemId, AttunementDefinition attunementDefinition) {
     }
 }

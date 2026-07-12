@@ -55,6 +55,7 @@ The first time a player enters a valid diamond-frame portal:
 
 - the complete portal is detected and assigned one canonical anchor block in the lowest interior row
 - if no registered portal anchor is enclosed by that physical portal, the mod walks a deterministic square spiral of distant search anchors
+- entering an unresolved portal displays a server-driven action-bar destination-search message before the search begins
 - at each eligible spiral anchor, the mod uses Minecraft's built-in worldgen biome search for the current default biome target
 - the mod attempts to generate a destination portal whose canonical anchor is exactly the requested candidate block
 - after generation succeeds, two independent portal routes are stored persistently:
@@ -96,7 +97,9 @@ Current scope:
 - `minecraft:overworld` only
 - attunement is applied by throwing one recognized item into an unresolved portal before first use
 - the most recently accepted offering replaces any previous portal attunement
-- accepted offerings are consumed immediately and established portals cannot be re-attuned
+- accepted offerings are consumed immediately, produce compact vanilla particles and a confirmation sound, and send an action-bar message to the throwing player when identified
+- unrecognized items are ignored without feedback
+- established portals cannot be re-attuned
 - portal founding uses the stored portal attunement when present and otherwise falls back to the effective data-driven `default` target
 
 ## Portal Anchor Identity

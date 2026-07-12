@@ -105,14 +105,6 @@
     ],
     "color": "#A9B3A7"
   },
-  "dappled_forest": {
-    "item": "minecraft:poplar_sapling",
-    "dimension": "minecraft:overworld",
-    "biomes": [
-      "minecraft:dappled_forest"
-    ],
-    "color": "#6F956A"
-  },
   "taiga": {
     "item": "minecraft:spruce_sapling",
     "dimension": "minecraft:overworld",
