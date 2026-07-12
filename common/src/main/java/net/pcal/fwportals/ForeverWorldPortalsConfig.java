@@ -13,7 +13,6 @@ public record ForeverWorldPortalsConfig(
         Block frameBlock,
         Identifier activationItemId,
         Item activationItem,
-        ReturnPortalMode returnPortalMode,
         DestinationPortalMode destinationPortalMode,
         int destinationSpiralSpacingBlocks,
         int maximumSpiralSearchPositions,
@@ -21,25 +20,4 @@ public record ForeverWorldPortalsConfig(
         int maximumPortalPlacementAttemptsPerBiome,
         int minimumGeneratedTerrainDistanceBlocks
 ) {
-
-    static ForeverWorldPortalsConfig defaults() {
-        Block frameBlock = net.minecraft.world.level.block.Blocks.DIAMOND_BLOCK;
-        Item activationItem = net.minecraft.world.item.Items.FLINT_AND_STEEL;
-        return new ForeverWorldPortalsConfig(
-                true,
-                true,
-                Level.INFO,
-                Identifier.parse("minecraft:diamond_block"),
-                frameBlock,
-                Identifier.parse("minecraft:flint_and_steel"),
-                activationItem,
-                ReturnPortalMode.GENERATE,
-                DestinationPortalMode.BROKEN,
-                10000,
-                512,
-                64,
-                64,
-                10000
-        );
-    }
 }

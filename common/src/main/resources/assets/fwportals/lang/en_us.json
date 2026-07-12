@@ -8,6 +8,5 @@
   "message.fwportals.return_portal_claimed": "Forever World return portal location is already claimed.",
   "message.fwportals.return_portal_in_progress": "Forever World return portal founding is already in progress.",
   "message.fwportals.founding_failed": "Forever World portal founding failed. Try again later.",
-  "message.fwportals.no_safe_destination": "Forever World portal could not find a safe destination yet.",
-  "message.fwportals.return_portal_mode_unimplemented": "Forever World return portal mode %s is not implemented yet."
+  "message.fwportals.no_safe_destination": "Forever World portal could not find a safe destination yet."
 }

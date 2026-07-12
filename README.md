@@ -119,8 +119,11 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `enabled`, `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `server.destinationPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, and `minimumGeneratedTerrainDistanceBlocks`
-- Behavior: defaults are documented and written automatically if the file does not exist
+- Current settings: `enabled`, `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `server.destinationPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, and `minimumGeneratedTerrainDistanceBlocks`
+- Initial creation: if `fwportals.properties` does not exist, the mod copies the bundled `fwportals-default.properties` template verbatim
+- Defaults on startup: the bundled `fwportals-default.properties` resource is always loaded as the default-value source, and any keys present in the user file override it
+- Partial user configs: omitted keys continue using the defaults bundled with the installed mod version
+- Existing user files are never automatically overwritten or rewritten just to add newly introduced settings
 - `requireEmptyInventory=true` prevents portal activation unless the player's main inventory, hotbar, armor slots, and offhand are all empty
 - `destinationSpiralSpacingBlocks` controls square-spiral search-center spacing
 - The biome-search radius is derived from spiral spacing as `ceil(spacing / sqrt(2))`
@@ -128,19 +131,13 @@ The mod writes and loads `config/fwportals.properties`.
 - `maximumBiomeSearches` independently limits expensive biome-locator calls across one destination search
 - `maximumPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
 - `minimumGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
-- `server.destinationPortalMode` accepts `none`, `broken`, or `complete` and defaults to `broken`
-
-`returnPortalMode` currently supports these values:
-
-- `GENERATE`: fully implemented; automatically generates and links the destination-side return portal
-- `REQUIRE_PLAYER_BUILD`: parsed but not implemented yet
-- `NONE`: parsed but not implemented yet
+- `server.destinationPortalMode` accepts `NONE`, `BROKEN`, or `COMPLETE` and defaults to `BROKEN`
 
 `server.destinationPortalMode` currently supports these values:
 
-- `none`: no destination portal is generated and no reverse portal is registered
-- `broken`: a cobbled-deepslate placeholder frame plus buried crying-obsidian footing is generated and registered
-- `complete`: a complete diamond Forever World portal plus buried crying-obsidian footing is generated and registered
+- `NONE`: no destination portal is generated and no reverse portal is registered
+- `BROKEN`: a cobbled-deepslate placeholder frame plus buried crying-obsidian footing is generated and registered
+- `COMPLETE`: a complete diamond Forever World portal plus buried crying-obsidian footing is generated and registered
 
 ## Status
 

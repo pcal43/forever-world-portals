@@ -13,7 +13,6 @@ import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 import net.pcal.fwportals.DestinationPortalMode;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
-import net.pcal.fwportals.ReturnPortalMode;
 import net.pcal.fwportals.attunement.AttunementDefinition;
 import net.pcal.fwportals.attunement.AttunementLookup;
 import net.pcal.fwportals.attunement.AttunementRegistry;
@@ -75,10 +74,6 @@ public final class PortalTravelService {
             return handleRegisteredPortalTravel(level, player, matchedPortal);
         }
 
-        if (config.returnPortalMode() != ReturnPortalMode.GENERATE) {
-            return failForUnimplementedReturnMode(player, frame);
-        }
-
         BlockPos portalAnchor = matchedPortal != null ? matchedPortal.anchor() : portalIdentity.computeAnchorBlock(frame);
         PortalKey inProgressKey = new PortalKey(level.dimension(), portalAnchor);
         if (!inProgressPortals.add(inProgressKey)) {
@@ -88,7 +83,7 @@ public final class PortalTravelService {
         }
 
         try {
-            return handleFoundingTravel(level, player, frame, registry, matchedPortal, portalAnchor);
+            return handleFoundingTravel(level, player, registry, matchedPortal, portalAnchor);
         } finally {
             inProgressPortals.remove(inProgressKey);
         }
@@ -116,7 +111,6 @@ public final class PortalTravelService {
     private @Nullable TeleportTransition handleFoundingTravel(
             ServerLevel level,
             ServerPlayer player,
-            ForeverWorldPortalFrame sourceFrame,
             ForeverWorldPortalRegistryData registry,
             @Nullable PortalRecord existingPortal,
             BlockPos portalAnchor
@@ -402,16 +396,6 @@ public final class PortalTravelService {
             );
         }
         return selected;
-    }
-
-    private @Nullable TeleportTransition failForUnimplementedReturnMode(ServerPlayer player, ForeverWorldPortalFrame frame) {
-        player.sendSystemMessage(PortalFeedbackText.returnPortalModeUnimplementedMessage(config.returnPortalMode()));
-        logger.warn(
-                "[fwportals] Return portal mode {} is not implemented for frame base {}",
-                config.returnPortalMode(),
-                frame.frameBasePos()
-        );
-        return null;
     }
 
     private TeleportTransition buildTransition(ServerLevel destinationLevel, Vec3 targetPosition, ServerPlayer player) {

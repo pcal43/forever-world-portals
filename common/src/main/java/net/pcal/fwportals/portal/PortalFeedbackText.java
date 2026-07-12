@@ -3,7 +3,6 @@ package net.pcal.fwportals.portal;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
-import net.pcal.fwportals.ReturnPortalMode;
 import net.pcal.fwportals.attunement.AttunementDefinition;
 
 public final class PortalFeedbackText {
@@ -117,11 +116,4 @@ public final class PortalFeedbackText {
         );
     }
 
-    public static MutableComponent returnPortalModeUnimplementedMessage(ReturnPortalMode mode) {
-        return Component.translatableWithFallback(
-                PREFIX + "return_portal_mode_unimplemented",
-                "Forever World return portal mode %s is not implemented yet.",
-                mode.name()
-        );
-    }
 }

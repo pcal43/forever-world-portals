@@ -7,20 +7,50 @@ import net.minecraft.world.level.block.Block;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.Set;
 
 final class ForeverWorldPortalsConfigParser {
 
-    static ForeverWorldPortalsConfig parse(InputStream in, ForeverWorldPortalsConfig defaults, Logger logger) throws IOException {
-        Properties properties = new Properties();
-        properties.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+    private static final Set<String> EXPECTED_KEYS = Set.of(
+            "enabled",
+            "requireEmptyInventory",
+            "logLevel",
+            "frameBlock",
+            "activationItem",
+            "server.destinationPortalMode",
+            "destinationSpiralSpacingBlocks",
+            "maximumSpiralSearchPositions",
+            "maximumBiomeSearches",
+            "maximumPortalPlacementAttemptsPerBiome",
+            "minimumGeneratedTerrainDistanceBlocks"
+    );
 
-        boolean enabled = parseBoolean(properties, "enabled", defaults.enabled(), logger);
+    static ForeverWorldPortalsConfig parseBundledDefaults(Properties bundledDefaults, String defaultResourceName) {
+        for (String key : EXPECTED_KEYS) {
+            requireDefaultValue(bundledDefaults, defaultResourceName, key);
+        }
+
+        return parse(
+                bundledDefaults,
+                buildInternalDefaults(bundledDefaults, defaultResourceName),
+                null
+        );
+    }
+
+    static ForeverWorldPortalsConfig parse(
+            Properties properties,
+            ForeverWorldPortalsConfig defaults,
+            Logger logger
+    ) {
+        boolean enabled = parseBoolean(
+                properties,
+                "enabled",
+                defaults.enabled(),
+                logger
+        );
         boolean requireEmptyInventory = parseBoolean(
                 properties,
                 "requireEmptyInventory",
@@ -29,11 +59,10 @@ final class ForeverWorldPortalsConfigParser {
         );
         Level logLevel = parseLevel(properties, "logLevel", defaults.logLevel(), logger);
         Block frameBlock = parseBlock(properties, "frameBlock", defaults.frameBlock(), logger);
-        Item activationItem = parseItem(properties, "activationItem", defaults.activationItem(), logger);
-        ReturnPortalMode returnPortalMode = parseReturnPortalMode(
+        Item activationItem = parseItem(
                 properties,
-                "returnPortalMode",
-                defaults.returnPortalMode(),
+                "activationItem",
+                defaults.activationItem(),
                 logger
         );
         DestinationPortalMode destinationPortalMode = parseDestinationPortalMode(
@@ -80,7 +109,6 @@ final class ForeverWorldPortalsConfigParser {
                 frameBlock,
                 BuiltInRegistries.ITEM.getKey(activationItem),
                 activationItem,
-                returnPortalMode,
                 destinationPortalMode,
                 destinationSpiralSpacingBlocks,
                 maximumSpiralSearchPositions,
@@ -88,6 +116,25 @@ final class ForeverWorldPortalsConfigParser {
                 maximumPortalPlacementAttemptsPerBiome,
                 minimumGeneratedTerrainDistanceBlocks
         );
+    }
+
+    static Set<String> expectedKeys() {
+        return new LinkedHashSet<>(EXPECTED_KEYS);
+    }
+
+    private static Identifier parseIdentifier(String key, String value, Logger logger) {
+        try {
+            return Identifier.parse(value.trim());
+        } catch (RuntimeException ex) {
+            if (logger != null) {
+                logger.warn(
+                        ForeverWorldPortalsService.LOG_PREFIX + "Invalid identifier '{}' for '{}'; using default",
+                        value,
+                        key
+                );
+            }
+            return null;
+        }
     }
 
     private static boolean parseBoolean(Properties properties, String key, boolean defaultValue, Logger logger) {
@@ -177,27 +224,11 @@ final class ForeverWorldPortalsConfigParser {
         });
     }
 
-    private static Identifier parseIdentifier(String key, String value, Logger logger) {
-        try {
-            return Identifier.parse(value.trim());
-        } catch (RuntimeException ex) {
-            if (logger != null) {
-                logger.warn(
-                        ForeverWorldPortalsService.LOG_PREFIX + "Invalid identifier '{}' for '{}'; using default",
-                        value,
-                        key
-                );
-            }
-            return null;
-        }
-    }
-
     private static int parsePositiveInt(Properties properties, String key, int defaultValue, Logger logger) {
         String value = properties.getProperty(key);
         if (value == null) {
             return defaultValue;
         }
-
         try {
             int parsed = Integer.parseInt(value.trim());
             if (parsed > 0) {
@@ -217,28 +248,6 @@ final class ForeverWorldPortalsConfigParser {
         return defaultValue;
     }
 
-    private static ReturnPortalMode parseReturnPortalMode(Properties properties, String key, ReturnPortalMode defaultValue, Logger logger) {
-        String value = properties.getProperty(key);
-        if (value == null) {
-            return defaultValue;
-        }
-
-        try {
-            return ReturnPortalMode.valueOf(value.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ignored) {
-        }
-
-        if (logger != null) {
-            logger.warn(
-                    ForeverWorldPortalsService.LOG_PREFIX + "Invalid return portal mode '{}' for '{}'; using default {}",
-                    value,
-                    key,
-                    defaultValue
-            );
-        }
-        return defaultValue;
-    }
-
     private static DestinationPortalMode parseDestinationPortalMode(
             Properties properties,
             String key,
@@ -249,22 +258,168 @@ final class ForeverWorldPortalsConfigParser {
         if (value == null) {
             return defaultValue;
         }
-
         try {
-            return DestinationPortalMode.valueOf(value.trim().toUpperCase(Locale.ROOT));
+            return DestinationPortalMode.valueOf(value.trim());
         } catch (IllegalArgumentException ignored) {
         }
-
         if (logger != null) {
             logger.warn(
                     ForeverWorldPortalsService.LOG_PREFIX
-                            + "Invalid destination portal mode '{}' for '{}'; using default {}. Accepted values: none, broken, complete",
+                            + "Invalid destination portal mode '{}' for '{}'; using default {}. Accepted values: NONE, BROKEN, COMPLETE",
                     value,
                     key,
-                    defaultValue.name().toLowerCase(Locale.ROOT)
+                    defaultValue.name()
             );
         }
         return defaultValue;
+    }
+
+    private static String requireDefaultValue(Properties bundledDefaults, String defaultResourceName, String key) {
+        String value = bundledDefaults.getProperty(key);
+        if (value == null) {
+            throw new IllegalStateException(
+                    "Missing required default config key '" + key + "' in bundled resource '" + defaultResourceName + "'"
+            );
+        }
+        return value;
+    }
+
+    private static IllegalStateException invalidBundledDefault(
+            String defaultResourceName,
+            String key,
+            String value,
+            String expectedType
+    ) {
+        return new IllegalStateException(
+                "Invalid bundled default value '" + value + "' for config key '" + key + "' in resource '"
+                        + defaultResourceName + "'; expected " + expectedType
+        );
+    }
+
+    private static ForeverWorldPortalsConfig buildInternalDefaults(Properties bundledDefaults, String defaultResourceName) {
+        return new ForeverWorldPortalsConfig(
+                requireParsedBooleanDefault(defaultResourceName, "enabled", requireDefaultValue(bundledDefaults, defaultResourceName, "enabled")),
+                requireParsedBooleanDefault(
+                        defaultResourceName,
+                        "requireEmptyInventory",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "requireEmptyInventory")
+                ),
+                requireParsedLevelDefault(defaultResourceName, "logLevel", requireDefaultValue(bundledDefaults, defaultResourceName, "logLevel")),
+                BuiltInRegistries.BLOCK.getKey(
+                        requireParsedBlockDefault(defaultResourceName, "frameBlock", requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock"))
+                ),
+                requireParsedBlockDefault(defaultResourceName, "frameBlock", requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock")),
+                BuiltInRegistries.ITEM.getKey(
+                        requireParsedItemDefault(
+                                defaultResourceName,
+                                "activationItem",
+                                requireDefaultValue(bundledDefaults, defaultResourceName, "activationItem")
+                        )
+                ),
+                requireParsedItemDefault(
+                        defaultResourceName,
+                        "activationItem",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "activationItem")
+                ),
+                requireParsedDestinationPortalModeDefault(
+                        defaultResourceName,
+                        "server.destinationPortalMode",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.destinationPortalMode")
+                ),
+                requireParsedPositiveIntDefault(
+                        defaultResourceName,
+                        "destinationSpiralSpacingBlocks",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "destinationSpiralSpacingBlocks")
+                ),
+                requireParsedPositiveIntDefault(
+                        defaultResourceName,
+                        "maximumSpiralSearchPositions",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumSpiralSearchPositions")
+                ),
+                requireParsedPositiveIntDefault(
+                        defaultResourceName,
+                        "maximumBiomeSearches",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumBiomeSearches")
+                ),
+                requireParsedPositiveIntDefault(
+                        defaultResourceName,
+                        "maximumPortalPlacementAttemptsPerBiome",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumPortalPlacementAttemptsPerBiome")
+                ),
+                requireParsedPositiveIntDefault(
+                        defaultResourceName,
+                        "minimumGeneratedTerrainDistanceBlocks",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "minimumGeneratedTerrainDistanceBlocks")
+                )
+        );
+    }
+
+    private static boolean requireParsedBooleanDefault(String defaultResourceName, String key, String defaultValue) {
+        String normalized = defaultValue.trim().toLowerCase(Locale.ROOT);
+        if ("true".equals(normalized)) {
+            return true;
+        }
+        if ("false".equals(normalized)) {
+            return false;
+        }
+        throw invalidBundledDefault(defaultResourceName, key, defaultValue, "boolean");
+    }
+
+    private static Level requireParsedLevelDefault(String defaultResourceName, String key, String defaultValue) {
+        Level parsed = Level.getLevel(defaultValue.trim().toUpperCase(Locale.ROOT));
+        if (parsed != null) {
+            return parsed;
+        }
+        throw invalidBundledDefault(defaultResourceName, key, defaultValue, "log level");
+    }
+
+    private static Block requireParsedBlockDefault(String defaultResourceName, String key, String defaultValue) {
+        try {
+            Identifier id = Identifier.parse(defaultValue.trim());
+            Block block = BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
+            if (block != null) {
+                return block;
+            }
+            throw invalidBundledDefault(defaultResourceName, key, defaultValue, "known block");
+        } catch (RuntimeException ex) {
+            throw invalidBundledDefault(defaultResourceName, key, defaultValue, "block identifier");
+        }
+    }
+
+    private static Item requireParsedItemDefault(String defaultResourceName, String key, String defaultValue) {
+        try {
+            Identifier id = Identifier.parse(defaultValue.trim());
+            Item item = BuiltInRegistries.ITEM.getOptional(id).orElse(null);
+            if (item != null) {
+                return item;
+            }
+            throw invalidBundledDefault(defaultResourceName, key, defaultValue, "known item");
+        } catch (RuntimeException ex) {
+            throw invalidBundledDefault(defaultResourceName, key, defaultValue, "item identifier");
+        }
+    }
+
+    private static int requireParsedPositiveIntDefault(String defaultResourceName, String key, String defaultValue) {
+        try {
+            int parsed = Integer.parseInt(defaultValue.trim());
+            if (parsed > 0) {
+                return parsed;
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        throw invalidBundledDefault(defaultResourceName, key, defaultValue, "positive integer");
+    }
+
+    private static DestinationPortalMode requireParsedDestinationPortalModeDefault(
+            String defaultResourceName,
+            String key,
+            String defaultValue
+    ) {
+        try {
+            return DestinationPortalMode.valueOf(defaultValue.trim());
+        } catch (IllegalArgumentException ignored) {
+        }
+        throw invalidBundledDefault(defaultResourceName, key, defaultValue, "destination portal mode");
     }
 
     private ForeverWorldPortalsConfigParser() {
