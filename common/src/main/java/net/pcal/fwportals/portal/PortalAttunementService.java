@@ -1,8 +1,6 @@
 package net.pcal.fwportals.portal;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ItemParticleOption;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
@@ -82,7 +80,7 @@ public final class PortalAttunementService {
         consumeAcceptedItem(itemEntity);
         recentlyAcceptedOfferingTicks.put(itemEntity.getUUID(), gameTime);
 
-        emitAcceptedOfferingFeedback(level, portalAnchor, itemEntity, offering.attunementDefinition());
+        emitAcceptedOfferingFeedback(level, portalAnchor, frame, offering.attunementDefinition());
 
         Entity owner = itemEntity.getOwner();
         if (owner instanceof ServerPlayer player && !player.isRemoved()) {
@@ -158,14 +156,11 @@ public final class PortalAttunementService {
     private void emitAcceptedOfferingFeedback(
             ServerLevel level,
             BlockPos portalAnchor,
-            ItemEntity itemEntity,
+            ForeverWorldPortalFrame frame,
             AttunementDefinition attunementDefinition
     ) {
         level.playSound(null, portalAnchor, SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.BLOCKS, 0.75F, 1.1F);
-        level.sendParticles(ParticleTypes.REVERSE_PORTAL, itemEntity.getX(), itemEntity.getY(0.5), itemEntity.getZ(), 8, 0.08, 0.18, 0.08, 0.02);
-        if (attunementDefinition.item() != null) {
-            level.sendParticles(new ItemParticleOption(ParticleTypes.ITEM, attunementDefinition.item()), itemEntity.getX(), itemEntity.getY(0.35), itemEntity.getZ(), 4, 0.05, 0.05, 0.05, 0.0);
-        }
+        PortalAttunementParticles.emitAcceptedOffering(level, frame, attunementDefinition.colorRgb());
     }
 
     private PortalRecord selectDeterministicMatch(ResourceKey<Level> dimension, List<PortalRecord> matches) {
