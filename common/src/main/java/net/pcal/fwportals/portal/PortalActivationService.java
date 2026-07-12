@@ -3,7 +3,6 @@ package net.pcal.fwportals.portal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -31,9 +30,6 @@ public final class PortalActivationService {
 
     private static final long ENTRY_LOG_COOLDOWN_TICKS = 40L;
     private static final long INVENTORY_WARNING_COOLDOWN_TICKS = 40L;
-    private static final Component INVENTORY_WARNING_MESSAGE =
-            Component.literal("You cannot enter a Forever World Portal while carrying items.");
-
     private final ForeverWorldPortalsConfig config;
     private final Logger logger;
     private final PortalAttunementService portalAttunementService;
@@ -190,7 +186,7 @@ public final class PortalActivationService {
         }
         Long previousWarning = recentInventoryWarnings.get(player.getUUID());
         if (previousWarning == null || gameTime - previousWarning > INVENTORY_WARNING_COOLDOWN_TICKS) {
-            player.connection.send(new ClientboundSetActionBarTextPacket(INVENTORY_WARNING_MESSAGE));
+            player.connection.send(new ClientboundSetActionBarTextPacket(PortalFeedbackText.inventoryBlockedMessage()));
             recentInventoryWarnings.put(player.getUUID(), gameTime);
         }
         return true;

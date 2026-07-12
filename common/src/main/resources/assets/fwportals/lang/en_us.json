@@ -1,0 +1,13 @@
+{
+  "message.fwportals.attuned": "Portal attuned to %s",
+  "message.fwportals.seeking_new_frontier": "Seeking a new frontier...",
+  "message.fwportals.seeking_frontier": "Seeking a %s frontier...",
+  "message.fwportals.inventory_blocked": "You cannot enter this portal while carrying items.",
+  "message.fwportals.founding_in_progress": "Forever World portal founding is already in progress.",
+  "message.fwportals.destination_unavailable": "Forever World destination is unavailable. Try again later.",
+  "message.fwportals.return_portal_claimed": "Forever World return portal location is already claimed.",
+  "message.fwportals.return_portal_in_progress": "Forever World return portal founding is already in progress.",
+  "message.fwportals.founding_failed": "Forever World portal founding failed. Try again later.",
+  "message.fwportals.no_safe_destination": "Forever World portal could not find a safe destination yet.",
+  "message.fwportals.return_portal_mode_unimplemented": "Forever World return portal mode %s is not implemented yet."
+}

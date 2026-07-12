@@ -1,5 +1,7 @@
 package net.pcal.fwportals.portal;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.pcal.fwportals.attunement.AttunementDefinition;
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class PortalFeedbackTextTest {
 
@@ -29,7 +32,8 @@ class PortalFeedbackTextTest {
                 null
         );
 
-        assertEquals("Seeking a new frontier...", PortalFeedbackText.seekingFrontierMessage(defaultAttunement));
+        assertEquals("Seeking a new frontier...", PortalFeedbackText.seekingFrontierMessage(defaultAttunement).getString());
+        assertTranslationKey(PortalFeedbackText.seekingFrontierMessage(defaultAttunement), "message.fwportals.seeking_new_frontier");
     }
 
     @Test
@@ -42,7 +46,14 @@ class PortalFeedbackTextTest {
                 null
         );
 
-        assertEquals("Portal attuned to Cherry Grove", PortalFeedbackText.acceptedAttunementMessage(cherryGrove));
-        assertEquals("Seeking a Cherry Grove frontier...", PortalFeedbackText.seekingFrontierMessage(cherryGrove));
+        assertEquals("Portal attuned to Cherry Grove", PortalFeedbackText.acceptedAttunementMessage(cherryGrove).getString());
+        assertEquals("Seeking a Cherry Grove frontier...", PortalFeedbackText.seekingFrontierMessage(cherryGrove).getString());
+        assertTranslationKey(PortalFeedbackText.acceptedAttunementMessage(cherryGrove), "message.fwportals.attuned");
+        assertTranslationKey(PortalFeedbackText.seekingFrontierMessage(cherryGrove), "message.fwportals.seeking_frontier");
+    }
+
+    private static void assertTranslationKey(Component component, String key) {
+        TranslatableContents contents = assertInstanceOf(TranslatableContents.class, component.getContents());
+        assertEquals(key, contents.getKey());
     }
 }

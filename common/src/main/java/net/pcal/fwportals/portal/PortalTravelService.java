@@ -80,7 +80,7 @@ public final class PortalTravelService {
         BlockPos portalAnchor = matchedPortal != null ? matchedPortal.anchor() : portalIdentity.computeAnchorBlock(frame);
         PortalKey inProgressKey = new PortalKey(level.dimension(), portalAnchor);
         if (!inProgressPortals.add(inProgressKey)) {
-            player.sendSystemMessage(Component.literal("Forever World portal founding is already in progress."));
+            player.sendSystemMessage(PortalFeedbackText.foundingInProgressMessage());
             logger.warn("[fwportals] Portal founding already in progress for portal anchor {}", portalAnchor);
             return null;
         }
@@ -104,7 +104,7 @@ public final class PortalTravelService {
                     selected.destinationDimension().orElseThrow().identifier(),
                     selected.anchor()
             );
-            player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
+            player.sendSystemMessage(PortalFeedbackText.destinationUnavailableMessage());
             return null;
         }
 
@@ -125,7 +125,7 @@ public final class PortalTravelService {
         String targetLabel = foundingTargetLabel(selectedAttunement);
         ServerLevel destinationLevel = level.getServer().getLevel(destinationTarget.dimension());
         if (destinationLevel == null) {
-            player.sendSystemMessage(Component.literal("Forever World destination is unavailable. Try again later."));
+            player.sendSystemMessage(PortalFeedbackText.destinationUnavailableMessage());
             logger.warn(
                     "[fwportals] Destination dimension {} is unavailable for portal anchor {}",
                     destinationTarget.dimension().identifier(),
@@ -134,7 +134,7 @@ public final class PortalTravelService {
             return null;
         }
         player.connection.send(new ClientboundSetActionBarTextPacket(
-                Component.literal(PortalFeedbackText.seekingFrontierMessage(selectedAttunement))
+                PortalFeedbackText.seekingFrontierMessage(selectedAttunement)
         ));
 
         PortalDestinationSelector.SearchContext searchContext = destinationSelector.beginSearch(
@@ -187,7 +187,7 @@ public final class PortalTravelService {
             List<PortalRecord> destinationMatches = registry.findPortalsContainedBy(destinationLevel.dimension(), generatedPortal.get().frame());
             if (!destinationMatches.isEmpty()) {
                 rollback.rollback();
-                player.sendSystemMessage(Component.literal("Forever World return portal location is already claimed."));
+                player.sendSystemMessage(PortalFeedbackText.returnPortalClaimedMessage());
                 logger.warn(
                         "[fwportals] Generated destination portal at anchor {} from requested anchor {} also enclosed existing portal anchors {}",
                         generatedPortalAnchor,
@@ -200,7 +200,7 @@ public final class PortalTravelService {
             PortalKey generatedKey = new PortalKey(destinationLevel.dimension(), generatedPortalAnchor);
             if (!inProgressPortals.add(generatedKey)) {
                 rollback.rollback();
-                player.sendSystemMessage(Component.literal("Forever World return portal founding is already in progress."));
+                player.sendSystemMessage(PortalFeedbackText.returnPortalFoundingInProgressMessage());
                 logger.warn("[fwportals] Reverse route founding already in progress for portal anchor {}", generatedPortalAnchor);
                 continue;
             }
@@ -267,7 +267,7 @@ public final class PortalTravelService {
                             rollbackEx.getMessage()
                     );
                 }
-                player.sendSystemMessage(Component.literal("Forever World portal founding failed. Try again later."));
+                player.sendSystemMessage(PortalFeedbackText.foundingFailedMessage());
                 return null;
             } finally {
                 inProgressPortals.remove(generatedKey);
@@ -285,7 +285,7 @@ public final class PortalTravelService {
             }
         }
 
-        player.sendSystemMessage(Component.literal("Forever World portal could not find a safe destination yet."));
+        player.sendSystemMessage(PortalFeedbackText.noSafeDestinationMessage());
         logger.warn(
                 "[fwportals] Failed to create a destination portal after {} attempts for portal anchor {} in {} using {}",
                 config.destinationSearchAttempts(),
@@ -350,9 +350,7 @@ public final class PortalTravelService {
     }
 
     private @Nullable TeleportTransition failForUnimplementedReturnMode(ServerPlayer player, ForeverWorldPortalFrame frame) {
-        player.sendSystemMessage(Component.literal(
-                "Forever World return portal mode " + config.returnPortalMode() + " is not implemented yet."
-        ));
+        player.sendSystemMessage(PortalFeedbackText.returnPortalModeUnimplementedMessage(config.returnPortalMode()));
         logger.warn(
                 "[fwportals] Return portal mode {} is not implemented for frame base {}",
                 config.returnPortalMode(),

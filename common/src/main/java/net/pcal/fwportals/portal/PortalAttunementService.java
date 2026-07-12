@@ -88,7 +88,7 @@ public final class PortalAttunementService {
         Entity owner = itemEntity.getOwner();
         if (owner instanceof ServerPlayer player && !player.isRemoved()) {
             player.connection.send(new ClientboundSetActionBarTextPacket(
-                    Component.literal(PortalFeedbackText.acceptedAttunementMessage(offering.attunementDefinition()))
+                    PortalFeedbackText.acceptedAttunementMessage(offering.attunementDefinition())
             ));
         }
 
