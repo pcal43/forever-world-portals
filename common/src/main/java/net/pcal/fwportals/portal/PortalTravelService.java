@@ -130,7 +130,7 @@ public final class PortalTravelService {
         PortalDestinationSelector.SearchContext searchContext = destinationSelector.beginSearch(destinationLevel, portalAnchor);
 
         for (int attempt = 0; attempt < config.destinationSearchAttempts(); attempt++) {
-            Optional<DestinationPortalCandidate> maybeCandidate = destinationSelector.findCandidateAnchor(searchContext, attempt);
+            Optional<DestinationPortalCandidate> maybeCandidate = destinationSelector.findCandidateAnchor(searchContext);
             if (maybeCandidate.isEmpty()) {
                 continue;
             }
@@ -150,6 +150,24 @@ public final class PortalTravelService {
 
             PortalPlacementRollback rollback = generatedPortal.get().rollback();
             BlockPos generatedPortalAnchor = generatedPortal.get().anchorBlock();
+
+            boolean rejectedByConstraint = false;
+            for (DestinationConstraint constraint : searchContext.constraints()) {
+                String rejectionReason = constraint.rejectionReason(generatedPortalAnchor);
+                if (rejectionReason != null) {
+                    rollback.rollback();
+                    logger.warn(
+                            "[fwportals] Rejecting generated destination portal at anchor {} because {}",
+                            generatedPortalAnchor,
+                            rejectionReason
+                    );
+                    rejectedByConstraint = true;
+                    break;
+                }
+            }
+            if (rejectedByConstraint) {
+                continue;
+            }
 
             List<PortalRecord> destinationMatches = registry.findPortalsContainedBy(destinationLevel.dimension(), generatedPortal.get().frame());
             if (!destinationMatches.isEmpty()) {

@@ -2,7 +2,6 @@ package net.pcal.fwportals.portal;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -29,6 +28,7 @@ public final class PortalDestinationSelector {
         return new SearchContext(
                 level,
                 portalAnchor.immutable(),
+                new SpiralAnchorIterator(config.minimumGeneratedTerrainDistanceBlocks()),
                 List.of(
                         GeneratedTerrainDistanceConstraint.snapshot(
                                 level,
@@ -40,46 +40,27 @@ public final class PortalDestinationSelector {
     }
 
     public Optional<DestinationPortalCandidate> findCandidateAnchor(
-            SearchContext searchContext,
-            int attempt
+            SearchContext searchContext
     ) {
-        RandomSource random = RandomSource.create(
-                searchContext.level().getSeed()
-                        ^ searchContext.portalAnchor().asLong()
-                        ^ searchContext.level().getGameTime()
-                        ^ ((long) attempt * 0x9E3779B97F4A7C15L)
-        );
-        int minimumGeneratedTerrainDistanceBlocks = config.minimumGeneratedTerrainDistanceBlocks();
-
-        double angle = random.nextDouble() * (Math.PI * 2.0);
-        int extraDistance = random.nextInt(Math.max(1024, minimumGeneratedTerrainDistanceBlocks));
-        int distance = minimumGeneratedTerrainDistanceBlocks + extraDistance;
-        int x = searchContext.portalAnchor().getX() + (int) Math.round(Math.cos(angle) * distance);
-        int z = searchContext.portalAnchor().getZ() + (int) Math.round(Math.sin(angle) * distance);
-        BlockPos candidate = candidateAnchorAt(searchContext.level(), x, z);
-        if (candidate == null) {
-            return Optional.empty();
-        }
-
+        BlockPos transientAnchor = searchContext.spiralAnchors().next();
         for (DestinationConstraint constraint : searchContext.constraints()) {
-            String rejectionReason = constraint.rejectionReason(candidate);
+            String rejectionReason = constraint.rejectionReason(transientAnchor);
             if (rejectionReason != null) {
                 logger.info(
                         "[fwportals] Rejecting candidate anchor {} in {} because {}",
-                        candidate,
+                        transientAnchor,
                         searchContext.level().dimension().identifier(),
                         rejectionReason
                 );
                 return Optional.empty();
             }
         }
-        return Optional.of(new DestinationPortalCandidate(candidate));
-    }
 
-    static long horizontalDistanceSquared(BlockPos a, BlockPos b) {
-        long dx = (long)a.getX() - b.getX();
-        long dz = (long)a.getZ() - b.getZ();
-        return dx * dx + dz * dz;
+        BlockPos candidate = candidateAnchorAt(searchContext.level(), transientAnchor.getX(), transientAnchor.getZ());
+        if (candidate == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new DestinationPortalCandidate(candidate));
     }
 
     private BlockPos candidateAnchorAt(ServerLevel level, int x, int z) {
@@ -99,10 +80,60 @@ public final class PortalDestinationSelector {
         }
     }
 
-    public record SearchContext(ServerLevel level, BlockPos portalAnchor, List<DestinationConstraint> constraints) {
+    public record SearchContext(
+            ServerLevel level,
+            BlockPos portalAnchor,
+            SpiralAnchorIterator spiralAnchors,
+            List<DestinationConstraint> constraints
+    ) {
         public SearchContext {
             portalAnchor = portalAnchor.immutable();
             constraints = List.copyOf(constraints);
+        }
+    }
+
+    static final class SpiralAnchorIterator {
+        private final int spacingBlocks;
+        private int orbit = 0;
+        private int segment = 0;
+        private int stepInSegment = 0;
+        private boolean yieldedOrigin = false;
+
+        SpiralAnchorIterator(int spacingBlocks) {
+            this.spacingBlocks = spacingBlocks;
+        }
+
+        BlockPos next() {
+            if (!yieldedOrigin) {
+                yieldedOrigin = true;
+                return new BlockPos(0, 0, 0);
+            }
+
+            int radius = orbit + 1;
+            int step = stepInSegment;
+            BlockPos result = switch (segment) {
+                case 0 -> grid(-radius, step);
+                case 1 -> grid(-radius + step + 1, radius);
+                case 2 -> grid(radius, radius - step - 1);
+                case 3 -> grid(radius - step - 1, -radius);
+                default -> throw new IllegalStateException("Unexpected spiral segment " + segment);
+            };
+
+            stepInSegment++;
+            int segmentLength = segment == 0 ? radius + 1 : 2 * radius;
+            if (stepInSegment >= segmentLength) {
+                stepInSegment = 0;
+                segment++;
+                if (segment >= 4) {
+                    segment = 0;
+                    orbit++;
+                }
+            }
+            return result;
+        }
+
+        private BlockPos grid(int gridX, int gridZ) {
+            return new BlockPos(gridX * spacingBlocks, 0, gridZ * spacingBlocks);
         }
     }
 }
