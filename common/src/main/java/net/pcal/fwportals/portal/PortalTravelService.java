@@ -144,23 +144,35 @@ public final class PortalTravelService {
                 targetLabel
         );
 
-        for (int attempt = 0; attempt < config.destinationSearchAttempts(); attempt++) {
+        while (!searchContext.searchBudget().isExhausted()) {
             Optional<DestinationPortalCandidate> maybeCandidate = destinationSelector.findCandidateAnchor(searchContext);
             if (maybeCandidate.isEmpty()) {
-                continue;
+                break;
             }
 
             DestinationPortalCandidate candidate = maybeCandidate.get();
-            Optional<PortalLayout> maybeLayout = portalPlacementService.findValidLayoutNearAnchor(
+            PortalPlacementService.LayoutSearchResult layoutSearchResult = portalPlacementService.findValidLayoutNearAnchor(
                     destinationLevel,
                     candidate.requestedAnchor(),
+                    config.maximumPortalPlacementAttemptsPerBiome(),
                     config.frameBlock().defaultBlockState()
             );
-            if (maybeLayout.isEmpty()) {
+            if (layoutSearchResult.layout().isEmpty()) {
+                if (layoutSearchResult.failureReason()
+                        == PortalPlacementService.LayoutSearchResult.FailureReason.PLACEMENT_ATTEMPTS_EXHAUSTED) {
+                    logger.debug(
+                            "[fwportals] Exhausted {} portal placement attempts for biome result {} in {}. Continuing outer search with {} spiral positions and {} biome searches consumed.",
+                            config.maximumPortalPlacementAttemptsPerBiome(),
+                            candidate.requestedAnchor(),
+                            destinationLevel.dimension().identifier(),
+                            searchContext.searchBudget().spiralPositionsExamined(),
+                            searchContext.searchBudget().biomeSearchesPerformed()
+                    );
+                }
                 continue;
             }
 
-            PortalLayout layout = maybeLayout.get();
+            PortalLayout layout = layoutSearchResult.layout().orElseThrow();
             BlockPos generatedPortalAnchor = layout.anchorBlock();
 
             boolean rejectedByConstraint = false;
@@ -262,11 +274,13 @@ public final class PortalTravelService {
 
         player.sendSystemMessage(PortalFeedbackText.noSafeDestinationMessage());
         logger.warn(
-                "[fwportals] Failed to create a destination portal after {} attempts for portal anchor {} in {} using {}",
-                config.destinationSearchAttempts(),
+                "[fwportals] Failed to create a destination portal for portal anchor {} in {} using {} after {} spiral positions and {} biome searches. Termination: {}",
                 portalAnchor,
                 level.dimension().identifier(),
-                targetLabel
+                targetLabel,
+                searchContext.searchBudget().spiralPositionsExamined(),
+                searchContext.searchBudget().biomeSearchesPerformed(),
+                searchContext.searchBudget().exhaustionReason().orElse(PortalDestinationSelector.ExhaustionReason.UNKNOWN)
         );
         return null;
     }

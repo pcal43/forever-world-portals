@@ -14,7 +14,10 @@ public record ForeverWorldPortalsConfig(
         Identifier activationItemId,
         Item activationItem,
         ReturnPortalMode returnPortalMode,
-        int destinationSearchAttempts,
+        int destinationSpiralSpacingBlocks,
+        int maximumSpiralSearchPositions,
+        int maximumBiomeSearches,
+        int maximumPortalPlacementAttemptsPerBiome,
         int minimumGeneratedTerrainDistanceBlocks
 ) {
 
@@ -30,6 +33,9 @@ public record ForeverWorldPortalsConfig(
                 Identifier.parse("minecraft:flint_and_steel"),
                 activationItem,
                 ReturnPortalMode.GENERATE,
+                10000,
+                512,
+                64,
                 64,
                 10000
         );

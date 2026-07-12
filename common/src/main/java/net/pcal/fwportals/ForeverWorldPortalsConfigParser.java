@@ -36,10 +36,28 @@ final class ForeverWorldPortalsConfigParser {
                 defaults.returnPortalMode(),
                 logger
         );
-        int destinationSearchAttempts = parsePositiveInt(
+        int destinationSpiralSpacingBlocks = parsePositiveInt(
                 properties,
-                "destinationSearchAttempts",
-                defaults.destinationSearchAttempts(),
+                "destinationSpiralSpacingBlocks",
+                defaults.destinationSpiralSpacingBlocks(),
+                logger
+        );
+        int maximumSpiralSearchPositions = parsePositiveInt(
+                properties,
+                "maximumSpiralSearchPositions",
+                defaults.maximumSpiralSearchPositions(),
+                logger
+        );
+        int maximumBiomeSearches = parsePositiveInt(
+                properties,
+                "maximumBiomeSearches",
+                defaults.maximumBiomeSearches(),
+                logger
+        );
+        int maximumPortalPlacementAttemptsPerBiome = parsePositiveInt(
+                properties,
+                "maximumPortalPlacementAttemptsPerBiome",
+                defaults.maximumPortalPlacementAttemptsPerBiome(),
                 logger
         );
         int minimumGeneratedTerrainDistanceBlocks = parsePositiveInt(
@@ -57,7 +75,10 @@ final class ForeverWorldPortalsConfigParser {
                 BuiltInRegistries.ITEM.getKey(activationItem),
                 activationItem,
                 returnPortalMode,
-                destinationSearchAttempts,
+                destinationSpiralSpacingBlocks,
+                maximumSpiralSearchPositions,
+                maximumBiomeSearches,
+                maximumPortalPlacementAttemptsPerBiome,
                 minimumGeneratedTerrainDistanceBlocks
         );
     }

@@ -44,7 +44,9 @@ public final class PortalDestinationSelector {
                 portalAnchor.immutable(),
                 destinationTarget,
                 targetLabel,
-                new SpiralAnchorIterator(config.minimumGeneratedTerrainDistanceBlocks()),
+                new SpiralAnchorIterator(config.destinationSpiralSpacingBlocks()),
+                deriveBiomeSearchRadiusBlocks(config.destinationSpiralSpacingBlocks()),
+                new SearchBudget(config.maximumSpiralSearchPositions(), config.maximumBiomeSearches()),
                 List.of(
                         GeneratedTerrainDistanceConstraint.snapshot(
                                 level,
@@ -58,43 +60,63 @@ public final class PortalDestinationSelector {
     public Optional<DestinationPortalCandidate> findCandidateAnchor(
             SearchContext searchContext
     ) {
-        Optional<BlockPos> maybeBiomeAnchor = findNextBiomeSearchAnchor(
-                searchContext.spiralAnchors(),
-                searchContext.constraints(),
-                transientAnchor -> destinationBiomeLocator.findNearest(
-                        searchContext.level(),
-                        transientAnchor,
-                        config.minimumGeneratedTerrainDistanceBlocks(),
-                        searchContext.destinationTarget()
-                ),
-                reason -> logger.info("[fwportals] {}", reason),
-                searchContext.level().dimension().identifier().toString(),
-                searchContext.targetLabel()
-        );
-        if (maybeBiomeAnchor.isEmpty()) {
-            return Optional.empty();
-        }
+        while (searchContext.searchBudget().canContinue()) {
+            Optional<BlockPos> maybeBiomeAnchor = findNextBiomeSearchAnchor(
+                    searchContext,
+                    transientAnchor -> destinationBiomeLocator.findNearest(
+                            searchContext.level(),
+                            transientAnchor,
+                            searchContext.biomeSearchRadiusBlocks(),
+                            searchContext.destinationTarget()
+                    ),
+                    reason -> logger.debug("[fwportals] {}", reason),
+                    searchContext.level().dimension().identifier().toString(),
+                    searchContext.targetLabel()
+            );
+            if (maybeBiomeAnchor.isEmpty()) {
+                continue;
+            }
 
-        BlockPos biomeAnchor = maybeBiomeAnchor.get();
-        BlockPos candidate = candidateAnchorAt(searchContext.level(), biomeAnchor.getX(), biomeAnchor.getZ());
-        if (candidate == null) {
-            return Optional.empty();
+            BlockPos biomeAnchor = maybeBiomeAnchor.get();
+            BlockPos candidate = candidateAnchorAt(searchContext.level(), biomeAnchor.getX(), biomeAnchor.getZ());
+            if (candidate == null) {
+                continue;
+            }
+            return Optional.of(new DestinationPortalCandidate(candidate));
         }
-        return Optional.of(new DestinationPortalCandidate(candidate));
+        logger.debug(
+                "[fwportals] Destination search exhausted for {} in {} after {} spiral positions and {} biome searches: {}",
+                searchContext.targetLabel(),
+                searchContext.level().dimension().identifier(),
+                searchContext.searchBudget().spiralPositionsExamined(),
+                searchContext.searchBudget().biomeSearchesPerformed(),
+                searchContext.searchBudget().exhaustionReason().orElse(ExhaustionReason.UNKNOWN)
+        );
+        return Optional.empty();
     }
 
     static Optional<BlockPos> findNextBiomeSearchAnchor(
-            SpiralAnchorIterator spiralAnchors,
-            List<DestinationConstraint> constraints,
+            SearchContext searchContext,
             Function<BlockPos, Optional<BlockPos>> biomeLocator,
             java.util.function.Consumer<String> logSink,
             String dimensionId,
             String targetLabel
     ) {
-        BlockPos transientAnchor = spiralAnchors.next();
-        String transientRejection = firstRejectionReason(constraints, transientAnchor);
+        if (!searchContext.searchBudget().canContinue()) {
+            return Optional.empty();
+        }
+        if (!searchContext.searchBudget().tryConsumeSpiralPosition()) {
+            return Optional.empty();
+        }
+
+        BlockPos transientAnchor = searchContext.spiralAnchors().next();
+        String transientRejection = firstRejectionReason(searchContext.constraints(), transientAnchor);
         if (transientRejection != null) {
             logSink.accept("Rejecting spiral anchor " + transientAnchor + " in " + dimensionId + " for " + targetLabel + " because " + transientRejection);
+            return Optional.empty();
+        }
+
+        if (!searchContext.searchBudget().tryConsumeBiomeSearch()) {
             return Optional.empty();
         }
 
@@ -105,7 +127,7 @@ public final class PortalDestinationSelector {
         }
 
         BlockPos biomeAnchor = maybeBiomeAnchor.get();
-        String biomeRejection = firstRejectionReason(constraints, biomeAnchor);
+        String biomeRejection = firstRejectionReason(searchContext.constraints(), biomeAnchor);
         if (biomeRejection != null) {
             logSink.accept("Rejecting biome-targeted anchor " + biomeAnchor + " from spiral anchor " + transientAnchor + " in " + dimensionId + " for " + targetLabel + " because " + biomeRejection);
             return Optional.empty();
@@ -122,6 +144,14 @@ public final class PortalDestinationSelector {
             }
         }
         return null;
+    }
+
+    static int deriveBiomeSearchRadiusBlocks(int spiralSpacingBlocks) {
+        int radius = (int) Math.ceil(spiralSpacingBlocks / Math.sqrt(2.0));
+        if (radius <= 0) {
+            throw new IllegalArgumentException("Derived biome search radius must be positive for spacing " + spiralSpacingBlocks);
+        }
+        return radius;
     }
 
     private BlockPos candidateAnchorAt(ServerLevel level, int x, int z) {
@@ -147,6 +177,8 @@ public final class PortalDestinationSelector {
             BiomeDestinationTarget destinationTarget,
             String targetLabel,
             SpiralAnchorIterator spiralAnchors,
+            int biomeSearchRadiusBlocks,
+            SearchBudget searchBudget,
             List<DestinationConstraint> constraints
     ) {
         public SearchContext {
@@ -197,6 +229,74 @@ public final class PortalDestinationSelector {
 
         private BlockPos grid(int gridX, int gridZ) {
             return new BlockPos(gridX * spacingBlocks, 0, gridZ * spacingBlocks);
+        }
+    }
+
+    enum ExhaustionReason {
+        MAXIMUM_SPIRAL_SEARCH_POSITIONS,
+        MAXIMUM_BIOME_SEARCHES,
+        UNKNOWN
+    }
+
+    static final class SearchBudget {
+        private final int maximumSpiralSearchPositions;
+        private final int maximumBiomeSearches;
+        private int spiralPositionsExamined;
+        private int biomeSearchesPerformed;
+        private ExhaustionReason exhaustionReason;
+
+        SearchBudget(int maximumSpiralSearchPositions, int maximumBiomeSearches) {
+            this.maximumSpiralSearchPositions = maximumSpiralSearchPositions;
+            this.maximumBiomeSearches = maximumBiomeSearches;
+        }
+
+        boolean tryConsumeSpiralPosition() {
+            if (spiralPositionsExamined >= maximumSpiralSearchPositions) {
+                exhaustionReason = ExhaustionReason.MAXIMUM_SPIRAL_SEARCH_POSITIONS;
+                return false;
+            }
+            spiralPositionsExamined++;
+            return true;
+        }
+
+        boolean tryConsumeBiomeSearch() {
+            if (biomeSearchesPerformed >= maximumBiomeSearches) {
+                exhaustionReason = ExhaustionReason.MAXIMUM_BIOME_SEARCHES;
+                return false;
+            }
+            biomeSearchesPerformed++;
+            return true;
+        }
+
+        boolean isExhausted() {
+            return exhaustionReason != null;
+        }
+
+        boolean canContinue() {
+            if (exhaustionReason != null) {
+                return false;
+            }
+            if (spiralPositionsExamined >= maximumSpiralSearchPositions) {
+                exhaustionReason = ExhaustionReason.MAXIMUM_SPIRAL_SEARCH_POSITIONS;
+                return false;
+            }
+            if (biomeSearchesPerformed >= maximumBiomeSearches) {
+                exhaustionReason = ExhaustionReason.MAXIMUM_BIOME_SEARCHES;
+                return false;
+            }
+            return true;
+        }
+
+        int spiralPositionsExamined() {
+            return spiralPositionsExamined;
+        }
+
+        int biomeSearchesPerformed() {
+            return biomeSearchesPerformed;
+        }
+
+        Optional<ExhaustionReason> exhaustionReason() {
+            return Optional.ofNullable(exhaustionReason);
         }
     }
 }

@@ -35,6 +35,20 @@ public final class PortalPlacementService {
     ) {
         return findValidLayoutNearAnchor(
                 level,
+                requestedAnchor,
+                Integer.MAX_VALUE,
+                frameState
+        ).layout();
+    }
+
+    public LayoutSearchResult findValidLayoutNearAnchor(
+            ServerLevel level,
+            BlockPos requestedAnchor,
+            int maximumPlacementAttempts,
+            BlockState frameState
+    ) {
+        return findValidLayoutNearAnchor(
+                level,
                 level.getMinY(),
                 level.getWorldBorder()::isWithinBounds,
                 (x, z) -> level.getHeightmapPos(
@@ -42,18 +56,21 @@ public final class PortalPlacementService {
                         new BlockPos(x, 0, z)
                 ).getY(),
                 requestedAnchor,
+                maximumPlacementAttempts,
                 frameState
         );
     }
 
-    Optional<PortalLayout> findValidLayoutNearAnchor(
+    LayoutSearchResult findValidLayoutNearAnchor(
             BlockGetter level,
             int minY,
             Predicate<BlockPos> withinBounds,
             IntBinaryOperator surfaceAirYAt,
             BlockPos requestedAnchor,
+            int maximumPlacementAttempts,
             BlockState frameState
     ) {
+        int placementAttempts = 0;
         for (BlockPos candidateColumn : candidateColumns(requestedAnchor)) {
             int surfaceAirY = surfaceAirYAt.applyAsInt(candidateColumn.getX(), candidateColumn.getZ());
             BlockPos candidateAnchor = new BlockPos(
@@ -65,6 +82,10 @@ public final class PortalPlacementService {
                 if (axis == Direction.Axis.Y) {
                     continue;
                 }
+                if (placementAttempts >= maximumPlacementAttempts) {
+                    return LayoutSearchResult.placementAttemptsExhausted(placementAttempts);
+                }
+                placementAttempts++;
 
                 PortalLayout layout = PortalLayout.createStandardForAnchorBlock(axis, candidateAnchor);
                 if (!layout.anchorBlock().equals(candidateAnchor)) {
@@ -73,10 +94,10 @@ public final class PortalPlacementService {
                 if (!canPlaceLayout(level, minY, withinBounds, layout, frameState)) {
                     continue;
                 }
-                return Optional.of(layout);
+                return LayoutSearchResult.found(layout, placementAttempts);
             }
         }
-        return Optional.empty();
+        return LayoutSearchResult.noValidLayout(placementAttempts);
     }
 
     public GeneratedPortal placeValidatedLayout(ServerLevel level, PortalLayout layout, BlockState frameState) {
@@ -179,5 +200,29 @@ public final class PortalPlacementService {
         return state.is(Blocks.NETHER_PORTAL)
                 || state.is(Blocks.END_PORTAL)
                 || state.is(Blocks.END_GATEWAY);
+    }
+
+    public record LayoutSearchResult(
+            Optional<PortalLayout> layout,
+            int placementAttemptsUsed,
+            FailureReason failureReason
+    ) {
+        static LayoutSearchResult found(PortalLayout layout, int placementAttemptsUsed) {
+            return new LayoutSearchResult(Optional.of(layout), placementAttemptsUsed, FailureReason.NONE);
+        }
+
+        static LayoutSearchResult noValidLayout(int placementAttemptsUsed) {
+            return new LayoutSearchResult(Optional.empty(), placementAttemptsUsed, FailureReason.NO_VALID_LAYOUT);
+        }
+
+        static LayoutSearchResult placementAttemptsExhausted(int placementAttemptsUsed) {
+            return new LayoutSearchResult(Optional.empty(), placementAttemptsUsed, FailureReason.PLACEMENT_ATTEMPTS_EXHAUSTED);
+        }
+
+        public enum FailureReason {
+            NONE,
+            NO_VALID_LAYOUT,
+            PLACEMENT_ATTEMPTS_EXHAUSTED
+        }
     }
 }

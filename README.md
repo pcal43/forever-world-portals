@@ -119,10 +119,15 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `enabled`, `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `destinationSearchAttempts`, and `minimumGeneratedTerrainDistanceBlocks`
+- Current settings: `enabled`, `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `returnPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, and `minimumGeneratedTerrainDistanceBlocks`
 - Behavior: defaults are documented and written automatically if the file does not exist
 - `requireEmptyInventory=true` prevents portal activation unless the player's main inventory, hotbar, armor slots, and offhand are all empty
-- `minimumGeneratedTerrainDistanceBlocks` is also used as the square-spiral spacing and the built-in nearest-biome search radius for each spiral anchor
+- `destinationSpiralSpacingBlocks` controls square-spiral search-center spacing
+- The biome-search radius is derived from spiral spacing as `ceil(spacing / sqrt(2))`
+- `maximumSpiralSearchPositions` limits cheap spiral-center inspection across one destination search
+- `maximumBiomeSearches` independently limits expensive biome-locator calls across one destination search
+- `maximumPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
+- `minimumGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
 
 `returnPortalMode` currently supports these values:
 

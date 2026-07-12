@@ -52,17 +52,18 @@ class PortalPlacementServiceTest {
         primeSurface(level, requestedAnchor, 69);
         PortalLayout expectedLayout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, expectedAnchor);
 
-        Optional<PortalLayout> layout = service.findValidLayoutNearAnchor(
+        PortalPlacementService.LayoutSearchResult result = service.findValidLayoutNearAnchor(
                 level,
                 level.getMinY(),
                 withinLayoutBounds(expectedLayout),
                 constantSurfaceAirY(70),
                 requestedAnchor,
+                1000,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
         );
 
-        assertTrue(layout.isPresent());
-        assertEquals(expectedAnchor, layout.orElseThrow().anchorBlock());
+        assertTrue(result.layout().isPresent());
+        assertEquals(expectedAnchor, result.layout().orElseThrow().anchorBlock());
         assertEquals(0, level.mutationCount());
     }
 
@@ -72,16 +73,17 @@ class PortalPlacementServiceTest {
         MutableTestBlockGetter level = new MutableTestBlockGetter();
         BlockPos requestedAnchor = new BlockPos(100, 70, -50);
 
-        Optional<PortalLayout> layout = service.findValidLayoutNearAnchor(
+        PortalPlacementService.LayoutSearchResult layout = service.findValidLayoutNearAnchor(
                 level,
                 level.getMinY(),
                 pos -> true,
                 constantSurfaceAirY(70),
                 requestedAnchor,
+                1000,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
         );
 
-        assertTrue(layout.isEmpty());
+        assertTrue(layout.layout().isEmpty());
         assertEquals(0, level.mutationCount());
     }
 
@@ -115,8 +117,9 @@ class PortalPlacementServiceTest {
                 pos -> true,
                 surfaceYAt,
                 requestedAnchor,
+                1000,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
-        ).orElseThrow();
+        ).layout().orElseThrow();
 
         assertTrue(queriedColumns.contains(requestedColumn));
         assertTrue(queriedColumns.contains(fallbackColumn));
@@ -138,8 +141,9 @@ class PortalPlacementServiceTest {
                 pos -> true,
                 (x, z) -> (x == higherColumn.getX() && z == higherColumn.getZ()) ? 84 : level.getMinY(),
                 requestedAnchor,
+                1000,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
-        ).orElseThrow();
+        ).layout().orElseThrow();
 
         assertEquals(new BlockPos(-1, 84, -1), layout.anchorBlock());
     }
@@ -154,16 +158,17 @@ class PortalPlacementServiceTest {
         PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, expectedAnchor);
         level.setInitialBlock(layout.foundationBlocks().get(0), Blocks.LAVA.defaultBlockState());
 
-        Optional<PortalLayout> maybeLayout = service.findValidLayoutNearAnchor(
+        PortalPlacementService.LayoutSearchResult maybeLayout = service.findValidLayoutNearAnchor(
                 level,
                 level.getMinY(),
                 withinLayoutBounds(layout),
                 constantSurfaceAirY(70),
                 requestedAnchor,
+                1000,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
         );
 
-        assertTrue(maybeLayout.isEmpty());
+        assertTrue(maybeLayout.layout().isEmpty());
         assertEquals(0, level.mutationCount());
     }
 
@@ -177,16 +182,17 @@ class PortalPlacementServiceTest {
         PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, expectedAnchor);
         level.setInitialBlock(layout.clearanceBlocks().get(0), Blocks.STONE.defaultBlockState());
 
-        Optional<PortalLayout> maybeLayout = service.findValidLayoutNearAnchor(
+        PortalPlacementService.LayoutSearchResult maybeLayout = service.findValidLayoutNearAnchor(
                 level,
                 level.getMinY(),
                 withinLayoutBounds(layout),
                 constantSurfaceAirY(70),
                 requestedAnchor,
+                1000,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
         );
 
-        assertTrue(maybeLayout.isEmpty());
+        assertTrue(maybeLayout.layout().isEmpty());
         assertEquals(0, level.mutationCount());
     }
 
@@ -203,8 +209,9 @@ class PortalPlacementServiceTest {
                 withinLayoutBounds(PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, expectedAnchor)),
                 constantSurfaceAirY(70),
                 requestedAnchor,
+                1000,
                 Blocks.DIAMOND_BLOCK.defaultBlockState()
-        ).orElseThrow();
+        ).layout().orElseThrow();
 
         AtomicInteger writes = new AtomicInteger();
         PortalPlacementService.applyLayout(
@@ -235,6 +242,61 @@ class PortalPlacementServiceTest {
         assertEquals(expectedAnchor, identity.computeAnchorBlock(detected.orElseThrow()));
         assertEquals(layout.frame().width(), detected.orElseThrow().width());
         assertEquals(layout.frame().height(), detected.orElseThrow().height());
+    }
+
+    @Test
+    void testingBothOrientationsAtOneCandidateConsumesTwoPlacementAttempts() {
+        TestBootstrap.ensureBootstrapped();
+        MutableTestBlockGetter level = new MutableTestBlockGetter();
+        BlockPos requestedAnchor = new BlockPos(100, 70, -50);
+
+        PortalPlacementService.LayoutSearchResult result = service.findValidLayoutNearAnchor(
+                level,
+                level.getMinY(),
+                pos -> false,
+                constantSurfaceAirY(70),
+                requestedAnchor,
+                2,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        );
+
+        assertEquals(2, result.placementAttemptsUsed());
+        assertEquals(
+                PortalPlacementService.LayoutSearchResult.FailureReason.PLACEMENT_ATTEMPTS_EXHAUSTED,
+                result.failureReason()
+        );
+    }
+
+    @Test
+    void placementAttemptBudgetResetsForNextBiomeResult() {
+        TestBootstrap.ensureBootstrapped();
+        MutableTestBlockGetter level = new MutableTestBlockGetter();
+
+        PortalPlacementService.LayoutSearchResult first = service.findValidLayoutNearAnchor(
+                level,
+                level.getMinY(),
+                pos -> false,
+                constantSurfaceAirY(70),
+                new BlockPos(100, 70, -50),
+                2,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        );
+        PortalPlacementService.LayoutSearchResult second = service.findValidLayoutNearAnchor(
+                level,
+                level.getMinY(),
+                pos -> false,
+                constantSurfaceAirY(70),
+                new BlockPos(200, 70, -50),
+                2,
+                Blocks.DIAMOND_BLOCK.defaultBlockState()
+        );
+
+        assertEquals(2, first.placementAttemptsUsed());
+        assertEquals(2, second.placementAttemptsUsed());
+        assertEquals(
+                PortalPlacementService.LayoutSearchResult.FailureReason.PLACEMENT_ATTEMPTS_EXHAUSTED,
+                second.failureReason()
+        );
     }
 
     private static IntBinaryOperator constantSurfaceAirY(int surfaceAirY) {
