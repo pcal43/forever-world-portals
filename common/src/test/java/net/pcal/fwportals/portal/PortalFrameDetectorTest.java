@@ -40,7 +40,7 @@ class PortalFrameDetectorTest {
         assertEquals(Direction.Axis.Z, frame.get().axis());
         assertEquals(2, frame.get().width());
         assertEquals(3, frame.get().height());
-        assertEquals(new BlockPos(0, 0, 0), frame.get().anchorPos());
+        assertEquals(new BlockPos(0, 0, 0), frame.get().frameBasePos());
         assertEquals(14, frame.get().frameBlocks().size());
         assertEquals(6, frame.get().interiorBlocks().size());
     }
@@ -76,7 +76,7 @@ class PortalFrameDetectorTest {
         );
 
         assertTrue(frame.isPresent());
-        assertEquals(new BlockPos(10, 5, 20), frame.get().anchorPos());
+        assertEquals(new BlockPos(10, 5, 20), frame.get().frameBasePos());
     }
 
     @Test

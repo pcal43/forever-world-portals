@@ -8,7 +8,7 @@ import java.util.List;
 
 public record PortalLayout(
         Direction.Axis axis,
-        BlockPos anchorPos,
+        BlockPos frameBasePos,
         int width,
         int height,
         List<BlockPos> frameBlocks,
@@ -44,6 +44,14 @@ public record PortalLayout(
                 frameBlocks.stream().sorted(ForeverWorldPortalFrame.POSITION_COMPARATOR).distinct().toList(),
                 interiorBlocks.stream().sorted(ForeverWorldPortalFrame.POSITION_COMPARATOR).toList()
         );
+    }
+
+    public static PortalLayout createForAnchorBlock(Direction.Axis axis, BlockPos anchorBlock, int width, int height) {
+        Direction horizontalDirection = axis == Direction.Axis.X ? Direction.EAST : Direction.SOUTH;
+        int horizontalOffset = (width - 1) / 2;
+        BlockPos interiorOrigin = anchorBlock.relative(horizontalDirection, -horizontalOffset);
+        BlockPos frameBasePos = interiorOrigin.relative(horizontalDirection, -1).below();
+        return create(axis, frameBasePos, width, height);
     }
 
     public BlockPos representativePortalPosition() {

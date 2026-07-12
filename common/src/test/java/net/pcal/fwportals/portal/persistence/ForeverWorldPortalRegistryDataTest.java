@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,7 +33,6 @@ class ForeverWorldPortalRegistryDataTest {
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
         SourcePortalRecord portal = new SourcePortalRecord(
-                UUID.randomUUID(),
                 Level.OVERWORLD,
                 new BlockPos(0, 2, 1),
                 Level.OVERWORLD,
@@ -46,8 +44,8 @@ class ForeverWorldPortalRegistryDataTest {
         List<SourcePortalRecord> portals = reloaded.sourcePortals().stream().toList();
 
         assertEquals(1, portals.size());
-        assertEquals(portal.originBlock(), portals.get(0).originBlock());
-        assertEquals(portal.destinationPosition(), portals.get(0).destinationPosition());
+        assertEquals(portal.sourceAnchor(), portals.get(0).sourceAnchor());
+        assertEquals(portal.destinationAnchor(), portals.get(0).destinationAnchor());
     }
 
     @Test
@@ -57,7 +55,7 @@ class ForeverWorldPortalRegistryDataTest {
         CompoundTag root = new CompoundTag();
         ListTag sourcePortals = new ListTag();
         CompoundTag malformedPortal = new CompoundTag();
-        malformedPortal.store("dimension", net.minecraft.resources.ResourceKey.codec(net.minecraft.core.registries.Registries.DIMENSION), Level.OVERWORLD);
+        malformedPortal.store("sourceDimension", net.minecraft.resources.ResourceKey.codec(net.minecraft.core.registries.Registries.DIMENSION), Level.OVERWORLD);
         sourcePortals.add(malformedPortal);
         root.put("sourcePortals", sourcePortals);
 
@@ -72,20 +70,19 @@ class ForeverWorldPortalRegistryDataTest {
         TestBootstrap.ensureBootstrapped();
 
         ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
-        BlockPos originBlock = identity.computeOriginBlock(frame);
+        BlockPos sourceAnchor = identity.computeAnchorBlock(frame);
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
         data.createSourcePortal(new SourcePortalRecord(
-                UUID.randomUUID(),
                 Level.OVERWORLD,
-                originBlock,
+                sourceAnchor,
                 Level.OVERWORLD,
                 new BlockPos(100, 80, 100)
         ));
 
         List<SourcePortalRecord> matches = data.findSourcePortalsContainedBy(Level.OVERWORLD, frame);
         assertEquals(1, matches.size());
-        assertEquals(originBlock, matches.get(0).originBlock());
+        assertEquals(sourceAnchor, matches.get(0).sourceAnchor());
     }
 
     @Test
@@ -96,7 +93,6 @@ class ForeverWorldPortalRegistryDataTest {
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
         data.createSourcePortal(new SourcePortalRecord(
-                UUID.randomUUID(),
                 Level.OVERWORLD,
                 new BlockPos(100, 100, 100),
                 Level.OVERWORLD,
@@ -112,13 +108,12 @@ class ForeverWorldPortalRegistryDataTest {
 
         ForeverWorldPortalFrame smaller = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
         ForeverWorldPortalFrame larger = buildAxisZFrame(new BlockPos(0, 0, 0), 3, 4);
-        BlockPos originBlock = identity.computeOriginBlock(smaller);
+        BlockPos sourceAnchor = identity.computeAnchorBlock(smaller);
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
         data.createSourcePortal(new SourcePortalRecord(
-                UUID.randomUUID(),
                 Level.OVERWORLD,
-                originBlock,
+                sourceAnchor,
                 Level.OVERWORLD,
                 new BlockPos(500, 80, 500)
         ));
@@ -133,7 +128,6 @@ class ForeverWorldPortalRegistryDataTest {
 
         ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
         data.createSourcePortal(new SourcePortalRecord(
-                UUID.randomUUID(),
                 Level.OVERWORLD,
                 new BlockPos(0, 64, 0),
                 Level.OVERWORLD,
@@ -141,7 +135,6 @@ class ForeverWorldPortalRegistryDataTest {
         ));
 
         assertFalse(data.isSeparated(Level.OVERWORLD, new BlockPos(100, 80, 0), 25000));
-        assertFalse(data.isSeparated(Level.OVERWORLD, new BlockPos(30100, 80, 0), 25000));
         assertTrue(data.isSeparated(Level.OVERWORLD, new BlockPos(60000, 80, 0), 25000));
     }
 

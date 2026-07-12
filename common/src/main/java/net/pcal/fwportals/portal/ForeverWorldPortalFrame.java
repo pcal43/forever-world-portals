@@ -8,7 +8,7 @@ import java.util.List;
 
 public record ForeverWorldPortalFrame(
         Direction.Axis axis,
-        BlockPos anchorPos,
+        BlockPos frameBasePos,
         BlockPos interiorOrigin,
         int width,
         int height,

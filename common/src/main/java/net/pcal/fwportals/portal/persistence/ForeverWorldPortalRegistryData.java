@@ -4,6 +4,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 import net.pcal.fwportals.portal.ForeverWorldPortalFrame;
@@ -14,7 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,13 +32,16 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
 
     private static final Logger LOGGER = LogManager.getLogger("fwportals");
     private static final Comparator<SourcePortalRecord> PORTAL_ORDER = Comparator
-            .comparing((SourcePortalRecord portal) -> portal.dimension().identifier().toString())
-            .thenComparingInt(portal -> portal.originBlock().getX())
-            .thenComparingInt(portal -> portal.originBlock().getY())
-            .thenComparingInt(portal -> portal.originBlock().getZ())
-            .thenComparing(SourcePortalRecord::portalId);
+            .comparing((SourcePortalRecord portal) -> portal.sourceDimension().identifier().toString())
+            .thenComparingInt(portal -> portal.sourceAnchor().getX())
+            .thenComparingInt(portal -> portal.sourceAnchor().getY())
+            .thenComparingInt(portal -> portal.sourceAnchor().getZ())
+            .thenComparing(portal -> portal.destinationDimension().identifier().toString())
+            .thenComparingInt(portal -> portal.destinationAnchor().getX())
+            .thenComparingInt(portal -> portal.destinationAnchor().getY())
+            .thenComparingInt(portal -> portal.destinationAnchor().getZ());
 
-    private final Map<UUID, SourcePortalRecord> sourcePortalsById = new LinkedHashMap<>();
+    private final Map<SourcePortalKey, SourcePortalRecord> sourcePortalsByKey = new LinkedHashMap<>();
 
     public static ForeverWorldPortalRegistryData get(ServerLevel level) {
         ServerLevel overworld = level.getServer().overworld();
@@ -53,12 +58,12 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
                 continue;
             }
             SourcePortalRecord.fromTag(portalTag, message -> LOGGER.warn("[fwportals] {}", message))
-                    .ifPresent(record -> data.sourcePortalsById.put(record.portalId(), record));
+                    .ifPresent(record -> data.sourcePortalsByKey.put(SourcePortalKey.of(record), record));
         }
 
         LOGGER.info(
                 "[fwportals] Loaded Forever World portal registry: sourcePortals={}",
-                data.sourcePortalsById.size()
+                data.sourcePortalsByKey.size()
         );
         return data;
     }
@@ -73,40 +78,38 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
         return root;
     }
 
-    public List<SourcePortalRecord> findSourcePortalsContainedBy(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension, ForeverWorldPortalFrame frame) {
+    public List<SourcePortalRecord> findSourcePortalsContainedBy(ResourceKey<Level> dimension, ForeverWorldPortalFrame frame) {
         return orderedSourcePortals().stream()
-                .filter(portal -> portal.dimension().equals(dimension))
-                .filter(portal -> frame.containsInterior(portal.originBlock()))
+                .filter(portal -> portal.sourceDimension().equals(dimension))
+                .filter(portal -> frame.containsInterior(portal.sourceAnchor()))
                 .toList();
     }
 
     public void createSourcePortal(SourcePortalRecord portal) {
-        if (sourcePortalsById.containsKey(portal.portalId())) {
-            throw new IllegalStateException("Source portal already exists with id " + portal.portalId());
+        SourcePortalKey key = SourcePortalKey.of(portal);
+        if (sourcePortalsByKey.containsKey(key)) {
+            throw new IllegalStateException("Source portal already exists for " + key.dimension.identifier() + " at " + key.anchor);
         }
-        sourcePortalsById.put(portal.portalId(), portal);
+        sourcePortalsByKey.put(key, portal);
         setDirty();
     }
 
-    public Optional<SourcePortalRecord> getSourcePortal(UUID portalId) {
-        return Optional.ofNullable(sourcePortalsById.get(portalId));
+    public Optional<SourcePortalRecord> getSourcePortal(ResourceKey<Level> dimension, BlockPos sourceAnchor) {
+        return Optional.ofNullable(sourcePortalsByKey.get(new SourcePortalKey(dimension, sourceAnchor.immutable())));
     }
 
-    public void removeSourcePortal(UUID portalId) {
-        if (sourcePortalsById.remove(portalId) != null) {
+    public void removeSourcePortal(ResourceKey<Level> dimension, BlockPos sourceAnchor) {
+        if (sourcePortalsByKey.remove(new SourcePortalKey(dimension, sourceAnchor.immutable())) != null) {
             setDirty();
         }
     }
 
-    public boolean isSeparated(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension, net.minecraft.core.BlockPos position, int minimumPortalSeparationBlocks) {
+    public boolean isSeparated(ResourceKey<Level> dimension, BlockPos position, int minimumPortalSeparationBlocks) {
         long minimumDistanceSquared = (long) minimumPortalSeparationBlocks * (long) minimumPortalSeparationBlocks;
 
-        for (SourcePortalRecord portal : sourcePortalsById.values()) {
-            if (portal.dimension().equals(dimension) && horizontalDistanceSquared(portal.originBlock(), position) < minimumDistanceSquared) {
-                return false;
-            }
-            if (portal.destinationDimension().equals(dimension)
-                    && horizontalDistanceSquared(portal.destinationPosition(), position) < minimumDistanceSquared) {
+        for (SourcePortalRecord portal : sourcePortalsByKey.values()) {
+            if (portal.sourceDimension().equals(dimension)
+                    && horizontalDistanceSquared(portal.sourceAnchor(), position) < minimumDistanceSquared) {
                 return false;
             }
         }
@@ -118,12 +121,18 @@ public final class ForeverWorldPortalRegistryData extends SavedData {
     }
 
     private List<SourcePortalRecord> orderedSourcePortals() {
-        return sourcePortalsById.values().stream().sorted(PORTAL_ORDER).toList();
+        return sourcePortalsByKey.values().stream().sorted(PORTAL_ORDER).toList();
     }
 
-    private static long horizontalDistanceSquared(net.minecraft.core.BlockPos a, net.minecraft.core.BlockPos b) {
+    private static long horizontalDistanceSquared(BlockPos a, BlockPos b) {
         long dx = (long) a.getX() - b.getX();
         long dz = (long) a.getZ() - b.getZ();
         return dx * dx + dz * dz;
+    }
+
+    private record SourcePortalKey(ResourceKey<Level> dimension, BlockPos anchor) {
+        private static SourcePortalKey of(SourcePortalRecord record) {
+            return new SourcePortalKey(record.sourceDimension(), record.sourceAnchor().immutable());
+        }
     }
 }

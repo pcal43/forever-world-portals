@@ -2,12 +2,12 @@ package net.pcal.fwportals.portal;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.pcal.fwportals.ForeverWorldPortalsConfig;
 import net.pcal.fwportals.portal.persistence.ForeverWorldPortalRegistryData;
-import net.pcal.fwportals.portal.persistence.PortalReservation;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
@@ -16,66 +16,66 @@ public final class PortalDestinationSelector {
 
     private final ForeverWorldPortalsConfig config;
     private final Logger logger;
-    private final SafeLandingFinder safeLandingFinder;
 
     public PortalDestinationSelector(ForeverWorldPortalsConfig config, Logger logger) {
         this.config = config;
         this.logger = logger;
-        this.safeLandingFinder = new SafeLandingFinder(logger);
     }
 
-    public Optional<PortalReservation> selectDestination(
+    public Optional<DestinationPortalCandidate> findCandidateAnchor(
             ServerLevel level,
-            ServerPlayer player,
-            BlockPos originAnchor,
-            ForeverWorldPortalRegistryData registry
+            BlockPos sourceAnchor,
+            ForeverWorldPortalRegistryData registry,
+            int attempt
     ) {
-        RandomSource random = RandomSource.create(level.getSeed() ^ originAnchor.asLong() ^ level.getGameTime());
+        RandomSource random = RandomSource.create(
+                level.getSeed()
+                        ^ sourceAnchor.asLong()
+                        ^ level.getGameTime()
+                        ^ ((long) attempt * 0x9E3779B97F4A7C15L)
+        );
         int minimumSeparation = config.minimumPortalSeparationBlocks();
 
-        for (int attempt = 0; attempt < config.destinationSearchAttempts(); attempt++) {
-            double angle = random.nextDouble() * (Math.PI * 2.0);
-            int extraDistance = random.nextInt(Math.max(1024, minimumSeparation));
-            int distance = minimumSeparation + extraDistance;
-            int x = originAnchor.getX() + (int)Math.round(Math.cos(angle) * distance);
-            int z = originAnchor.getZ() + (int)Math.round(Math.sin(angle) * distance);
-            BlockPos candidate = new BlockPos(x, originAnchor.getY(), z);
-
-            if (!registry.isSeparated(level.dimension(), candidate, minimumSeparation)) {
-                logger.info(
-                        "[fwportals] Rejecting destination attempt {} at {} in {} because it is too close to an existing portal reservation",
-                        attempt + 1,
-                        candidate,
-                        level.dimension().identifier()
-                );
-                continue;
-            }
-
-            Optional<Vec3> safeLanding = safeLandingFinder.findSafeLanding(level, player, x, z);
-            if (safeLanding.isEmpty()) {
-                continue;
-            }
-
-            BlockPos reservedPosition = BlockPos.containing(safeLanding.get());
-            if (!registry.isSeparated(level.dimension(), reservedPosition, minimumSeparation)) {
-                continue;
-            }
-
-            return Optional.of(new PortalReservation(level.dimension(), reservedPosition, safeLanding.get()));
+        double angle = random.nextDouble() * (Math.PI * 2.0);
+        int extraDistance = random.nextInt(Math.max(1024, minimumSeparation));
+        int distance = minimumSeparation + extraDistance;
+        int x = sourceAnchor.getX() + (int) Math.round(Math.cos(angle) * distance);
+        int z = sourceAnchor.getZ() + (int) Math.round(Math.sin(angle) * distance);
+        BlockPos candidate = candidateAnchorAt(level, x, z);
+        if (candidate == null) {
+            return Optional.empty();
         }
-
-        logger.warn(
-                "[fwportals] Failed to select destination after {} attempts for origin {} in {}",
-                config.destinationSearchAttempts(),
-                originAnchor,
-                level.dimension().identifier()
-        );
-        return Optional.empty();
+        if (!registry.isSeparated(level.dimension(), candidate, minimumSeparation)) {
+            logger.info(
+                    "[fwportals] Rejecting candidate anchor {} in {} because it is too close to an existing registered source anchor",
+                    candidate,
+                    level.dimension().identifier()
+            );
+            return Optional.empty();
+        }
+        return Optional.of(new DestinationPortalCandidate(candidate));
     }
 
     static long horizontalDistanceSquared(BlockPos a, BlockPos b) {
         long dx = (long)a.getX() - b.getX();
         long dz = (long)a.getZ() - b.getZ();
         return dx * dx + dz * dz;
+    }
+
+    private BlockPos candidateAnchorAt(ServerLevel level, int x, int z) {
+        BlockPos column = new BlockPos(x, 0, z);
+        ensureChunkAvailable(level, column);
+        BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column);
+        if (!level.getWorldBorder().isWithinBounds(surface) || surface.getY() <= level.getMinY() + 1) {
+            return null;
+        }
+        return new BlockPos(x, surface.getY(), z);
+    }
+
+    private void ensureChunkAvailable(ServerLevel level, BlockPos probe) {
+        ChunkPos chunkPos = ChunkPos.containing(probe);
+        if (level.getChunkSource().getChunkNow(chunkPos.x(), chunkPos.z()) == null) {
+            level.getChunk(chunkPos.x(), chunkPos.z(), ChunkStatus.FULL, true);
+        }
     }
 }

@@ -30,6 +30,7 @@ public final class PortalActivationService {
     private final ForeverWorldPortalsConfig config;
     private final Logger logger;
     private final PortalFrameDetector detector = new PortalFrameDetector();
+    private final PortalIdentity portalIdentity = new PortalIdentity();
     private final Map<UUID, PortalEntryRecord> recentEntries = new HashMap<>();
 
     public PortalActivationService(ForeverWorldPortalsConfig config, Logger logger) {
@@ -63,8 +64,9 @@ public final class PortalActivationService {
             level.setBlock(portalPos, portalState, 18);
         }
         logger.info(
-                ForeverWorldPortalsService.LOG_PREFIX + "Activated Forever World portal at {} axis={} width={} height={}",
-                frame.anchorPos(),
+                ForeverWorldPortalsService.LOG_PREFIX + "Activated Forever World portal with frame base {} and portal anchor {} axis={} width={} height={}",
+                frame.frameBasePos(),
+                portalIdentity.computeAnchorBlock(frame),
                 frame.axis(),
                 frame.width(),
                 frame.height()
@@ -106,22 +108,23 @@ public final class PortalActivationService {
         }
 
         ForeverWorldPortalFrame frame = maybeFrame.get();
+        BlockPos anchorBlock = portalIdentity.computeAnchorBlock(frame);
         PortalEntryRecord previous = recentEntries.get(entity.getUUID());
         long gameTime = level.getGameTime();
         if (previous != null
                 && previous.dimension().equals(level.dimension())
-                && previous.anchor().equals(frame.anchorPos())
+                && previous.anchor().equals(anchorBlock)
                 && gameTime - previous.lastSeenGameTime() <= ENTRY_LOG_COOLDOWN_TICKS) {
             recentEntries.put(entity.getUUID(), new PortalEntryRecord(previous.dimension(), previous.anchor(), gameTime));
             return;
         }
 
-        recentEntries.put(entity.getUUID(), new PortalEntryRecord(level.dimension(), frame.anchorPos(), gameTime));
+        recentEntries.put(entity.getUUID(), new PortalEntryRecord(level.dimension(), anchorBlock, gameTime));
         logger.info(
-                ForeverWorldPortalsService.LOG_PREFIX + "Entity entered Forever World portal: entity={} type={} anchor={}",
+                ForeverWorldPortalsService.LOG_PREFIX + "Entity entered Forever World portal: entity={} type={} anchorBlock={}",
                 entity.getName().getString(),
                 BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()),
-                frame.anchorPos()
+                anchorBlock
         );
     }
 

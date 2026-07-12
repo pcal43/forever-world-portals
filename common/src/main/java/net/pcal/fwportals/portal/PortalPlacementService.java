@@ -5,11 +5,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.apache.logging.log4j.Logger;
 
 import java.util.LinkedHashMap;
@@ -18,114 +16,119 @@ import java.util.Optional;
 
 public final class PortalPlacementService {
 
-    private static final int SEARCH_RADIUS = 12;
+    private static final int ANCHOR_SEARCH_RADIUS = 8;
 
     private final Logger logger;
     private final SafeLandingFinder safeLandingFinder;
     private final PortalFrameDetector detector = new PortalFrameDetector();
+    private final PortalIdentity portalIdentity = new PortalIdentity();
 
     public PortalPlacementService(Logger logger, SafeLandingFinder safeLandingFinder) {
         this.logger = logger;
         this.safeLandingFinder = safeLandingFinder;
     }
 
-    public Optional<GeneratedPortalPlacement> generateReturnPortal(
+    public Optional<GeneratedPortal> tryGeneratePortalAtAnchor(
             ServerLevel level,
             ServerPlayer player,
-            BlockPos targetPosition,
-            ForeverWorldPortalFrame sourceFrame,
+            BlockPos requestedAnchor,
+            int width,
+            int height,
             BlockState frameState
     ) {
-        for (Direction.Axis axis : axisOrder(sourceFrame.axis())) {
-            for (BlockPos anchor : candidateAnchors(level, targetPosition)) {
-                PortalLayout layout = PortalLayout.create(axis, anchor, sourceFrame.width(), sourceFrame.height());
+        for (BlockPos candidateAnchor : candidateAnchors(requestedAnchor)) {
+            for (Direction.Axis axis : Direction.Axis.values()) {
+                if (axis == Direction.Axis.Y) {
+                    continue;
+                }
+
+                PortalLayout layout = PortalLayout.createForAnchorBlock(axis, candidateAnchor, width, height);
+                if (!layout.interiorBlocks().contains(candidateAnchor)) {
+                    continue;
+                }
                 if (!canPlaceLayout(level, layout, frameState)) {
                     continue;
                 }
 
-                Optional<Vec3> arrivalPosition = findArrivalPosition(level, player, layout);
-                if (arrivalPosition.isEmpty()) {
-                    continue;
-                }
-
                 PlacementTransaction transaction = new PlacementTransaction(level);
+                boolean committed = false;
                 try {
                     placeLayout(transaction, layout, frameState);
-                    Optional<ForeverWorldPortalFrame> generatedFrame = detector.findPortalFrame(
+
+                    Optional<ForeverWorldPortalFrame> detectedFrame = detector.findPortalFrame(
                             level,
-                            layout.representativePortalPosition(),
+                            candidateAnchor,
                             axis,
                             frameState
                     );
-                    if (generatedFrame.isEmpty()) {
+                    if (detectedFrame.isEmpty()) {
                         transaction.rollback();
                         continue;
                     }
 
+                    ForeverWorldPortalFrame frame = detectedFrame.get();
+                    BlockPos generatedAnchor = portalIdentity.computeAnchorBlock(frame);
+                    if (!generatedAnchor.equals(candidateAnchor)) {
+                        logger.warn(
+                                "[fwportals] Rejecting generated portal at frame base {} in {} because computed anchor {} did not match candidate anchor {}",
+                                frame.frameBasePos(),
+                                level.dimension().identifier(),
+                                generatedAnchor,
+                                candidateAnchor
+                        );
+                        transaction.rollback();
+                        continue;
+                    }
+
+                    if (!safeLandingFinder.canArriveAtAnchor(level, player, generatedAnchor)) {
+                        transaction.rollback();
+                        continue;
+                    }
+
+                    committed = true;
                     logger.info(
-                            "[fwportals] Generated return portal at {} linked near {} in {}",
-                            generatedFrame.get().anchorPos(),
-                            targetPosition,
+                            "[fwportals] Generated portal near requested anchor {} using actual anchor {} with axis {} in {}",
+                            requestedAnchor,
+                            generatedAnchor,
+                            frame.axis(),
                             level.dimension().identifier()
                     );
-                    return Optional.of(new GeneratedPortalPlacement(generatedFrame.get(), arrivalPosition.get()));
+                    return Optional.of(new GeneratedPortal(frame, generatedAnchor, transaction));
                 } catch (RuntimeException ex) {
-                    transaction.rollback();
+                    if (!committed) {
+                        transaction.rollback();
+                    }
                     throw ex;
                 }
             }
         }
 
         logger.warn(
-                "[fwportals] Failed to place return portal near {} in {}",
-                targetPosition,
+                "[fwportals] Failed to generate portal near requested anchor {} in {}",
+                requestedAnchor,
                 level.dimension().identifier()
         );
         return Optional.empty();
     }
 
-    public Optional<Vec3> findArrivalPosition(ServerLevel level, ServerPlayer player, ForeverWorldPortalFrame frame) {
-        PortalLayout layout = PortalLayout.create(frame.axis(), frame.anchorPos(), frame.width(), frame.height());
-        return findArrivalPosition(level, player, layout)
-                .or(() -> safeLandingFinder.findSafeLanding(
-                        level,
-                        player,
-                        frame.representativePortalPosition().getX(),
-                        frame.representativePortalPosition().getZ()
-                ));
-    }
-
-    private Iterable<BlockPos> candidateAnchors(ServerLevel level, BlockPos targetPosition) {
+    private Iterable<BlockPos> candidateAnchors(BlockPos requestedAnchor) {
         java.util.List<BlockPos> anchors = new java.util.ArrayList<>();
-        for (int radius = 0; radius <= SEARCH_RADIUS; radius++) {
+        anchors.add(requestedAnchor);
+        for (int radius = 1; radius <= ANCHOR_SEARCH_RADIUS; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) {
                         continue;
                     }
-
-                    BlockPos column = new BlockPos(targetPosition.getX() + dx, 0, targetPosition.getZ() + dz);
-                    ensureChunkAvailable(level, column);
-                    BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column);
-                    if (!level.getWorldBorder().isWithinBounds(surface) || surface.getY() <= level.getMinY() + 1) {
-                        continue;
-                    }
-
-                    anchors.add(new BlockPos(column.getX(), surface.getY() - 1, column.getZ()));
+                    anchors.add(requestedAnchor.offset(dx, 0, dz));
                 }
             }
         }
         return anchors;
     }
 
-    private Direction.Axis[] axisOrder(Direction.Axis preferredAxis) {
-        return preferredAxis == Direction.Axis.X
-                ? new Direction.Axis[]{Direction.Axis.X, Direction.Axis.Z}
-                : new Direction.Axis[]{Direction.Axis.Z, Direction.Axis.X};
-    }
-
     private boolean canPlaceLayout(ServerLevel level, PortalLayout layout, BlockState frameState) {
-        int baseY = layout.anchorPos().getY();
+        int frameBaseY = layout.frameBasePos().getY();
 
         for (BlockPos pos : layout.interiorBlocks()) {
             if (!isReplaceableForPortal(level.getBlockState(pos))) {
@@ -138,7 +141,7 @@ public final class PortalPlacementService {
                 continue;
             }
 
-            if (pos.getY() == baseY) {
+            if (pos.getY() == frameBaseY) {
                 if (!canUseAsFoundation(level, pos, state)) {
                     return false;
                 }
@@ -192,54 +195,44 @@ public final class PortalPlacementService {
         }
     }
 
-    private Optional<Vec3> findArrivalPosition(ServerLevel level, ServerPlayer player, PortalLayout layout) {
-        for (Direction side : normalDirections(layout.axis())) {
-            for (BlockPos interiorPos : orderedBottomInterior(layout)) {
-                Optional<Vec3> standingPosition = safeLandingFinder.findSafeStandingAt(level, player, interiorPos.relative(side));
-                if (standingPosition.isPresent()) {
-                    return standingPosition;
-                }
-            }
-        }
-        return Optional.empty();
-    }
-
-    private java.util.List<BlockPos> orderedBottomInterior(PortalLayout layout) {
-        return layout.interiorBlocks().stream()
-                .filter(pos -> pos.getY() == layout.anchorPos().getY() + 1)
-                .toList();
-    }
-
-    private Direction[] normalDirections(Direction.Axis axis) {
-        return axis == Direction.Axis.X
-                ? new Direction[]{Direction.NORTH, Direction.SOUTH}
-                : new Direction[]{Direction.WEST, Direction.EAST};
-    }
-
-    private void ensureChunkAvailable(ServerLevel level, BlockPos probe) {
-        ChunkPos chunkPos = ChunkPos.containing(probe);
-        if (level.getChunkSource().getChunkNow(chunkPos.x(), chunkPos.z()) == null) {
-            level.getChunk(chunkPos.x(), chunkPos.z(), ChunkStatus.FULL, true);
-        }
-    }
-
-    private static final class PlacementTransaction {
+    private static final class PlacementTransaction implements PortalPlacementRollback {
         private final ServerLevel level;
-        private final Map<BlockPos, BlockState> originalStates = new LinkedHashMap<>();
+        private final Map<BlockPos, Snapshot> snapshots = new LinkedHashMap<>();
 
         private PlacementTransaction(ServerLevel level) {
             this.level = level;
         }
 
         private void setBlock(BlockPos pos, BlockState state, int flags) {
-            originalStates.putIfAbsent(pos.immutable(), level.getBlockState(pos));
+            snapshots.putIfAbsent(pos.immutable(), Snapshot.capture(level, pos));
             level.setBlock(pos, state, flags);
         }
 
-        private void rollback() {
-            for (Map.Entry<BlockPos, BlockState> entry : originalStates.entrySet()) {
-                level.setBlock(entry.getKey(), entry.getValue(), 18);
+        @Override
+        public void rollback() {
+            for (Map.Entry<BlockPos, Snapshot> entry : snapshots.entrySet()) {
+                BlockPos pos = entry.getKey();
+                Snapshot snapshot = entry.getValue();
+                level.setBlock(pos, snapshot.state(), 18);
+                if (snapshot.blockEntityTag() != null) {
+                    BlockEntity blockEntity = BlockEntity.loadStatic(pos, snapshot.state(), snapshot.blockEntityTag(), level.registryAccess());
+                    if (blockEntity != null) {
+                        level.setBlockEntity(blockEntity);
+                    }
+                } else {
+                    level.removeBlockEntity(pos);
+                }
             }
+        }
+    }
+
+    private record Snapshot(BlockState state, net.minecraft.nbt.CompoundTag blockEntityTag) {
+        private static Snapshot capture(ServerLevel level, BlockPos pos) {
+            LevelChunk chunk = level.getChunkAt(pos);
+            return new Snapshot(
+                    level.getBlockState(pos),
+                    chunk.getBlockEntityNbtForSaving(pos, level.registryAccess())
+            );
         }
     }
 }

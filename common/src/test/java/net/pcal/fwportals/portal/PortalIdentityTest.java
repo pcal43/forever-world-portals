@@ -18,39 +18,55 @@ class PortalIdentityTest {
     private final PortalIdentity identity = new PortalIdentity();
 
     @Test
-    void selectsOriginBlockNearVisualCenter() {
+    void oddWidthInteriorSelectsSingleCenterBlockInLowestRow() {
+        TestBootstrap.ensureBootstrapped();
+        ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 3, 3);
+
+        assertEquals(new BlockPos(0, 1, 2), identity.computeAnchorBlock(frame));
+    }
+
+    @Test
+    void evenWidthAxisXTieBreaksTowardNegativeX() {
+        TestBootstrap.ensureBootstrapped();
+        ForeverWorldPortalFrame frame = buildAxisXFrame(new BlockPos(10, 5, 20), 2, 4);
+
+        assertEquals(new BlockPos(11, 6, 20), identity.computeAnchorBlock(frame));
+    }
+
+    @Test
+    void evenWidthAxisZTieBreaksTowardNegativeZ() {
         TestBootstrap.ensureBootstrapped();
         ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
 
-        assertEquals(new BlockPos(0, 2, 1), identity.computeOriginBlock(frame));
+        assertEquals(new BlockPos(0, 1, 1), identity.computeAnchorBlock(frame));
     }
 
     @Test
-    void breaksOriginTiesTowardNegativeCoordinates() {
+    void anchorIsAlwaysInLowestInteriorRow() {
         TestBootstrap.ensureBootstrapped();
         ForeverWorldPortalFrame frame = buildAxisXFrame(new BlockPos(10, 5, 20), 3, 4);
 
-        assertEquals(new BlockPos(12, 7, 20), identity.computeOriginBlock(frame));
+        assertEquals(6, identity.computeAnchorBlock(frame).getY());
     }
 
     @Test
-    void rebuiltPortalStillEnclosingOriginKeepsIdentity() {
+    void rebuiltPortalStillEnclosingAnchorKeepsIdentity() {
         TestBootstrap.ensureBootstrapped();
         ForeverWorldPortalFrame original = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
-        BlockPos origin = identity.computeOriginBlock(original);
+        BlockPos anchor = identity.computeAnchorBlock(original);
         ForeverWorldPortalFrame rebuilt = buildAxisZFrame(new BlockPos(0, 0, 0), 3, 4);
 
-        assertTrue(identity.portalEnclosesOrigin(rebuilt, origin));
+        assertTrue(identity.portalEnclosesAnchor(rebuilt, anchor));
     }
 
     @Test
     void rebuiltPortalElsewhereBecomesDistinctIdentity() {
         TestBootstrap.ensureBootstrapped();
         ForeverWorldPortalFrame original = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
-        BlockPos origin = identity.computeOriginBlock(original);
+        BlockPos anchor = identity.computeAnchorBlock(original);
         ForeverWorldPortalFrame rebuiltElsewhere = buildAxisZFrame(new BlockPos(10, 0, 0), 2, 3);
 
-        assertFalse(identity.portalEnclosesOrigin(rebuiltElsewhere, origin));
+        assertFalse(identity.portalEnclosesAnchor(rebuiltElsewhere, anchor));
     }
 
     private ForeverWorldPortalFrame buildAxisZFrame(BlockPos anchor, int width, int height) {
