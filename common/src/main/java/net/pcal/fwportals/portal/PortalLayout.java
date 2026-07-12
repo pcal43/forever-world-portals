@@ -54,6 +54,29 @@ public record PortalLayout(
         return create(axis, frameBasePos, width, height);
     }
 
+    public BlockPos interiorOrigin() {
+        Direction rightDir = axis == Direction.Axis.X ? Direction.EAST : Direction.SOUTH;
+        return frameBasePos.relative(Direction.UP).relative(rightDir);
+    }
+
+    public BlockPos anchorBlock() {
+        Direction rightDir = axis == Direction.Axis.X ? Direction.EAST : Direction.SOUTH;
+        int horizontalOffset = (width - 1) / 2;
+        return interiorOrigin().relative(rightDir, horizontalOffset).immutable();
+    }
+
+    public ForeverWorldPortalFrame frame() {
+        return new ForeverWorldPortalFrame(
+                axis,
+                frameBasePos,
+                interiorOrigin(),
+                width,
+                height,
+                frameBlocks,
+                interiorBlocks
+        );
+    }
+
     public BlockPos representativePortalPosition() {
         return interiorBlocks.get(0);
     }

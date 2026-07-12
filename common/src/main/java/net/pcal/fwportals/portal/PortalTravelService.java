@@ -151,26 +151,24 @@ public final class PortalTravelService {
             }
 
             DestinationPortalCandidate candidate = maybeCandidate.get();
-            Optional<GeneratedPortal> generatedPortal = portalPlacementService.tryGeneratePortalAtAnchor(
+            Optional<PortalLayout> maybeLayout = portalPlacementService.findValidLayoutNearAnchor(
                     destinationLevel,
-                    player,
                     candidate.requestedAnchor(),
                     sourceFrame.width(),
                     sourceFrame.height(),
                     config.frameBlock().defaultBlockState()
             );
-            if (generatedPortal.isEmpty()) {
+            if (maybeLayout.isEmpty()) {
                 continue;
             }
 
-            PortalPlacementRollback rollback = generatedPortal.get().rollback();
-            BlockPos generatedPortalAnchor = generatedPortal.get().anchorBlock();
+            PortalLayout layout = maybeLayout.get();
+            BlockPos generatedPortalAnchor = layout.anchorBlock();
 
             boolean rejectedByConstraint = false;
             for (DestinationConstraint constraint : searchContext.constraints()) {
                 String rejectionReason = constraint.rejectionReason(generatedPortalAnchor);
                 if (rejectionReason != null) {
-                    rollback.rollback();
                     logger.warn(
                             "[fwportals] Rejecting generated destination portal at anchor {} because {}",
                             generatedPortalAnchor,
@@ -184,9 +182,8 @@ public final class PortalTravelService {
                 continue;
             }
 
-            List<PortalRecord> destinationMatches = registry.findPortalsContainedBy(destinationLevel.dimension(), generatedPortal.get().frame());
+            List<PortalRecord> destinationMatches = registry.findPortalsContainedBy(destinationLevel.dimension(), layout.frame());
             if (!destinationMatches.isEmpty()) {
-                rollback.rollback();
                 player.sendSystemMessage(PortalFeedbackText.returnPortalClaimedMessage());
                 logger.warn(
                         "[fwportals] Generated destination portal at anchor {} from requested anchor {} also enclosed existing portal anchors {}",
@@ -199,15 +196,17 @@ public final class PortalTravelService {
 
             PortalKey generatedKey = new PortalKey(destinationLevel.dimension(), generatedPortalAnchor);
             if (!inProgressPortals.add(generatedKey)) {
-                rollback.rollback();
                 player.sendSystemMessage(PortalFeedbackText.returnPortalFoundingInProgressMessage());
                 logger.warn("[fwportals] Reverse route founding already in progress for portal anchor {}", generatedPortalAnchor);
                 continue;
             }
 
-            boolean success = false;
-            boolean rolledBack = false;
             try {
+                GeneratedPortal generatedPortal = portalPlacementService.placeValidatedLayout(
+                        destinationLevel,
+                        layout,
+                        config.frameBlock().defaultBlockState()
+                );
                 PortalRecord outboundPortal = PortalRecord.resolved(
                         level.dimension(),
                         portalAnchor.immutable(),
@@ -241,47 +240,25 @@ public final class PortalTravelService {
                         outboundPortal.destinationDimension().orElseThrow().identifier()
                 );
                 logger.info(
-                    "[fwportals] Registered reverse portal route {} in {} -> {} in {}",
+                        "[fwportals] Registered reverse portal route {} in {} -> {} in {}",
                     reversePortal.anchor(),
                     reversePortal.dimension().identifier(),
                     reversePortal.destinationAnchor().orElseThrow(),
                     reversePortal.destinationDimension().orElseThrow().identifier()
                 );
 
-                success = true;
-                return buildTransition(destinationLevel, Vec3.atBottomCenterOf(generatedPortalAnchor), player);
+                return buildTransition(destinationLevel, Vec3.atBottomCenterOf(generatedPortal.anchorBlock()), player);
             } catch (RuntimeException ex) {
                 logger.warn(
-                        "[fwportals] Rolling back failed portal founding for portal anchor {} and requested destination anchor {}: {}",
+                        "[fwportals] Portal founding failed for portal anchor {} and requested destination anchor {}: {}",
                         portalAnchor,
                         candidate.requestedAnchor(),
                         ex.getMessage()
                 );
-                try {
-                    rollback.rollback();
-                    rolledBack = true;
-                } catch (RuntimeException rollbackEx) {
-                    logger.error(
-                        "[fwportals] Rollback failed after portal founding error for portal anchor {}: {}",
-                            portalAnchor,
-                            rollbackEx.getMessage()
-                    );
-                }
                 player.sendSystemMessage(PortalFeedbackText.foundingFailedMessage());
                 return null;
             } finally {
                 inProgressPortals.remove(generatedKey);
-                if (!success && !rolledBack) {
-                    try {
-                        rollback.rollback();
-                    } catch (RuntimeException rollbackEx) {
-                        logger.error(
-                                "[fwportals] Rollback failed while cleaning up portal founding for portal anchor {}: {}",
-                                portalAnchor,
-                                rollbackEx.getMessage()
-                        );
-                    }
-                }
             }
         }
 

@@ -3,16 +3,14 @@ package net.pcal.fwportals.portal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
 import org.apache.logging.log4j.Logger;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 public final class PortalPlacementService {
 
@@ -20,17 +18,34 @@ public final class PortalPlacementService {
 
     private final Logger logger;
     private final SafeLandingFinder safeLandingFinder;
-    private final PortalFrameDetector detector = new PortalFrameDetector();
-    private final PortalIdentity portalIdentity = new PortalIdentity();
 
     public PortalPlacementService(Logger logger, SafeLandingFinder safeLandingFinder) {
         this.logger = logger;
         this.safeLandingFinder = safeLandingFinder;
     }
 
-    public Optional<GeneratedPortal> tryGeneratePortalAtAnchor(
+    public Optional<PortalLayout> findValidLayoutNearAnchor(
             ServerLevel level,
-            ServerPlayer player,
+            BlockPos requestedAnchor,
+            int width,
+            int height,
+            BlockState frameState
+    ) {
+        return findValidLayoutNearAnchor(
+                level,
+                level.getMinY(),
+                level.getWorldBorder()::isWithinBounds,
+                requestedAnchor,
+                width,
+                height,
+                frameState
+        );
+    }
+
+    Optional<PortalLayout> findValidLayoutNearAnchor(
+            BlockGetter level,
+            int minY,
+            Predicate<BlockPos> withinBounds,
             BlockPos requestedAnchor,
             int width,
             int height,
@@ -43,72 +58,42 @@ public final class PortalPlacementService {
                 }
 
                 PortalLayout layout = PortalLayout.createForAnchorBlock(axis, candidateAnchor, width, height);
-                if (!layout.interiorBlocks().contains(candidateAnchor)) {
+                if (!layout.anchorBlock().equals(candidateAnchor)) {
                     continue;
                 }
-                if (!canPlaceLayout(level, layout, frameState)) {
+                if (!canPlaceLayout(level, minY, withinBounds, layout, frameState)) {
                     continue;
                 }
-
-                PlacementTransaction transaction = new PlacementTransaction(level);
-                boolean committed = false;
-                try {
-                    placeLayout(transaction, layout, frameState);
-
-                    Optional<ForeverWorldPortalFrame> detectedFrame = detector.findPortalFrame(
-                            level,
-                            candidateAnchor,
-                            axis,
-                            frameState
-                    );
-                    if (detectedFrame.isEmpty()) {
-                        transaction.rollback();
-                        continue;
-                    }
-
-                    ForeverWorldPortalFrame frame = detectedFrame.get();
-                    BlockPos generatedPortalAnchor = portalIdentity.computeAnchorBlock(frame);
-                    if (!generatedPortalAnchor.equals(candidateAnchor)) {
-                        logger.warn(
-                                "[fwportals] Rejecting generated portal at frame base {} in {} because computed anchor {} did not match candidate anchor {}",
-                                frame.frameBasePos(),
-                                level.dimension().identifier(),
-                                generatedPortalAnchor,
-                                candidateAnchor
-                        );
-                        transaction.rollback();
-                        continue;
-                    }
-
-                    if (!safeLandingFinder.canArriveAtAnchor(level, player, generatedPortalAnchor)) {
-                        transaction.rollback();
-                        continue;
-                    }
-
-                    committed = true;
-                    logger.info(
-                            "[fwportals] Generated portal near requested anchor {} using actual anchor {} with axis {} in {}",
-                            requestedAnchor,
-                            generatedPortalAnchor,
-                            frame.axis(),
-                            level.dimension().identifier()
-                    );
-                    return Optional.of(new GeneratedPortal(frame, generatedPortalAnchor, transaction));
-                } catch (RuntimeException ex) {
-                    if (!committed) {
-                        transaction.rollback();
-                    }
-                    throw ex;
-                }
+                return Optional.of(layout);
             }
         }
+        return Optional.empty();
+    }
 
-        logger.warn(
-                "[fwportals] Failed to generate portal near requested anchor {} in {}",
-                requestedAnchor,
+    public GeneratedPortal placeValidatedLayout(ServerLevel level, PortalLayout layout, BlockState frameState) {
+        applyLayout(layout, frameState, (pos, state) -> level.setBlock(pos, state, 18));
+        GeneratedPortal generatedPortal = new GeneratedPortal(layout.frame(), layout.anchorBlock());
+        logger.info(
+                "[fwportals] Generated portal at anchor {} with axis {} in {}",
+                generatedPortal.anchorBlock(),
+                generatedPortal.frame().axis(),
                 level.dimension().identifier()
         );
-        return Optional.empty();
+        return generatedPortal;
+    }
+
+    static void applyLayout(PortalLayout layout, BlockState frameState, BiConsumer<BlockPos, BlockState> blockSetter) {
+        for (BlockPos framePos : layout.frameBlocks()) {
+            blockSetter.accept(framePos, frameState);
+        }
+
+        BlockState portalState = Blocks.NETHER_PORTAL.defaultBlockState().setValue(
+                net.minecraft.world.level.block.NetherPortalBlock.AXIS,
+                layout.axis()
+        );
+        for (BlockPos interiorPos : layout.interiorBlocks()) {
+            blockSetter.accept(interiorPos, portalState);
+        }
     }
 
     private Iterable<BlockPos> candidateAnchors(BlockPos requestedAnchor) {
@@ -127,15 +112,25 @@ public final class PortalPlacementService {
         return anchors;
     }
 
-    private boolean canPlaceLayout(ServerLevel level, PortalLayout layout, BlockState frameState) {
+    private boolean canPlaceLayout(
+            BlockGetter level,
+            int minY,
+            Predicate<BlockPos> withinBounds,
+            PortalLayout layout,
+            BlockState frameState
+    ) {
         int frameBaseY = layout.frameBasePos().getY();
 
         for (BlockPos pos : layout.interiorBlocks()) {
-            if (!isReplaceableForPortal(level.getBlockState(pos))) {
+            if (!withinBounds.test(pos) || !isReplaceableForPortal(level.getBlockState(pos))) {
                 return false;
             }
         }
         for (BlockPos pos : layout.frameBlocks()) {
+            if (!withinBounds.test(pos)) {
+                return false;
+            }
+
             BlockState state = level.getBlockState(pos);
             if (state.is(frameState.getBlock())) {
                 continue;
@@ -152,7 +147,8 @@ public final class PortalPlacementService {
                 return false;
             }
         }
-        return true;
+
+        return safeLandingFinder.validateGeneratedLandingSpot(level, minY, withinBounds, layout, frameState) == null;
     }
 
     private boolean isReplaceableForPortal(BlockState state) {
@@ -166,7 +162,7 @@ public final class PortalPlacementService {
                 || state.is(Blocks.FIRE);
     }
 
-    private boolean canUseAsFoundation(ServerLevel level, BlockPos pos, BlockState state) {
+    private boolean canUseAsFoundation(BlockGetter level, BlockPos pos, BlockState state) {
         if (state.isAir() || state.canBeReplaced()) {
             return true;
         }
@@ -179,60 +175,5 @@ public final class PortalPlacementService {
                 || state.is(Blocks.WATER)
                 || state.is(Blocks.FIRE)
                 || state.is(Blocks.POWDER_SNOW);
-    }
-
-    private void placeLayout(PlacementTransaction transaction, PortalLayout layout, BlockState frameState) {
-        for (BlockPos framePos : layout.frameBlocks()) {
-            transaction.setBlock(framePos, frameState, 18);
-        }
-
-        BlockState portalState = Blocks.NETHER_PORTAL.defaultBlockState().setValue(
-                net.minecraft.world.level.block.NetherPortalBlock.AXIS,
-                layout.axis()
-        );
-        for (BlockPos interiorPos : layout.interiorBlocks()) {
-            transaction.setBlock(interiorPos, portalState, 18);
-        }
-    }
-
-    private static final class PlacementTransaction implements PortalPlacementRollback {
-        private final ServerLevel level;
-        private final Map<BlockPos, Snapshot> snapshots = new LinkedHashMap<>();
-
-        private PlacementTransaction(ServerLevel level) {
-            this.level = level;
-        }
-
-        private void setBlock(BlockPos pos, BlockState state, int flags) {
-            snapshots.putIfAbsent(pos.immutable(), Snapshot.capture(level, pos));
-            level.setBlock(pos, state, flags);
-        }
-
-        @Override
-        public void rollback() {
-            for (Map.Entry<BlockPos, Snapshot> entry : snapshots.entrySet()) {
-                BlockPos pos = entry.getKey();
-                Snapshot snapshot = entry.getValue();
-                level.setBlock(pos, snapshot.state(), 18);
-                if (snapshot.blockEntityTag() != null) {
-                    BlockEntity blockEntity = BlockEntity.loadStatic(pos, snapshot.state(), snapshot.blockEntityTag(), level.registryAccess());
-                    if (blockEntity != null) {
-                        level.setBlockEntity(blockEntity);
-                    }
-                } else {
-                    level.removeBlockEntity(pos);
-                }
-            }
-        }
-    }
-
-    private record Snapshot(BlockState state, net.minecraft.nbt.CompoundTag blockEntityTag) {
-        private static Snapshot capture(ServerLevel level, BlockPos pos) {
-            LevelChunk chunk = level.getChunkAt(pos);
-            return new Snapshot(
-                    level.getBlockState(pos),
-                    chunk.getBlockEntityNbtForSaving(pos, level.registryAccess())
-            );
-        }
     }
 }

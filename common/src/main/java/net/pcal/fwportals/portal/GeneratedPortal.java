@@ -4,8 +4,7 @@ import net.minecraft.core.BlockPos;
 
 public record GeneratedPortal(
         ForeverWorldPortalFrame frame,
-        BlockPos anchorBlock,
-        PortalPlacementRollback rollback
+        BlockPos anchorBlock
 ) {
     public GeneratedPortal {
         anchorBlock = anchorBlock.immutable();

@@ -3,31 +3,53 @@ package net.pcal.fwportals.portal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Predicate;
 
 public final class SafeLandingFinder {
 
     public SafeLandingFinder() {
     }
 
-    public boolean canArriveAtAnchor(ServerLevel level, ServerPlayer player, BlockPos anchorBlock) {
-        return validateManualLandingSpot(level, anchorBlock) == null
-                && level.getWorldBorder().isWithinBounds(anchorBlock);
+    public boolean canArriveAtGeneratedPortal(ServerLevel level, PortalLayout layout, BlockState frameState) {
+        return validateGeneratedLandingSpot(
+                level,
+                level.getMinY(),
+                level.getWorldBorder()::isWithinBounds,
+                layout,
+                frameState
+        ) == null;
     }
 
-    private @Nullable FailureReason validateManualLandingSpot(ServerLevel level, BlockPos feetPos) {
-        if (!level.getWorldBorder().isWithinBounds(feetPos) || feetPos.getY() <= level.getMinY() + 1) {
+    @Nullable FailureReason validateGeneratedLandingSpot(
+            BlockGetter level,
+            int minY,
+            Predicate<BlockPos> withinBounds,
+            PortalLayout layout,
+            BlockState frameState
+    ) {
+        BlockPos feetPos = layout.anchorBlock();
+        if (!withinBounds.test(feetPos) || feetPos.getY() <= minY + 1) {
             return FailureReason.OUT_OF_BOUNDS;
         }
 
         BlockPos headPos = feetPos.above();
         BlockPos floorPos = feetPos.below();
-        BlockState feetState = level.getBlockState(feetPos);
-        BlockState headState = level.getBlockState(headPos);
-        BlockState floorState = level.getBlockState(floorPos);
+        if (!withinBounds.test(headPos) || !withinBounds.test(floorPos)) {
+            return FailureReason.OUT_OF_BOUNDS;
+        }
+
+        BlockState portalState = Blocks.NETHER_PORTAL.defaultBlockState().setValue(
+                net.minecraft.world.level.block.NetherPortalBlock.AXIS,
+                layout.axis()
+        );
+        BlockState feetState = projectedState(level, layout, frameState, portalState, feetPos);
+        BlockState headState = projectedState(level, layout, frameState, portalState, headPos);
+        BlockState floorState = projectedState(level, layout, frameState, portalState, floorPos);
 
         if (!floorState.blocksMotion() || !floorState.isFaceSturdy(level, floorPos, Direction.UP)) {
             return FailureReason.BLOCKED;
@@ -42,6 +64,22 @@ public final class SafeLandingFinder {
         }
 
         return null;
+    }
+
+    private BlockState projectedState(
+            BlockGetter level,
+            PortalLayout layout,
+            BlockState frameState,
+            BlockState portalState,
+            BlockPos pos
+    ) {
+        if (layout.frameBlocks().contains(pos)) {
+            return frameState;
+        }
+        if (layout.interiorBlocks().contains(pos)) {
+            return portalState;
+        }
+        return level.getBlockState(pos);
     }
 
     private boolean isHazardous(BlockState state) {
