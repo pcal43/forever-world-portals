@@ -1,4 +1,4 @@
-package net.pcal.fwportals.fabric.mixin.client;
+package net.pcal.fwportals.fabric.mixins;
 
 import net.fabricmc.fabric.api.client.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.client.renderer.v1.mesh.QuadEmitter;

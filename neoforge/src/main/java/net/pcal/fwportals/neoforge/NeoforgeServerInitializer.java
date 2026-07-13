@@ -13,13 +13,13 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.pcal.fwportals.ForeverWorldPortals;
 import net.pcal.fwportals.ForeverWorldPortalsService;
 
-@Mod(ForeverWorldPortalsNeoForgeInitializer.MOD_ID)
-public class ForeverWorldPortalsNeoForgeInitializer {
+@Mod(NeoforgeServerInitializer.MOD_ID)
+public class NeoforgeServerInitializer {
 
     public static final String MOD_ID = "fwportals";
     private static final Identifier ATTUNEMENTS_RELOAD_ID = Identifier.fromNamespaceAndPath(MOD_ID, "attunements");
 
-    public ForeverWorldPortalsNeoForgeInitializer(IEventBus modEventBus) {
+    public NeoforgeServerInitializer(IEventBus modEventBus) {
         ForeverWorldPortals.initialize();
         NeoForge.EVENT_BUS.addListener((AddServerReloadListenersEvent event) ->
                 event.addListener(

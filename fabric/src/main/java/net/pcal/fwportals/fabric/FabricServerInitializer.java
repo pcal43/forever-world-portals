@@ -11,7 +11,7 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.pcal.fwportals.ForeverWorldPortals;
 import net.pcal.fwportals.ForeverWorldPortalsService;
 
-public class ForeverWorldPortalsFabricInitializer implements ModInitializer {
+public class FabricServerInitializer implements ModInitializer {
 
     private static final Identifier ATTUNEMENTS_RELOAD_ID = Identifier.fromNamespaceAndPath("fwportals", "attunements");
 

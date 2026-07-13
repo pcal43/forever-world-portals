@@ -6,10 +6,10 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.pcal.fwportals.client.ForeverWorldPortalsClient;
 
-@EventBusSubscriber(modid = ForeverWorldPortalsNeoForgeInitializer.MOD_ID, value = Dist.CLIENT)
-public final class ForeverWorldPortalsNeoForgeClientInitializer {
+@EventBusSubscriber(modid = NeoforgeServerInitializer.MOD_ID, value = Dist.CLIENT)
+public final class NeoforgeClientInitializer {
 
-    private ForeverWorldPortalsNeoForgeClientInitializer() {
+    private NeoforgeClientInitializer() {
     }
 
     @SubscribeEvent

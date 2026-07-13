@@ -13,10 +13,10 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.pcal.fwportals.fabric.ForeverWorldPortalsFabricInitializer"
+      "net.pcal.fwportals.fabric.FabricServerInitializer"
     ],
     "client": [
-      "net.pcal.fwportals.fabric.ForeverWorldPortalsFabricClientInitializer"
+      "net.pcal.fwportals.fabric.FabricClientInitializer"
     ]
   },
   "mixins": [
