@@ -51,7 +51,7 @@ public final class PortalTravelService {
             return null;
         }
 
-        Optional<PortalFrame> maybeFrame = detector.findPortalFrame(level, portalEntryPos, config.frameBlock().defaultBlockState());
+        Optional<PortalFrame> maybeFrame = detector.findPortalFrame(level, portalEntryPos, config.portalFrameBlock().defaultBlockState());
         if (maybeFrame.isEmpty()) {
             return null;
         }
@@ -153,7 +153,7 @@ public final class PortalTravelService {
             DestinationPortalCandidate candidate = maybeCandidate.get();
             BlockState destinationFrameState = config.returnPortalMode() == CommonConfig.ReturnPortalMode.RUINED
                     ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
-                    : config.frameBlock().defaultBlockState();
+                    : config.portalFrameBlock().defaultBlockState();
             PortalPlacementService.LayoutSearchResult layoutSearchResult = portalPlacementService.findValidLayoutNearAnchor(
                     destinationLevel,
                     candidate.requestedAnchor(),
@@ -244,7 +244,7 @@ public final class PortalTravelService {
                         destinationLevel,
                         layout,
                         config.returnPortalMode(),
-                        config.frameBlock().defaultBlockState()
+                        config.portalFrameBlock().defaultBlockState()
                 );
                 FoundingRegistration registration = buildFoundingRegistration(
                         config.returnPortalMode(),

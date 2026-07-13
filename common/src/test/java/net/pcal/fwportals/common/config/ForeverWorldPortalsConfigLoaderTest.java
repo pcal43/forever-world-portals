@@ -19,7 +19,7 @@ class ForeverWorldPortalsConfigLoaderTest {
             # Example config
             requireEmptyInventory=true
             logLevel=INFO
-            frameBlock=minecraft:diamond_block
+            portalFrameBlock=minecraft:diamond_block
             returnPortalMode=RUINED
             destinationSpiralSpacingBlocks=10000
             maximumSpiralSearchPositions=512
@@ -64,7 +64,7 @@ class ForeverWorldPortalsConfigLoaderTest {
         Files.writeString(configPath, """
                 requireEmptyInventory=false
                 logLevel=DEBUG
-                frameBlock=minecraft:emerald_block
+                portalFrameBlock=minecraft:emerald_block
                 returnPortalMode=COMPLETE
                 destinationSpiralSpacingBlocks=20000
                 maximumSpiralSearchPositions=100
@@ -77,7 +77,7 @@ class ForeverWorldPortalsConfigLoaderTest {
 
         assertFalse(config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.DEBUG, config.logLevel());
-        assertEquals("minecraft:emerald_block", config.frameBlockId().toString());
+        assertEquals("minecraft:emerald_block", config.portalFrameBlockId().toString());
         assertEquals(CommonConfig.ReturnPortalMode.COMPLETE, config.returnPortalMode());
         assertEquals(20000, config.destinationSpiralSpacingBlocks());
         assertEquals(100, config.maximumSpiralSearchPositions());
@@ -96,7 +96,7 @@ class ForeverWorldPortalsConfigLoaderTest {
 
         assertEquals(true, config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.INFO, config.logLevel());
-        assertEquals("minecraft:diamond_block", config.frameBlockId().toString());
+        assertEquals("minecraft:diamond_block", config.portalFrameBlockId().toString());
         assertEquals(CommonConfig.ReturnPortalMode.RUINED, config.returnPortalMode());
         assertEquals(DEFAULT_TEMPLATE, Files.readString(configPath, StandardCharsets.UTF_8));
     }

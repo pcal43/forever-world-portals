@@ -17,7 +17,7 @@ public final class CommonConfigParser {
     private static final Set<String> EXPECTED_KEYS = Set.of(
             "requireEmptyInventory",
             "logLevel",
-            "frameBlock",
+            "portalFrameBlock",
             "returnPortalMode",
             "destinationSpiralSpacingBlocks",
             "maximumSpiralSearchPositions",
@@ -50,7 +50,7 @@ public final class CommonConfigParser {
                 logger
         );
         Level logLevel = parseLevel(properties, "logLevel", defaults.logLevel(), logger);
-        Block frameBlock = parseBlock(properties, "frameBlock", defaults.frameBlock(), logger);
+        Block portalFrameBlock = parseBlock(properties, "portalFrameBlock", defaults.portalFrameBlock(), logger);
         CommonConfig.ReturnPortalMode returnPortalMode = parseReturnPortalMode(
                 properties,
                 "returnPortalMode",
@@ -90,8 +90,8 @@ public final class CommonConfigParser {
         return new CommonConfig(
                 requireEmptyInventory,
                 logLevel,
-                BuiltInRegistries.BLOCK.getKey(frameBlock),
-                frameBlock,
+                BuiltInRegistries.BLOCK.getKey(portalFrameBlock),
+                portalFrameBlock,
                 returnPortalMode,
                 destinationSpiralSpacingBlocks,
                 maximumSpiralSearchPositions,
@@ -272,14 +272,14 @@ public final class CommonConfigParser {
                 BuiltInRegistries.BLOCK.getKey(
                         requireParsedBlockDefault(
                                 defaultResourceName,
-                                "frameBlock",
-                                requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock")
+                                "portalFrameBlock",
+                                requireDefaultValue(bundledDefaults, defaultResourceName, "portalFrameBlock")
                         )
                 ),
                 requireParsedBlockDefault(
                         defaultResourceName,
-                        "frameBlock",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock")
+                        "portalFrameBlock",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "portalFrameBlock")
                 ),
                 requireParsedReturnPortalModeDefault(
                         defaultResourceName,

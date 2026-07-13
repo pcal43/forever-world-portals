@@ -7,8 +7,8 @@ import org.apache.logging.log4j.Level;
 public record CommonConfig(
         boolean requireEmptyInventory,
         Level logLevel,
-        Identifier frameBlockId,
-        Block frameBlock,
+        Identifier portalFrameBlockId,
+        Block portalFrameBlock,
         ReturnPortalMode returnPortalMode,
         int destinationSpiralSpacingBlocks,
         int maximumSpiralSearchPositions,

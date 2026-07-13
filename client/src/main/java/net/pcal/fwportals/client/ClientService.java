@@ -133,7 +133,7 @@ public final class ClientService {
 
     public boolean isForeverWorldPortal(BlockAndTintGetter level, BlockPos pos) {
         BlockState frameState = CommonService.getInstance().isInitialized()
-                ? CommonService.getInstance().config().frameBlock().defaultBlockState()
+                ? CommonService.getInstance().config().portalFrameBlock().defaultBlockState()
                 : Blocks.DIAMOND_BLOCK.defaultBlockState();
         return detector.findPortalFrame(level, pos, frameState).isPresent();
     }

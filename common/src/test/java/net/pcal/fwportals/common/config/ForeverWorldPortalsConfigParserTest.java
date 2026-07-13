@@ -81,7 +81,7 @@ class ForeverWorldPortalsConfigParserTest {
                 properties("""
                         requireEmptyInventory=not_boolean
                         logLevel=LOUD
-                        frameBlock=not a block id
+                        portalFrameBlock=not a block id
                         returnPortalMode=glitched
                         destinationSpiralSpacingBlocks=0
                         maximumSpiralSearchPositions=-1
@@ -95,7 +95,7 @@ class ForeverWorldPortalsConfigParserTest {
 
         assertEquals(true, config.requireEmptyInventory());
         assertEquals(Level.INFO, config.logLevel());
-        assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
+        assertEquals(Blocks.DIAMOND_BLOCK, config.portalFrameBlock());
         assertEquals(CommonConfig.ReturnPortalMode.RUINED, config.returnPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
         assertEquals(512, config.maximumSpiralSearchPositions());

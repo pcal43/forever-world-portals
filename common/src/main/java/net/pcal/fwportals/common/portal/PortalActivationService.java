@@ -51,7 +51,7 @@ public final class PortalActivationService {
             return false;
         }
 
-        BlockState frameState = config.frameBlock().defaultBlockState();
+        BlockState frameState = config.portalFrameBlock().defaultBlockState();
         Optional<PortalFrame> maybeFrame = detector.findEmptyFrame(level, firePos, Direction.Axis.X, frameState);
         if (maybeFrame.isEmpty()) {
             if (isAdjacentToFrame(level, firePos, frameState)) {
@@ -77,7 +77,7 @@ public final class PortalActivationService {
     }
 
     public boolean canActivatePortalAt(BlockGetter level, BlockPos firePos) {
-        BlockState frameState = config.frameBlock().defaultBlockState();
+        BlockState frameState = config.portalFrameBlock().defaultBlockState();
         return detector.findEmptyFrame(level, firePos, Direction.Axis.X, frameState).isPresent();
     }
 
@@ -86,7 +86,7 @@ public final class PortalActivationService {
         if (!state.is(Blocks.NETHER_PORTAL)) {
             return Optional.empty();
         }
-        return detector.findPortalFrame(level, pos, config.frameBlock().defaultBlockState());
+        return detector.findPortalFrame(level, pos, config.portalFrameBlock().defaultBlockState());
     }
 
     public boolean isForeverWorldPortal(BlockGetter level, BlockPos pos) {

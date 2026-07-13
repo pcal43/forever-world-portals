@@ -21,7 +21,7 @@ class ForeverWorldPortalsClientConfigLoaderTest {
     private static final String DEFAULT_TEMPLATE = """
             requireEmptyInventory=true
             logLevel=INFO
-            frameBlock=minecraft:diamond_block
+            portalFrameBlock=minecraft:diamond_block
             returnPortalMode=RUINED
             client.portalColor=#4CAF50
             destinationSpiralSpacingBlocks=10000
