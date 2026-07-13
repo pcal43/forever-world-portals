@@ -112,29 +112,29 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 - A rebuilt frame keeps the same identity if it still encloses that stored portal anchor
 - Moving the frame so it no longer encloses that anchor creates a new portal
 - Teleportation always derives arrival from the stored destination anchor and does not use a separate persisted landing position
-- By default, players must carry absolutely nothing to enter a Forever World portal; this can be disabled with `server.requireEmptyInventory=false`
+- By default, players must carry absolutely nothing to enter a Forever World portal; this can be disabled with `requireEmptyInventory=false`
 
 ## Configuration
 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `server.enabled`, `server.requireEmptyInventory`, `server.logLevel`, `server.frameBlock`, `server.activationItem`, `server.destinationPortalMode`, `server.destinationSpiralSpacingBlocks`, `server.maximumSpiralSearchPositions`, `server.maximumBiomeSearches`, `server.maximumPortalPlacementAttemptsPerBiome`, `server.minimumGeneratedTerrainDistanceBlocks`, and `client.portalColor`
+- Current settings: `enabled`, `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `destinationPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, `minimumGeneratedTerrainDistanceBlocks`, and `client.portalColor`
 - Initial creation: if `fwportals.properties` does not exist, the mod copies the bundled `fwportals-default.properties` template verbatim
 - Defaults on startup: the bundled `fwportals-default.properties` resource is always loaded as the default-value source, and any keys present in the user file override it
 - Partial user configs: omitted keys continue using the defaults bundled with the installed mod version
 - Existing user files are never automatically overwritten or rewritten just to add newly introduced settings
-- `server.requireEmptyInventory=true` prevents portal activation unless the player's main inventory, hotbar, armor slots, and offhand are all empty
-- `server.destinationSpiralSpacingBlocks` controls square-spiral search-center spacing
+- `requireEmptyInventory=true` prevents portal activation unless the player's main inventory, hotbar, armor slots, and offhand are all empty
+- `destinationSpiralSpacingBlocks` controls square-spiral search-center spacing
 - The biome-search radius is derived from spiral spacing as `ceil(spacing / sqrt(2))`
-- `server.maximumSpiralSearchPositions` limits cheap spiral-center inspection across one destination search
-- `server.maximumBiomeSearches` independently limits expensive biome-locator calls across one destination search
-- `server.maximumPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
-- `server.minimumGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
-- `server.destinationPortalMode` accepts `NONE`, `BROKEN`, or `COMPLETE` and defaults to `BROKEN`
+- `maximumSpiralSearchPositions` limits cheap spiral-center inspection across one destination search
+- `maximumBiomeSearches` independently limits expensive biome-locator calls across one destination search
+- `maximumPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
+- `minimumGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
+- `destinationPortalMode` accepts `NONE`, `BROKEN`, or `COMPLETE` and defaults to `BROKEN`
 - `client.portalColor` sets the fixed RGB tint used by the optional client module for valid Forever World portals and defaults to `#4CAF50`
 
-`server.destinationPortalMode` currently supports these values:
+`destinationPortalMode` currently supports these values:
 
 - `NONE`: no destination portal is generated and no reverse portal is registered
 - `BROKEN`: a cobbled-deepslate placeholder frame plus buried crying-obsidian footing is generated and registered

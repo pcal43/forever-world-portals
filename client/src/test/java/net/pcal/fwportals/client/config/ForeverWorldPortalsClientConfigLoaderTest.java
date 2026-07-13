@@ -19,18 +19,18 @@ class ForeverWorldPortalsClientConfigLoaderTest {
 
     private static final Logger LOGGER = LogManager.getLogger("fwportals-test");
     private static final String DEFAULT_TEMPLATE = """
-            server.enabled=true
-            server.requireEmptyInventory=true
-            server.logLevel=INFO
-            server.frameBlock=minecraft:diamond_block
-            server.activationItem=minecraft:flint_and_steel
-            server.destinationPortalMode=BROKEN
+            enabled=true
+            requireEmptyInventory=true
+            logLevel=INFO
+            frameBlock=minecraft:diamond_block
+            activationItem=minecraft:flint_and_steel
+            destinationPortalMode=BROKEN
             client.portalColor=#4CAF50
-            server.destinationSpiralSpacingBlocks=10000
-            server.maximumSpiralSearchPositions=512
-            server.maximumBiomeSearches=64
-            server.maximumPortalPlacementAttemptsPerBiome=64
-            server.minimumGeneratedTerrainDistanceBlocks=10000
+            destinationSpiralSpacingBlocks=10000
+            maximumSpiralSearchPositions=512
+            maximumBiomeSearches=64
+            maximumPortalPlacementAttemptsPerBiome=64
+            minimumGeneratedTerrainDistanceBlocks=10000
             """;
 
     @Test
@@ -61,7 +61,7 @@ class ForeverWorldPortalsClientConfigLoaderTest {
     void missingBundledClientPortalColorFailsClearly() {
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> new ForeverWorldPortalsClientConfigLoaderHelper("server.enabled=true\n").loadBundledDefaultColor()
+                () -> new ForeverWorldPortalsClientConfigLoaderHelper("enabled=true\n").loadBundledDefaultColor()
         );
         assertTrue(exception.getMessage().contains("client.portalColor"));
     }

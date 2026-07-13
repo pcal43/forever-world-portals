@@ -17,17 +17,17 @@ class ForeverWorldPortalsConfigLoaderTest {
 
     private static final String DEFAULT_TEMPLATE = """
             # Example config
-            server.enabled=true
-            server.requireEmptyInventory=true
-            server.logLevel=INFO
-            server.frameBlock=minecraft:diamond_block
-            server.activationItem=minecraft:flint_and_steel
-            server.destinationPortalMode=BROKEN
-            server.destinationSpiralSpacingBlocks=10000
-            server.maximumSpiralSearchPositions=512
-            server.maximumBiomeSearches=64
-            server.maximumPortalPlacementAttemptsPerBiome=64
-            server.minimumGeneratedTerrainDistanceBlocks=10000
+            enabled=true
+            requireEmptyInventory=true
+            logLevel=INFO
+            frameBlock=minecraft:diamond_block
+            activationItem=minecraft:flint_and_steel
+            destinationPortalMode=BROKEN
+            destinationSpiralSpacingBlocks=10000
+            maximumSpiralSearchPositions=512
+            maximumBiomeSearches=64
+            maximumPortalPlacementAttemptsPerBiome=64
+            minimumGeneratedTerrainDistanceBlocks=10000
             """;
 
     @Test
@@ -46,8 +46,8 @@ class ForeverWorldPortalsConfigLoaderTest {
         Path configPath = tempDir.resolve("config").resolve(CommonConfigLoader.CONFIG_FILENAME);
         Files.createDirectories(configPath.getParent());
         String partialConfig = """
-                server.requireEmptyInventory=false
-                server.maximumBiomeSearches=5
+                requireEmptyInventory=false
+                maximumBiomeSearches=5
                 """;
         Files.writeString(configPath, partialConfig, StandardCharsets.UTF_8);
         long originalModifiedTime = Files.getLastModifiedTime(configPath).toMillis();
@@ -64,17 +64,17 @@ class ForeverWorldPortalsConfigLoaderTest {
         CommonConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
         Path configPath = tempDir.resolve(CommonConfigLoader.CONFIG_FILENAME);
         Files.writeString(configPath, """
-                server.enabled=false
-                server.requireEmptyInventory=false
-                server.logLevel=DEBUG
-                server.frameBlock=minecraft:emerald_block
-                server.activationItem=minecraft:fire_charge
-                server.destinationPortalMode=COMPLETE
-                server.destinationSpiralSpacingBlocks=20000
-                server.maximumSpiralSearchPositions=100
-                server.maximumBiomeSearches=50
-                server.maximumPortalPlacementAttemptsPerBiome=25
-                server.minimumGeneratedTerrainDistanceBlocks=30000
+                enabled=false
+                requireEmptyInventory=false
+                logLevel=DEBUG
+                frameBlock=minecraft:emerald_block
+                activationItem=minecraft:fire_charge
+                destinationPortalMode=COMPLETE
+                destinationSpiralSpacingBlocks=20000
+                maximumSpiralSearchPositions=100
+                maximumBiomeSearches=50
+                maximumPortalPlacementAttemptsPerBiome=25
+                minimumGeneratedTerrainDistanceBlocks=30000
                 """, StandardCharsets.UTF_8);
 
         CommonConfig config = loader.load(configPath, null);

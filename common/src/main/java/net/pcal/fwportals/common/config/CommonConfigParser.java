@@ -16,17 +16,17 @@ import java.util.Set;
 public final class CommonConfigParser {
 
     private static final Set<String> EXPECTED_KEYS = Set.of(
-            "server.enabled",
-            "server.requireEmptyInventory",
-            "server.logLevel",
-            "server.frameBlock",
-            "server.activationItem",
-            "server.destinationPortalMode",
-            "server.destinationSpiralSpacingBlocks",
-            "server.maximumSpiralSearchPositions",
-            "server.maximumBiomeSearches",
-            "server.maximumPortalPlacementAttemptsPerBiome",
-            "server.minimumGeneratedTerrainDistanceBlocks"
+            "enabled",
+            "requireEmptyInventory",
+            "logLevel",
+            "frameBlock",
+            "activationItem",
+            "destinationPortalMode",
+            "destinationSpiralSpacingBlocks",
+            "maximumSpiralSearchPositions",
+            "maximumBiomeSearches",
+            "maximumPortalPlacementAttemptsPerBiome",
+            "minimumGeneratedTerrainDistanceBlocks"
     );
 
     static CommonConfig parseBundledDefaults(Properties bundledDefaults, String defaultResourceName) {
@@ -48,57 +48,57 @@ public final class CommonConfigParser {
     ) {
         boolean enabled = parseBoolean(
                 properties,
-                "server.enabled",
+                "enabled",
                 defaults.enabled(),
                 logger
         );
         boolean requireEmptyInventory = parseBoolean(
                 properties,
-                "server.requireEmptyInventory",
+                "requireEmptyInventory",
                 defaults.requireEmptyInventory(),
                 logger
         );
-        Level logLevel = parseLevel(properties, "server.logLevel", defaults.logLevel(), logger);
-        Block frameBlock = parseBlock(properties, "server.frameBlock", defaults.frameBlock(), logger);
+        Level logLevel = parseLevel(properties, "logLevel", defaults.logLevel(), logger);
+        Block frameBlock = parseBlock(properties, "frameBlock", defaults.frameBlock(), logger);
         Item activationItem = parseItem(
                 properties,
-                "server.activationItem",
+                "activationItem",
                 defaults.activationItem(),
                 logger
         );
         CommonConfig.DestinationPortalMode destinationPortalMode = parseDestinationPortalMode(
                 properties,
-                "server.destinationPortalMode",
+                "destinationPortalMode",
                 defaults.destinationPortalMode(),
                 logger
         );
         int destinationSpiralSpacingBlocks = parsePositiveInt(
                 properties,
-                "server.destinationSpiralSpacingBlocks",
+                "destinationSpiralSpacingBlocks",
                 defaults.destinationSpiralSpacingBlocks(),
                 logger
         );
         int maximumSpiralSearchPositions = parsePositiveInt(
                 properties,
-                "server.maximumSpiralSearchPositions",
+                "maximumSpiralSearchPositions",
                 defaults.maximumSpiralSearchPositions(),
                 logger
         );
         int maximumBiomeSearches = parsePositiveInt(
                 properties,
-                "server.maximumBiomeSearches",
+                "maximumBiomeSearches",
                 defaults.maximumBiomeSearches(),
                 logger
         );
         int maximumPortalPlacementAttemptsPerBiome = parsePositiveInt(
                 properties,
-                "server.maximumPortalPlacementAttemptsPerBiome",
+                "maximumPortalPlacementAttemptsPerBiome",
                 defaults.maximumPortalPlacementAttemptsPerBiome(),
                 logger
         );
         int minimumGeneratedTerrainDistanceBlocks = parsePositiveInt(
                 properties,
-                "server.minimumGeneratedTerrainDistanceBlocks",
+                "minimumGeneratedTerrainDistanceBlocks",
                 defaults.minimumGeneratedTerrainDistanceBlocks(),
                 logger
         );
@@ -301,72 +301,72 @@ public final class CommonConfigParser {
         return new CommonConfig(
                 requireParsedBooleanDefault(
                         defaultResourceName,
-                        "server.enabled",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.enabled")
+                        "enabled",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "enabled")
                 ),
                 requireParsedBooleanDefault(
                         defaultResourceName,
-                        "server.requireEmptyInventory",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.requireEmptyInventory")
+                        "requireEmptyInventory",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "requireEmptyInventory")
                 ),
                 requireParsedLevelDefault(
                         defaultResourceName,
-                        "server.logLevel",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.logLevel")
+                        "logLevel",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "logLevel")
                 ),
                 BuiltInRegistries.BLOCK.getKey(
                         requireParsedBlockDefault(
                                 defaultResourceName,
-                                "server.frameBlock",
-                                requireDefaultValue(bundledDefaults, defaultResourceName, "server.frameBlock")
+                                "frameBlock",
+                                requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock")
                         )
                 ),
                 requireParsedBlockDefault(
                         defaultResourceName,
-                        "server.frameBlock",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.frameBlock")
+                        "frameBlock",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock")
                 ),
                 BuiltInRegistries.ITEM.getKey(
                         requireParsedItemDefault(
                                 defaultResourceName,
-                                "server.activationItem",
-                                requireDefaultValue(bundledDefaults, defaultResourceName, "server.activationItem")
+                                "activationItem",
+                                requireDefaultValue(bundledDefaults, defaultResourceName, "activationItem")
                         )
                 ),
                 requireParsedItemDefault(
                         defaultResourceName,
-                        "server.activationItem",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.activationItem")
+                        "activationItem",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "activationItem")
                 ),
                 requireParsedDestinationPortalModeDefault(
                         defaultResourceName,
-                        "server.destinationPortalMode",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.destinationPortalMode")
+                        "destinationPortalMode",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "destinationPortalMode")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "server.destinationSpiralSpacingBlocks",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.destinationSpiralSpacingBlocks")
+                        "destinationSpiralSpacingBlocks",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "destinationSpiralSpacingBlocks")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "server.maximumSpiralSearchPositions",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.maximumSpiralSearchPositions")
+                        "maximumSpiralSearchPositions",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumSpiralSearchPositions")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "server.maximumBiomeSearches",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.maximumBiomeSearches")
+                        "maximumBiomeSearches",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumBiomeSearches")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "server.maximumPortalPlacementAttemptsPerBiome",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.maximumPortalPlacementAttemptsPerBiome")
+                        "maximumPortalPlacementAttemptsPerBiome",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumPortalPlacementAttemptsPerBiome")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "server.minimumGeneratedTerrainDistanceBlocks",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "server.minimumGeneratedTerrainDistanceBlocks")
+                        "minimumGeneratedTerrainDistanceBlocks",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "minimumGeneratedTerrainDistanceBlocks")
                 )
         );
     }
