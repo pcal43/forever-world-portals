@@ -1,5 +1,7 @@
 package net.pcal.fwportals;
 
+import net.pcal.fwportals.common.config.Config;
+import net.pcal.fwportals.common.config.ConfigLoader;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,11 +25,11 @@ public final class ForeverWorldPortals {
 
     private static void initializeCommon() throws IOException {
         Logger logger = LogManager.getLogger(LOGGER_NAME);
-        ForeverWorldPortalsConfigLoader configLoader = ForeverWorldPortalsConfigLoader.createDefault();
-        java.nio.file.Path configFilePath = Paths.get("config").resolve(ForeverWorldPortalsConfigLoader.CONFIG_FILENAME);
+        ConfigLoader configLoader = ConfigLoader.createDefault();
+        java.nio.file.Path configFilePath = Paths.get("config").resolve(ConfigLoader.CONFIG_FILENAME);
 
         logger.info(LOG_PREFIX + "Loading configuration from " + configFilePath);
-        ForeverWorldPortalsConfig config = configLoader.load(configFilePath, logger);
+        Config config = configLoader.load(configFilePath, logger);
 
         if (config.logLevel() != Level.INFO) {
             Configurator.setLevel(LOGGER_NAME, config.logLevel());

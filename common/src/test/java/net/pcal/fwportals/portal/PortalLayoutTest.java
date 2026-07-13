@@ -3,6 +3,9 @@ package net.pcal.fwportals.portal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.pcal.fwportals.TestBootstrap;
+import net.pcal.fwportals.common.portal.PortalFrame;
+import net.pcal.fwportals.common.portal.PortalIdentity;
+import net.pcal.fwportals.common.portal.PortalLayout;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,7 +55,7 @@ class PortalLayoutTest {
 
         BlockPos requestedAnchor = new BlockPos(100, 70, -50);
         PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, requestedAnchor);
-        ForeverWorldPortalFrame frame = layout.frame();
+        PortalFrame frame = layout.frame();
 
         assertEquals(requestedAnchor, identity.computeAnchorBlock(frame));
     }
@@ -63,7 +66,7 @@ class PortalLayoutTest {
 
         BlockPos requestedAnchor = new BlockPos(100, 70, -50);
         PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.X, requestedAnchor);
-        ForeverWorldPortalFrame frame = layout.frame();
+        PortalFrame frame = layout.frame();
 
         assertEquals(requestedAnchor, identity.computeAnchorBlock(frame));
     }

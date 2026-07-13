@@ -4,7 +4,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.pcal.fwportals.TestBootstrap;
-import net.pcal.fwportals.attunement.BiomeDestinationTarget;
+import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
+import net.pcal.fwportals.common.portal.DestinationConstraint;
+import net.pcal.fwportals.common.portal.GeneratedTerrainDistanceConstraint;
+import net.pcal.fwportals.common.portal.PortalDestinationSelector;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;

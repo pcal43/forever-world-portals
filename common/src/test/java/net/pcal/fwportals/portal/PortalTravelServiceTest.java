@@ -2,11 +2,12 @@ package net.pcal.fwportals.portal;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
-import net.pcal.fwportals.DestinationPortalMode;
-import net.pcal.fwportals.attunement.AttunementDefinition;
-import net.pcal.fwportals.attunement.AttunementLookup;
-import net.pcal.fwportals.attunement.BiomeDestinationTarget;
-import net.pcal.fwportals.portal.persistence.PortalRecord;
+import net.pcal.fwportals.common.attunement.AttunementDefinition;
+import net.pcal.fwportals.common.attunement.AttunementLookup;
+import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
+import net.pcal.fwportals.common.config.Config;
+import net.pcal.fwportals.common.portal.PortalTravelService;
+import net.pcal.fwportals.common.persistence.PortalRecord;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
 
@@ -105,7 +106,7 @@ class PortalTravelServiceTest {
     @Test
     void noneModeBuildsOutboundOnlyRegistration() {
         PortalTravelService.FoundingRegistration registration = PortalTravelService.buildFoundingRegistration(
-                DestinationPortalMode.NONE,
+                Config.DestinationPortalMode.NONE,
                 Level.OVERWORLD,
                 new net.minecraft.core.BlockPos(0, 64, 0),
                 Level.OVERWORLD,
@@ -118,7 +119,7 @@ class PortalTravelServiceTest {
 
     @Test
     void brokenAndCompleteModesBuildLinkedReverseRegistrations() {
-        for (DestinationPortalMode mode : new DestinationPortalMode[]{DestinationPortalMode.BROKEN, DestinationPortalMode.COMPLETE}) {
+        for (Config.DestinationPortalMode mode : new Config.DestinationPortalMode[]{Config.DestinationPortalMode.BROKEN, Config.DestinationPortalMode.COMPLETE}) {
             PortalTravelService.FoundingRegistration registration = PortalTravelService.buildFoundingRegistration(
                     mode,
                     Level.OVERWORLD,

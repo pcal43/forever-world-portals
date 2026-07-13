@@ -10,10 +10,12 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.pcal.fwportals.TestBootstrap;
-import net.pcal.fwportals.portal.ForeverWorldPortalFrame;
-import net.pcal.fwportals.portal.PortalFrameDetector;
+import net.pcal.fwportals.common.portal.PortalFrame;
+import net.pcal.fwportals.common.portal.PortalFrameDetector;
+import net.pcal.fwportals.common.persistence.PortalRegistryData;
+import net.pcal.fwportals.common.persistence.PortalRecord;
 import net.pcal.fwportals.portal.PortalFrameDetectorTestBlockGetter;
-import net.pcal.fwportals.portal.PortalIdentity;
+import net.pcal.fwportals.common.portal.PortalIdentity;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -31,7 +33,7 @@ class ForeverWorldPortalRegistryDataTest {
     void serializesAndDeserializesResolvedPortals() {
         TestBootstrap.ensureBootstrapped();
 
-        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        PortalRegistryData data = new PortalRegistryData();
         PortalRecord portal = PortalRecord.resolved(
                 Level.OVERWORLD,
                 new BlockPos(0, 2, 1),
@@ -40,7 +42,7 @@ class ForeverWorldPortalRegistryDataTest {
         );
         data.createPortal(portal);
 
-        ForeverWorldPortalRegistryData reloaded = roundTrip(data);
+        PortalRegistryData reloaded = roundTrip(data);
         PortalRecord reloadedPortal = reloaded.portals().stream().findFirst().orElseThrow();
 
         assertTrue(reloadedPortal.isResolved());
@@ -53,7 +55,7 @@ class ForeverWorldPortalRegistryDataTest {
     void serializesAndDeserializesPendingPortals() {
         TestBootstrap.ensureBootstrapped();
 
-        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        PortalRegistryData data = new PortalRegistryData();
         PortalRecord portal = PortalRecord.pending(
                 Level.OVERWORLD,
                 new BlockPos(0, 2, 1),
@@ -61,7 +63,7 @@ class ForeverWorldPortalRegistryDataTest {
         );
         data.createPortal(portal);
 
-        ForeverWorldPortalRegistryData reloaded = roundTrip(data);
+        PortalRegistryData reloaded = roundTrip(data);
         PortalRecord reloadedPortal = reloaded.portals().stream().findFirst().orElseThrow();
 
         assertTrue(!reloadedPortal.isResolved());
@@ -80,8 +82,8 @@ class ForeverWorldPortalRegistryDataTest {
         sourcePortals.add(malformedPortal);
         root.put("sourcePortals", sourcePortals);
 
-        DataResult<ForeverWorldPortalRegistryData> parsed = ForeverWorldPortalRegistryData.TYPE.codec().parse(NbtOps.INSTANCE, root);
-        ForeverWorldPortalRegistryData data = parsed.getOrThrow();
+        DataResult<PortalRegistryData> parsed = PortalRegistryData.TYPE.codec().parse(NbtOps.INSTANCE, root);
+        PortalRegistryData data = parsed.getOrThrow();
 
         assertEquals(0, data.portals().size());
     }
@@ -90,10 +92,10 @@ class ForeverWorldPortalRegistryDataTest {
     void portalInsideFrameMatchesThatFrame() {
         TestBootstrap.ensureBootstrapped();
 
-        ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+        PortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
         BlockPos portalAnchor = identity.computeAnchorBlock(frame);
 
-        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        PortalRegistryData data = new PortalRegistryData();
         data.createPortal(PortalRecord.resolved(
                 Level.OVERWORLD,
                 portalAnchor,
@@ -110,9 +112,9 @@ class ForeverWorldPortalRegistryDataTest {
     void portalOutsideFrameDoesNotMatch() {
         TestBootstrap.ensureBootstrapped();
 
-        ForeverWorldPortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+        PortalFrame frame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
 
-        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        PortalRegistryData data = new PortalRegistryData();
         data.createPortal(PortalRecord.resolved(
                 Level.OVERWORLD,
                 new BlockPos(100, 100, 100),
@@ -127,11 +129,11 @@ class ForeverWorldPortalRegistryDataTest {
     void multiplePhysicalFramesCanMatchSameStoredPortalAnchor() {
         TestBootstrap.ensureBootstrapped();
 
-        ForeverWorldPortalFrame smaller = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
-        ForeverWorldPortalFrame larger = buildAxisZFrame(new BlockPos(0, 0, 0), 3, 4);
+        PortalFrame smaller = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+        PortalFrame larger = buildAxisZFrame(new BlockPos(0, 0, 0), 3, 4);
         BlockPos portalAnchor = identity.computeAnchorBlock(smaller);
 
-        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        PortalRegistryData data = new PortalRegistryData();
         data.createPortal(PortalRecord.resolved(
                 Level.OVERWORLD,
                 portalAnchor,
@@ -147,10 +149,10 @@ class ForeverWorldPortalRegistryDataTest {
     void repairedBrokenPortalMatchesExistingRegisteredAnchor() {
         TestBootstrap.ensureBootstrapped();
 
-        ForeverWorldPortalFrame repairedDiamondFrame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
+        PortalFrame repairedDiamondFrame = buildAxisZFrame(new BlockPos(0, 0, 0), 2, 3);
         BlockPos registeredAnchor = identity.computeAnchorBlock(repairedDiamondFrame);
 
-        ForeverWorldPortalRegistryData data = new ForeverWorldPortalRegistryData();
+        PortalRegistryData data = new PortalRegistryData();
         data.createPortal(PortalRecord.resolved(
                 Level.OVERWORLD,
                 registeredAnchor,
@@ -163,14 +165,14 @@ class ForeverWorldPortalRegistryDataTest {
         assertEquals(registeredAnchor, matches.get(0).anchor());
     }
 
-    private static ForeverWorldPortalRegistryData roundTrip(ForeverWorldPortalRegistryData data) {
-        CompoundTag encoded = (CompoundTag) ForeverWorldPortalRegistryData.TYPE.codec()
+    private static PortalRegistryData roundTrip(PortalRegistryData data) {
+        CompoundTag encoded = (CompoundTag) PortalRegistryData.TYPE.codec()
                 .encodeStart(NbtOps.INSTANCE, data)
                 .getOrThrow();
-        return ForeverWorldPortalRegistryData.TYPE.codec().parse(NbtOps.INSTANCE, encoded).getOrThrow();
+        return PortalRegistryData.TYPE.codec().parse(NbtOps.INSTANCE, encoded).getOrThrow();
     }
 
-    private ForeverWorldPortalFrame buildAxisZFrame(BlockPos anchor, int width, int height) {
+    private PortalFrame buildAxisZFrame(BlockPos anchor, int width, int height) {
         PortalFrameDetectorTestBlockGetter level = new PortalFrameDetectorTestBlockGetter();
         for (int z = 0; z < width + 2; z++) {
             level.setBlock(anchor.offset(0, 0, z), Blocks.DIAMOND_BLOCK.defaultBlockState());
@@ -180,7 +182,7 @@ class ForeverWorldPortalRegistryDataTest {
             level.setBlock(anchor.offset(0, y, 0), Blocks.DIAMOND_BLOCK.defaultBlockState());
             level.setBlock(anchor.offset(0, y, width + 1), Blocks.DIAMOND_BLOCK.defaultBlockState());
         }
-        Optional<ForeverWorldPortalFrame> frame = detector.findEmptyFrame(
+        Optional<PortalFrame> frame = detector.findEmptyFrame(
                 level,
                 anchor.offset(0, 1, 1),
                 Direction.Axis.Z,

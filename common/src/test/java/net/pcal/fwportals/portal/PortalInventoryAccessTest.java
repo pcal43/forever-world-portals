@@ -2,6 +2,7 @@ package net.pcal.fwportals.portal;
 
 import net.minecraft.world.item.ItemStack;
 import net.pcal.fwportals.TestBootstrap;
+import net.pcal.fwportals.common.portal.PortalInventoryAccess;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

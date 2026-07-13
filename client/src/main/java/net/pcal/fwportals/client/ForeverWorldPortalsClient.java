@@ -14,8 +14,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.pcal.fwportals.ForeverWorldPortalsService;
-import net.pcal.fwportals.portal.PortalFrameDetector;
-import net.pcal.fwportals.portal.PortalInventoryAccess;
+import net.pcal.fwportals.common.portal.PortalFrameDetector;
+import net.pcal.fwportals.common.portal.PortalInventoryAccess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

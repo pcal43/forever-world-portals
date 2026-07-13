@@ -1,5 +1,7 @@
 package net.pcal.fwportals;
 
+import net.pcal.fwportals.common.config.Config;
+import net.pcal.fwportals.common.config.ConfigLoader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -31,8 +33,8 @@ class ForeverWorldPortalsConfigLoaderTest {
 
     @Test
     void copiesBundledTemplateVerbatimWhenUserConfigIsMissing(@TempDir Path tempDir) throws IOException {
-        ForeverWorldPortalsConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
-        Path configPath = tempDir.resolve("config").resolve(ForeverWorldPortalsConfigLoader.CONFIG_FILENAME);
+        ConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
+        Path configPath = tempDir.resolve("config").resolve(ConfigLoader.CONFIG_FILENAME);
 
         loader.ensureUserConfigExists(configPath, null);
 
@@ -41,8 +43,8 @@ class ForeverWorldPortalsConfigLoaderTest {
 
     @Test
     void existingUserConfigIsNotRewrittenOrAugmented(@TempDir Path tempDir) throws IOException {
-        ForeverWorldPortalsConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
-        Path configPath = tempDir.resolve("config").resolve(ForeverWorldPortalsConfigLoader.CONFIG_FILENAME);
+        ConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
+        Path configPath = tempDir.resolve("config").resolve(ConfigLoader.CONFIG_FILENAME);
         Files.createDirectories(configPath.getParent());
         String partialConfig = """
                 server.requireEmptyInventory=false
@@ -60,8 +62,8 @@ class ForeverWorldPortalsConfigLoaderTest {
     @Test
     void fullyPopulatedUserConfigOverridesBundledDefaults(@TempDir Path tempDir) throws IOException {
         TestBootstrap.ensureBootstrapped();
-        ForeverWorldPortalsConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
-        Path configPath = tempDir.resolve(ForeverWorldPortalsConfigLoader.CONFIG_FILENAME);
+        ConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
+        Path configPath = tempDir.resolve(ConfigLoader.CONFIG_FILENAME);
         Files.writeString(configPath, """
                 server.enabled=false
                 server.requireEmptyInventory=false
@@ -76,14 +78,14 @@ class ForeverWorldPortalsConfigLoaderTest {
                 server.minimumGeneratedTerrainDistanceBlocks=30000
                 """, StandardCharsets.UTF_8);
 
-        ForeverWorldPortalsConfig config = loader.load(configPath, null);
+        Config config = loader.load(configPath, null);
 
         assertFalse(config.enabled());
         assertFalse(config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.DEBUG, config.logLevel());
         assertEquals("minecraft:emerald_block", config.frameBlockId().toString());
         assertEquals("minecraft:fire_charge", config.activationItemId().toString());
-        assertEquals(DestinationPortalMode.COMPLETE, config.destinationPortalMode());
+        assertEquals(Config.DestinationPortalMode.COMPLETE, config.destinationPortalMode());
         assertEquals(20000, config.destinationSpiralSpacingBlocks());
         assertEquals(100, config.maximumSpiralSearchPositions());
         assertEquals(50, config.maximumBiomeSearches());
@@ -94,22 +96,22 @@ class ForeverWorldPortalsConfigLoaderTest {
     @Test
     void missingUserConfigReturnsParsedBundledDefaults(@TempDir Path tempDir) throws IOException {
         TestBootstrap.ensureBootstrapped();
-        ForeverWorldPortalsConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
-        Path configPath = tempDir.resolve("config").resolve(ForeverWorldPortalsConfigLoader.CONFIG_FILENAME);
+        ConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
+        Path configPath = tempDir.resolve("config").resolve(ConfigLoader.CONFIG_FILENAME);
 
-        ForeverWorldPortalsConfig config = loader.load(configPath, null);
+        Config config = loader.load(configPath, null);
 
         assertEquals(true, config.enabled());
         assertEquals(true, config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.INFO, config.logLevel());
         assertEquals("minecraft:diamond_block", config.frameBlockId().toString());
         assertEquals("minecraft:flint_and_steel", config.activationItemId().toString());
-        assertEquals(DestinationPortalMode.BROKEN, config.destinationPortalMode());
+        assertEquals(Config.DestinationPortalMode.BROKEN, config.destinationPortalMode());
         assertEquals(DEFAULT_TEMPLATE, Files.readString(configPath, StandardCharsets.UTF_8));
     }
 
-    private static ForeverWorldPortalsConfigLoader loaderFor(String text) {
-        return new ForeverWorldPortalsConfigLoader(
+    private static ConfigLoader loaderFor(String text) {
+        return new ConfigLoader(
                 "test-defaults.properties",
                 () -> new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8))
         );

@@ -8,6 +8,10 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.pcal.fwportals.TestBootstrap;
+import net.pcal.fwportals.common.attunement.AttunementDefinition;
+import net.pcal.fwportals.common.attunement.AttunementLoader;
+import net.pcal.fwportals.common.attunement.AttunementLookup;
+import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "net.pcal.fwportals.mixin",
+  "package": "net.pcal.fwportals.common.mixins",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
     "FlintAndSteelItemMixin",

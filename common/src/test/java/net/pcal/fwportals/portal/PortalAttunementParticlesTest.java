@@ -3,6 +3,8 @@ package net.pcal.fwportals.portal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
+import net.pcal.fwportals.common.portal.PortalFrame;
+import net.pcal.fwportals.common.portal.PortalAttunementParticles;
 import org.joml.Vector3f;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +36,7 @@ class PortalAttunementParticlesTest {
 
     @Test
     void generatesPortalWideBoundsAcrossInterior() {
-        ForeverWorldPortalFrame frame = new ForeverWorldPortalFrame(
+        PortalFrame frame = new PortalFrame(
                 Direction.Axis.Z,
                 new BlockPos(0, 0, 0),
                 new BlockPos(0, 1, 1),
