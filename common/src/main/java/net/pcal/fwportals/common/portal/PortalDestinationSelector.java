@@ -6,7 +6,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
-import net.pcal.fwportals.common.config.Config;
+import net.pcal.fwportals.common.config.CommonConfig;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
@@ -15,16 +15,16 @@ import java.util.function.Function;
 
 public final class PortalDestinationSelector {
 
-    private final Config config;
+    private final CommonConfig config;
     private final Logger logger;
     private final DestinationBiomeLocator destinationBiomeLocator;
 
-    public PortalDestinationSelector(Config config, Logger logger) {
+    public PortalDestinationSelector(CommonConfig config, Logger logger) {
         this(config, logger, new DestinationBiomeLocator());
     }
 
     PortalDestinationSelector(
-            Config config,
+            CommonConfig config,
             Logger logger,
             DestinationBiomeLocator destinationBiomeLocator
     ) {

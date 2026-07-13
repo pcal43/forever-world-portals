@@ -4,7 +4,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.pcal.fwportals.client.ForeverWorldPortalsClient;
+import net.pcal.fwportals.client.ClientService;
 
 @EventBusSubscriber(modid = NeoforgeServerInitializer.MOD_ID, value = Dist.CLIENT)
 public final class NeoforgeClientInitializer {
@@ -14,6 +14,6 @@ public final class NeoforgeClientInitializer {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        ForeverWorldPortalsClient.getInstance().initialize();
+        ClientService.getInstance().initialize();
     }
 }

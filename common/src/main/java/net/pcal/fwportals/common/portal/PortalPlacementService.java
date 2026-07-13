@@ -8,7 +8,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.pcal.fwportals.common.config.Config;
+import net.pcal.fwportals.common.config.CommonConfig;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
@@ -142,7 +142,7 @@ public final class PortalPlacementService {
     public GeneratedPortal placeDestinationPortal(
             ServerLevel level,
             PortalLayout layout,
-            Config.DestinationPortalMode mode,
+            CommonConfig.DestinationPortalMode mode,
             BlockState completeFrameState
     ) {
         return switch (mode) {

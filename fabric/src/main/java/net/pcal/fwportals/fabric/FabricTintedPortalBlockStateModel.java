@@ -13,7 +13,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.pcal.fwportals.client.ForeverWorldPortalsClient;
+import net.pcal.fwportals.client.ClientService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,13 +41,13 @@ final class FabricTintedPortalBlockStateModel extends WrapperBlockStateModel {
             RandomSource random,
             Predicate<Direction> cullTest
     ) {
-        if (!state.is(Blocks.NETHER_PORTAL) || !ForeverWorldPortalsClient.getInstance().isForeverWorldPortal(level, pos)) {
+        if (!state.is(Blocks.NETHER_PORTAL) || !ClientService.getInstance().isForeverWorldPortal(level, pos)) {
             super.emitQuads(emitter, level, pos, state, random, cullTest);
             return;
         }
 
         List<BlockStateModelPart> parts = new ArrayList<>();
-        ForeverWorldPortalsClient.getInstance().wrapPortalModel(wrapped).collectParts(random, parts);
+        ClientService.getInstance().wrapPortalModel(wrapped).collectParts(random, parts);
         for (BlockStateModelPart part : parts) {
             emitPartQuads(part, emitter, cullTest);
         }
@@ -55,10 +55,10 @@ final class FabricTintedPortalBlockStateModel extends WrapperBlockStateModel {
 
     @Override
     public Object createGeometryKey(BlockAndTintGetter level, BlockPos pos, BlockState state, RandomSource random) {
-        if (!state.is(Blocks.NETHER_PORTAL) || !ForeverWorldPortalsClient.getInstance().isForeverWorldPortal(level, pos)) {
+        if (!state.is(Blocks.NETHER_PORTAL) || !ClientService.getInstance().isForeverWorldPortal(level, pos)) {
             return super.createGeometryKey(level, pos, state, random);
         }
-        return ForeverWorldPortalsClient.getInstance().wrapPortalModel(wrapped);
+        return ClientService.getInstance().wrapPortalModel(wrapped);
     }
 
     private static void emitPartQuads(

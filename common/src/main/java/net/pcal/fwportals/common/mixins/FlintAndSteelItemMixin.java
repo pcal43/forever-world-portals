@@ -9,7 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.pcal.fwportals.ForeverWorldPortalsService;
+import net.pcal.fwportals.CommonService;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,8 +23,8 @@ public class FlintAndSteelItemMixin {
         Level level = context.getLevel();
         BlockPos firePos = context.getClickedPos().relative(context.getClickedFace());
         if (!level.getBlockState(firePos).isAir()) {
-            ForeverWorldPortalsService.getInstance().logger().info(
-                    ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel mixin skipped: target {} is {} on {}",
+            CommonService.getInstance().logger().info(
+                    CommonService.LOG_PREFIX + "FlintAndSteel mixin skipped: target {} is {} on {}",
                     firePos,
                     level.getBlockState(firePos).getBlock().getName().getString(),
                     level.isClientSide() ? "client" : "server"
@@ -33,16 +33,16 @@ public class FlintAndSteelItemMixin {
         }
 
         ItemStack itemStack = context.getItemInHand();
-        ForeverWorldPortalsService.getInstance().logger().info(
-                ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel mixin checking portal activation at {} from clickedPos={} face={} on {}",
+        CommonService.getInstance().logger().info(
+                CommonService.LOG_PREFIX + "FlintAndSteel mixin checking portal activation at {} from clickedPos={} face={} on {}",
                 firePos,
                 context.getClickedPos(),
                 context.getClickedFace(),
                 level.isClientSide() ? "client" : "server"
         );
-        if (!ForeverWorldPortalsService.getInstance().canActivatePortalAt(level, firePos, itemStack)) {
-            ForeverWorldPortalsService.getInstance().logger().info(
-                    ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel mixin found no valid Forever World portal frame at {} on {}",
+        if (!CommonService.getInstance().canActivatePortalAt(level, firePos, itemStack)) {
+            CommonService.getInstance().logger().info(
+                    CommonService.LOG_PREFIX + "FlintAndSteel mixin found no valid Forever World portal frame at {} on {}",
                     firePos,
                     level.isClientSide() ? "client" : "server"
             );
@@ -50,8 +50,8 @@ public class FlintAndSteelItemMixin {
         }
 
         if (level.isClientSide()) {
-            ForeverWorldPortalsService.getInstance().logger().info(
-                    ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel mixin accepted activation client-side at {}",
+            CommonService.getInstance().logger().info(
+                    CommonService.LOG_PREFIX + "FlintAndSteel mixin accepted activation client-side at {}",
                     firePos
             );
             cir.setReturnValue(InteractionResult.SUCCESS);
@@ -60,23 +60,23 @@ public class FlintAndSteelItemMixin {
 
         Player player = context.getPlayer();
         if (player == null) {
-            ForeverWorldPortalsService.getInstance().logger().info(
-                    ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel mixin found valid frame at {} but no player was present",
+            CommonService.getInstance().logger().info(
+                    CommonService.LOG_PREFIX + "FlintAndSteel mixin found valid frame at {} but no player was present",
                     firePos
             );
             return;
         }
 
-        if (!ForeverWorldPortalsService.getInstance().tryActivatePortal(level, firePos, itemStack, player)) {
-            ForeverWorldPortalsService.getInstance().logger().info(
-                    ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel mixin failed to activate portal server-side at {}",
+        if (!CommonService.getInstance().tryActivatePortal(level, firePos, itemStack, player)) {
+            CommonService.getInstance().logger().info(
+                    CommonService.LOG_PREFIX + "FlintAndSteel mixin failed to activate portal server-side at {}",
                     firePos
             );
             return;
         }
 
-        ForeverWorldPortalsService.getInstance().logger().info(
-                ForeverWorldPortalsService.LOG_PREFIX + "FlintAndSteel mixin activated portal server-side at {}",
+        CommonService.getInstance().logger().info(
+                CommonService.LOG_PREFIX + "FlintAndSteel mixin activated portal server-side at {}",
                 firePos
         );
         level.playSound(player, firePos, net.minecraft.sounds.SoundEvents.FLINTANDSTEEL_USE, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);

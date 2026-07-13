@@ -112,4 +112,14 @@ public final class GeneratedTerrainDistanceConstraint implements DestinationCons
             return 0;
         }
     }
+
+    /**
+     * TEST ONLY.  Creates a constraint from an explicit region snapshot for deterministic tests.
+     */
+    static GeneratedTerrainDistanceConstraint ofRegions(
+            List<RegionRectangle> occupiedRegions,
+            int minimumGeneratedTerrainDistanceBlocks
+    ) {
+        return new GeneratedTerrainDistanceConstraint(occupiedRegions, minimumGeneratedTerrainDistanceBlocks);
+    }
 }

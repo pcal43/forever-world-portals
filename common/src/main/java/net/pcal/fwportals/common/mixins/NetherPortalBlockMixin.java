@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.NetherPortalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.portal.TeleportTransition;
-import net.pcal.fwportals.ForeverWorldPortalsService;
+import net.pcal.fwportals.CommonService;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,7 +35,7 @@ public class NetherPortalBlockMixin {
             RandomSource random,
             CallbackInfoReturnable<BlockState> cir
     ) {
-        if (cir.getReturnValue().isAir() && ForeverWorldPortalsService.getInstance().isForeverWorldPortal(level, pos)) {
+        if (cir.getReturnValue().isAir() && CommonService.getInstance().isForeverWorldPortal(level, pos)) {
             cir.setReturnValue(state);
         }
     }
@@ -50,7 +50,7 @@ public class NetherPortalBlockMixin {
             boolean isPrecise,
             org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci
     ) {
-        if (!ForeverWorldPortalsService.getInstance().handleEntityInsidePortal(level, pos, entity)) {
+        if (!CommonService.getInstance().handleEntityInsidePortal(level, pos, entity)) {
             ci.cancel();
         }
     }
@@ -66,12 +66,12 @@ public class NetherPortalBlockMixin {
         }
 
         BlockPos entryPos = entity.portalProcess.getEntryPosition();
-        if (!ForeverWorldPortalsService.getInstance().isForeverWorldPortal(level, entryPos)) {
+        if (!CommonService.getInstance().isForeverWorldPortal(level, entryPos)) {
             return;
         }
 
         if (entity instanceof net.minecraft.server.level.ServerPlayer player
-                && !ForeverWorldPortalsService.getInstance().canPlayerUseForeverWorldPortal(player)) {
+                && !CommonService.getInstance().canPlayerUseForeverWorldPortal(player)) {
             cir.setReturnValue(Integer.MAX_VALUE);
             return;
         }
@@ -86,8 +86,8 @@ public class NetherPortalBlockMixin {
             BlockPos portalEntryPos,
             CallbackInfoReturnable<@Nullable TeleportTransition> cir
     ) {
-        if (ForeverWorldPortalsService.getInstance().isForeverWorldPortal(currentLevel, portalEntryPos)) {
-            cir.setReturnValue(ForeverWorldPortalsService.getInstance().getTeleportTransitionForPortal(currentLevel, entity, portalEntryPos));
+        if (CommonService.getInstance().isForeverWorldPortal(currentLevel, portalEntryPos)) {
+            cir.setReturnValue(CommonService.getInstance().getTeleportTransitionForPortal(currentLevel, entity, portalEntryPos));
         }
     }
 }

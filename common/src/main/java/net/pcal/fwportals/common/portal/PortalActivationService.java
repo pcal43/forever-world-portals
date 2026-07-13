@@ -17,8 +17,8 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.NetherPortalBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.pcal.fwportals.ForeverWorldPortalsService;
-import net.pcal.fwportals.common.config.Config;
+import net.pcal.fwportals.CommonService;
+import net.pcal.fwportals.common.config.CommonConfig;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
@@ -30,7 +30,7 @@ public final class PortalActivationService {
 
     private static final long ENTRY_LOG_COOLDOWN_TICKS = 40L;
     private static final long INVENTORY_WARNING_COOLDOWN_TICKS = 40L;
-    private final Config config;
+    private final CommonConfig config;
     private final Logger logger;
     private final PortalAttunementService portalAttunementService;
     private final PortalFrameDetector detector = new PortalFrameDetector();
@@ -38,7 +38,7 @@ public final class PortalActivationService {
     private final Map<UUID, PortalEntryRecord> recentEntries = new HashMap<>();
     private final Map<UUID, Long> recentInventoryWarnings = new HashMap<>();
 
-    public PortalActivationService(Config config, Logger logger, PortalAttunementService portalAttunementService) {
+    public PortalActivationService(CommonConfig config, Logger logger, PortalAttunementService portalAttunementService) {
         this.config = config;
         this.logger = logger;
         this.portalAttunementService = portalAttunementService;
@@ -59,7 +59,7 @@ public final class PortalActivationService {
         Optional<PortalFrame> maybeFrame = detector.findEmptyFrame(level, firePos, Direction.Axis.X, frameState);
         if (maybeFrame.isEmpty()) {
             if (isAdjacentToFrame(level, firePos, frameState)) {
-                logger.debug(ForeverWorldPortalsService.LOG_PREFIX + "Activation failed at {}", firePos);
+                logger.debug(CommonService.LOG_PREFIX + "Activation failed at {}", firePos);
             }
             return false;
         }
@@ -70,7 +70,7 @@ public final class PortalActivationService {
             level.setBlock(portalPos, portalState, 18);
         }
         logger.info(
-                ForeverWorldPortalsService.LOG_PREFIX + "Activated Forever World portal with frame base {} and portal anchor {} axis={} width={} height={}",
+                CommonService.LOG_PREFIX + "Activated Forever World portal with frame base {} and portal anchor {} axis={} width={} height={}",
                 frame.frameBasePos(),
                 portalIdentity.computeAnchorBlock(frame),
                 frame.axis(),
@@ -135,7 +135,7 @@ public final class PortalActivationService {
 
         recentEntries.put(entity.getUUID(), new PortalEntryRecord(level.dimension(), anchorBlock, gameTime));
         logger.info(
-                ForeverWorldPortalsService.LOG_PREFIX + "Entity entered Forever World portal: entity={} type={} anchorBlock={}",
+                CommonService.LOG_PREFIX + "Entity entered Forever World portal: entity={} type={} anchorBlock={}",
                 entity.getName().getString(),
                 BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()),
                 anchorBlock
@@ -150,7 +150,7 @@ public final class PortalActivationService {
         boolean foreverWorldPortal = isForeverWorldPortal(level, portalEntryPos);
         if (foreverWorldPortal) {
             logger.debug(
-                    ForeverWorldPortalsService.LOG_PREFIX + "Suppressing vanilla Nether teleport for entity={} at {}",
+                    CommonService.LOG_PREFIX + "Suppressing vanilla Nether teleport for entity={} at {}",
                     entity.getName().getString(),
                     portalEntryPos
             );

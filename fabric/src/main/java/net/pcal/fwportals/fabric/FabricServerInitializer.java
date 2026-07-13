@@ -8,8 +8,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
-import net.pcal.fwportals.ForeverWorldPortals;
-import net.pcal.fwportals.ForeverWorldPortalsService;
+import net.pcal.fwportals.CommonService;
 
 public class FabricServerInitializer implements ModInitializer {
 
@@ -17,19 +16,19 @@ public class FabricServerInitializer implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ForeverWorldPortals.initialize();
+        CommonService.initializeCommon();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(
                 ATTUNEMENTS_RELOAD_ID,
                 lookup -> new FabricReloadListenerAdapter(
                         ATTUNEMENTS_RELOAD_ID,
-                        ForeverWorldPortalsService.getInstance().attunementRegistry().createReloadListener(lookup)
+                        CommonService.getInstance().attunementRegistry().createReloadListener(lookup)
                 )
         );
-        ServerLifecycleEvents.SERVER_STARTING.register(ForeverWorldPortalsService.getInstance()::onServerStarting);
-        ServerLifecycleEvents.SERVER_STARTED.register(ForeverWorldPortalsService.getInstance()::onServerStarted);
-        ServerTickEvents.END_SERVER_TICK.register(ForeverWorldPortalsService.getInstance()::onServerTick);
-        ServerLifecycleEvents.SERVER_STOPPING.register(ForeverWorldPortalsService.getInstance()::onServerStopping);
-        ServerLifecycleEvents.SERVER_STOPPED.register(ForeverWorldPortalsService.getInstance()::onServerStopped);
+        ServerLifecycleEvents.SERVER_STARTING.register(CommonService.getInstance()::onServerStarting);
+        ServerLifecycleEvents.SERVER_STARTED.register(CommonService.getInstance()::onServerStarted);
+        ServerTickEvents.END_SERVER_TICK.register(CommonService.getInstance()::onServerTick);
+        ServerLifecycleEvents.SERVER_STOPPING.register(CommonService.getInstance()::onServerStopping);
+        ServerLifecycleEvents.SERVER_STOPPED.register(CommonService.getInstance()::onServerStopped);
     }
 
     private record FabricReloadListenerAdapter(

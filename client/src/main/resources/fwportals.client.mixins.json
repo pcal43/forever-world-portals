@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "net.pcal.fwportals.client.mixin",
+  "package": "net.pcal.fwportals.client.mixins",
   "compatibilityLevel": "JAVA_25",
   "client": [
     "BlockColorsMixin",

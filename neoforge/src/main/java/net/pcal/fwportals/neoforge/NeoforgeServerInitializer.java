@@ -10,8 +10,7 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.pcal.fwportals.ForeverWorldPortals;
-import net.pcal.fwportals.ForeverWorldPortalsService;
+import net.pcal.fwportals.CommonService;
 
 @Mod(NeoforgeServerInitializer.MOD_ID)
 public class NeoforgeServerInitializer {
@@ -20,21 +19,21 @@ public class NeoforgeServerInitializer {
     private static final Identifier ATTUNEMENTS_RELOAD_ID = Identifier.fromNamespaceAndPath(MOD_ID, "attunements");
 
     public NeoforgeServerInitializer(IEventBus modEventBus) {
-        ForeverWorldPortals.initialize();
+        CommonService.initializeCommon();
         NeoForge.EVENT_BUS.addListener((AddServerReloadListenersEvent event) ->
                 event.addListener(
                         ATTUNEMENTS_RELOAD_ID,
-                        ForeverWorldPortalsService.getInstance().attunementRegistry().createReloadListener(event.getRegistryAccess())
+                        CommonService.getInstance().attunementRegistry().createReloadListener(event.getRegistryAccess())
                 ));
         NeoForge.EVENT_BUS.addListener((ServerStartingEvent event) ->
-                ForeverWorldPortalsService.getInstance().onServerStarting(event.getServer()));
+                CommonService.getInstance().onServerStarting(event.getServer()));
         NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) ->
-                ForeverWorldPortalsService.getInstance().onServerStarted(event.getServer()));
+                CommonService.getInstance().onServerStarted(event.getServer()));
         NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) ->
-                ForeverWorldPortalsService.getInstance().onServerTick(event.getServer()));
+                CommonService.getInstance().onServerTick(event.getServer()));
         NeoForge.EVENT_BUS.addListener((ServerStoppingEvent event) ->
-                ForeverWorldPortalsService.getInstance().onServerStopping(event.getServer()));
+                CommonService.getInstance().onServerStopping(event.getServer()));
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) ->
-                ForeverWorldPortalsService.getInstance().onServerStopped(event.getServer()));
+                CommonService.getInstance().onServerStopped(event.getServer()));
     }
 }

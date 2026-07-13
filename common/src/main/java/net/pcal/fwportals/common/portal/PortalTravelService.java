@@ -14,7 +14,7 @@ import net.pcal.fwportals.common.attunement.AttunementDefinition;
 import net.pcal.fwportals.common.attunement.AttunementLookup;
 import net.pcal.fwportals.common.attunement.AttunementRegistry;
 import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
-import net.pcal.fwportals.common.config.Config;
+import net.pcal.fwportals.common.config.CommonConfig;
 import net.pcal.fwportals.common.persistence.PortalRecord;
 import net.pcal.fwportals.common.persistence.PortalRegistryData;
 import org.apache.logging.log4j.Logger;
@@ -27,7 +27,7 @@ import java.util.Set;
 
 public final class PortalTravelService {
 
-    private final Config config;
+    private final CommonConfig config;
     private final Logger logger;
     private final AttunementRegistry attunementRegistry;
     private final PortalFrameDetector detector = new PortalFrameDetector();
@@ -37,7 +37,7 @@ public final class PortalTravelService {
     private final PortalIdentity portalIdentity = new PortalIdentity();
     private final Set<PortalKey> inProgressPortals = new HashSet<>();
 
-    public PortalTravelService(Config config, Logger logger, AttunementRegistry attunementRegistry) {
+    public PortalTravelService(CommonConfig config, Logger logger, AttunementRegistry attunementRegistry) {
         this.config = config;
         this.logger = logger;
         this.attunementRegistry = attunementRegistry;
@@ -151,7 +151,7 @@ public final class PortalTravelService {
             }
 
             DestinationPortalCandidate candidate = maybeCandidate.get();
-            BlockState destinationFrameState = config.destinationPortalMode() == Config.DestinationPortalMode.BROKEN
+            BlockState destinationFrameState = config.destinationPortalMode() == CommonConfig.DestinationPortalMode.BROKEN
                     ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
                     : config.frameBlock().defaultBlockState();
             PortalPlacementService.LayoutSearchResult layoutSearchResult = portalPlacementService.findValidLayoutNearAnchor(
@@ -207,7 +207,7 @@ public final class PortalTravelService {
                 continue;
             }
 
-            if (config.destinationPortalMode() == Config.DestinationPortalMode.NONE) {
+            if (config.destinationPortalMode() == CommonConfig.DestinationPortalMode.NONE) {
                 FoundingRegistration registration = buildFoundingRegistration(
                         config.destinationPortalMode(),
                         level.dimension(),
@@ -355,7 +355,7 @@ public final class PortalTravelService {
     }
 
     static FoundingRegistration buildFoundingRegistration(
-            Config.DestinationPortalMode destinationPortalMode,
+            CommonConfig.DestinationPortalMode destinationPortalMode,
             net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> sourceDimension,
             BlockPos sourceAnchor,
             net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> destinationDimension,
@@ -367,7 +367,7 @@ public final class PortalTravelService {
                 destinationDimension,
                 destinationAnchor
         );
-        if (destinationPortalMode == Config.DestinationPortalMode.NONE) {
+        if (destinationPortalMode == CommonConfig.DestinationPortalMode.NONE) {
             return new FoundingRegistration(outboundPortal, Optional.empty());
         }
 
