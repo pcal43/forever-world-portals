@@ -118,8 +118,8 @@ class PortalTravelServiceTest {
     }
 
     @Test
-    void brokenAndCompleteModesBuildLinkedReverseRegistrations() {
-        for (CommonConfig.DestinationPortalMode mode : new CommonConfig.DestinationPortalMode[]{CommonConfig.DestinationPortalMode.BROKEN, CommonConfig.DestinationPortalMode.COMPLETE}) {
+    void ruinedAndCompleteModesBuildLinkedReverseRegistrations() {
+        for (CommonConfig.DestinationPortalMode mode : new CommonConfig.DestinationPortalMode[]{CommonConfig.DestinationPortalMode.RUINED, CommonConfig.DestinationPortalMode.COMPLETE}) {
             PortalTravelService.FoundingRegistration registration = PortalTravelService.buildFoundingRegistration(
                     mode,
                     Level.OVERWORLD,

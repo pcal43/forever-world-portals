@@ -21,7 +21,7 @@ public record CommonConfig(
 ) {
     public enum DestinationPortalMode {
         NONE,
-        BROKEN,
+        RUINED,
         COMPLETE
     }
 }

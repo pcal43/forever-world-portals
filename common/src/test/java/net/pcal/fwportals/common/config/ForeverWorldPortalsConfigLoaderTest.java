@@ -21,7 +21,7 @@ class ForeverWorldPortalsConfigLoaderTest {
             logLevel=INFO
             frameBlock=minecraft:diamond_block
             activationItem=minecraft:flint_and_steel
-            destinationPortalMode=BROKEN
+            destinationPortalMode=RUINED
             destinationSpiralSpacingBlocks=10000
             maximumSpiralSearchPositions=512
             maximumBiomeSearches=64
@@ -101,7 +101,7 @@ class ForeverWorldPortalsConfigLoaderTest {
         assertEquals(org.apache.logging.log4j.Level.INFO, config.logLevel());
         assertEquals("minecraft:diamond_block", config.frameBlockId().toString());
         assertEquals("minecraft:flint_and_steel", config.activationItemId().toString());
-        assertEquals(CommonConfig.DestinationPortalMode.BROKEN, config.destinationPortalMode());
+        assertEquals(CommonConfig.DestinationPortalMode.RUINED, config.destinationPortalMode());
         assertEquals(DEFAULT_TEMPLATE, Files.readString(configPath, StandardCharsets.UTF_8));
     }
 

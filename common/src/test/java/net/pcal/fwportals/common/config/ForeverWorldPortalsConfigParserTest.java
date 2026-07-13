@@ -63,7 +63,7 @@ class ForeverWorldPortalsConfigParserTest {
 
         assertEquals(false, config.requireEmptyInventory());
         assertEquals(Level.INFO, config.logLevel());
-        assertEquals(CommonConfig.DestinationPortalMode.BROKEN, config.destinationPortalMode());
+        assertEquals(CommonConfig.DestinationPortalMode.RUINED, config.destinationPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
         assertEquals(512, config.maximumSpiralSearchPositions());
         assertEquals(45, config.maximumBiomeSearches());
@@ -99,7 +99,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
         assertEquals(Items.FLINT_AND_STEEL, config.activationItem());
-        assertEquals(CommonConfig.DestinationPortalMode.BROKEN, config.destinationPortalMode());
+        assertEquals(CommonConfig.DestinationPortalMode.RUINED, config.destinationPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
         assertEquals(512, config.maximumSpiralSearchPositions());
         assertEquals(64, config.maximumBiomeSearches());

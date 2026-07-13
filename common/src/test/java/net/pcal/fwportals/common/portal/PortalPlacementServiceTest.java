@@ -302,7 +302,7 @@ class PortalPlacementServiceTest {
     }
 
     @Test
-    void brokenDestinationPortalUsesWeatheredDeepslateMixNoPortalBlocksAndSubfoundation() {
+    void ruinedDestinationPortalUsesWeatheredDeepslateMixNoPortalBlocksAndSubfoundation() {
         TestBootstrap.ensureBootstrapped();
         PortalLayout layout = PortalLayout.createStandardForAnchorBlock(Direction.Axis.Z, new BlockPos(100, 70, -50));
         MutableTestBlockGetter level = new MutableTestBlockGetter();
@@ -316,7 +316,7 @@ class PortalPlacementServiceTest {
                 level::setBlock
         );
         for (BlockPos framePos : layout.frameBlocks()) {
-            level.setBlock(framePos, PortalPlacementService.brokenFrameState(random));
+            level.setBlock(framePos, PortalPlacementService.ruinedFrameState(random));
         }
 
         for (BlockPos framePos : layout.frameBlocks()) {

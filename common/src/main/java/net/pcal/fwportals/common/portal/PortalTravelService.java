@@ -151,7 +151,7 @@ public final class PortalTravelService {
             }
 
             DestinationPortalCandidate candidate = maybeCandidate.get();
-            BlockState destinationFrameState = config.destinationPortalMode() == CommonConfig.DestinationPortalMode.BROKEN
+            BlockState destinationFrameState = config.destinationPortalMode() == CommonConfig.DestinationPortalMode.RUINED
                     ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
                     : config.frameBlock().defaultBlockState();
             PortalPlacementService.LayoutSearchResult layoutSearchResult = portalPlacementService.findValidLayoutNearAnchor(

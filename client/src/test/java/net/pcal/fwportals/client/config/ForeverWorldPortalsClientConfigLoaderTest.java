@@ -23,7 +23,7 @@ class ForeverWorldPortalsClientConfigLoaderTest {
             logLevel=INFO
             frameBlock=minecraft:diamond_block
             activationItem=minecraft:flint_and_steel
-            destinationPortalMode=BROKEN
+            destinationPortalMode=RUINED
             client.portalColor=#4CAF50
             destinationSpiralSpacingBlocks=10000
             maximumSpiralSearchPositions=512

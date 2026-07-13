@@ -12,14 +12,14 @@ Please add configurable destination-portal generation modes to Forever World Por
 Add a new server-prefixed configuration key:
 
 ```properties
-server.destinationPortalMode=broken
+server.destinationPortalMode=ruined
 ```
 
 Represent this as an enum with these values:
 
 ```java
 NONE
-BROKEN
+RUINED
 COMPLETE
 ```
 
@@ -27,13 +27,13 @@ Configuration parsing should be case-insensitive. Document the accepted property
 
 ```text
 none
-broken
+ruined
 complete
 ```
 
-Use `broken` as the default.
+Use `ruined` as the default.
 
-Invalid values should produce a clear warning and fall back to `broken`.
+Invalid values should produce a clear warning and fall back to `ruined`.
 
 Do not implement this as multiple booleans. These are mutually exclusive destination-generation policies.
 
@@ -51,21 +51,21 @@ After a new source portal finds a destination:
 
 The landing area must still be safe and suitable for the player.
 
-### `BROKEN`
+### `RUINED`
 
-Generate a broken destination portal at the selected destination.
+Generate a ruined destination portal at the selected destination.
 
-The broken portal should:
+The ruined portal should:
 
 * Use the same dimensions, position, orientation, anchor conventions, and placement validation as a complete generated Forever World Portal.
 * Have its visible frame made from a normal, blastable placeholder block.
-* For now, use `cobbled_deepslate` for the visible broken frame.
+* For now, use `cobbled_deepslate` for the visible ruined frame.
 * Contain no active portal blocks.
 * Not be immediately usable.
 
 The player must repair the visible frame by replacing it with diamond blocks and then light it normally before it can be used.
 
-Register this destination portal immediately, even though it is broken. It must be linked back to the original source portal.
+Register this destination portal immediately, even though it is ruined. It must be linked back to the original source portal.
 
 When the player repairs and lights a diamond frame enclosing the registered destination portal's origin block, the existing registered portal must be recognized and activated. It must not be treated as a new unrelated portal or assigned a new destination.
 
@@ -83,7 +83,7 @@ It should:
 
 ## Destination subfoundation
 
-For both `BROKEN` and `COMPLETE`, place a hidden four-block crying-obsidian subfoundation immediately beneath the bottom row of the generated portal frame.
+For both `RUINED` and `COMPLETE`, place a hidden four-block crying-obsidian subfoundation immediately beneath the bottom row of the generated portal frame.
 
 This should be a `4 × 1` line:
 
@@ -123,9 +123,9 @@ Preserve the current portal identity model:
 * Do not add portal UUIDs if they are not otherwise required by the current registry.
 * Do not add migration logic for old registry data. Existing development-world registry files can be deleted.
 
-For `BROKEN` and `COMPLETE`, register the generated destination portal using the origin block enclosed by the generated frame.
+For `RUINED` and `COMPLETE`, register the generated destination portal using the origin block enclosed by the generated frame.
 
-For `BROKEN`, registration must not depend on the placeholder frame continuing to exist. If the placeholder blocks are destroyed, the registered destination portal should remain in persistent state so that rebuilding the diamond frame in the correct location restores the link.
+For `RUINED`, registration must not depend on the placeholder frame continuing to exist. If the placeholder blocks are destroyed, the registered destination portal should remain in persistent state so that rebuilding the diamond frame in the correct location restores the link.
 
 For `NONE`, do not register a portal at the destination.
 
@@ -135,7 +135,7 @@ Add useful logs that include:
 
 * selected destination portal mode;
 * generated destination portal position and orientation;
-* whether a broken or complete destination portal was generated;
+* whether a ruined or complete destination portal was generated;
 * whether the destination portal was registered;
 * placement of the crying-obsidian subfoundation;
 * clear warnings when generation fails.
@@ -148,16 +148,16 @@ Update the configuration documentation and example properties file.
 
 Add or update tests for at least:
 
-1. Default mode is `BROKEN`.
+1. Default mode is `RUINED`.
 2. Case-insensitive enum parsing.
-3. Invalid values fall back to `BROKEN`.
+3. Invalid values fall back to `RUINED`.
 4. `NONE` generates and registers no destination portal.
-5. `BROKEN` generates a cobbled-deepslate frame with no portal blocks.
-6. `BROKEN` registers the destination portal and links it back to the source.
-7. A repaired broken portal matches the existing registered portal rather than creating a new one.
+5. `RUINED` generates a cobbled-deepslate frame with no portal blocks.
+6. `RUINED` registers the destination portal and links it back to the source.
+7. A repaired ruined portal matches the existing registered portal rather than creating a new one.
 8. `COMPLETE` generates a diamond frame with active portal blocks.
 9. `COMPLETE` registers and links the destination portal.
-10. `BROKEN` and `COMPLETE` generate exactly four crying-obsidian blocks in a straight line beneath the bottom frame row.
+10. `RUINED` and `COMPLETE` generate exactly four crying-obsidian blocks in a straight line beneath the bottom frame row.
 11. `NONE` generates no crying obsidian.
 12. The implementation works for both portal orientations.
 13. Registry persistence survives a server restart.

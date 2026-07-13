@@ -21,8 +21,8 @@ import java.util.function.Predicate;
 public final class PortalPlacementService {
 
     private static final int ANCHOR_SEARCH_RADIUS = 8;
-    private static final BlockState BROKEN_FRAME_PRIMARY_STATE = Blocks.DEEPSLATE_TILES.defaultBlockState();
-    private static final BlockState BROKEN_FRAME_ACCENT_STATE = Blocks.CRACKED_DEEPSLATE_TILES.defaultBlockState();
+    private static final BlockState RUINED_FRAME_PRIMARY_STATE = Blocks.DEEPSLATE_TILES.defaultBlockState();
+    private static final BlockState RUINED_FRAME_ACCENT_STATE = Blocks.CRACKED_DEEPSLATE_TILES.defaultBlockState();
     private static final BlockState SUBFOUNDATION_STATE = Blocks.CRYING_OBSIDIAN.defaultBlockState();
 
     private final Logger logger;
@@ -147,10 +147,10 @@ public final class PortalPlacementService {
     ) {
         return switch (mode) {
             case NONE -> throw new IllegalArgumentException("NONE does not place a destination portal");
-            case BROKEN -> {
-                applyBrokenLayout(level, layout);
+            case RUINED -> {
+                applyRuinedLayout(level, layout);
                 logger.info(
-                        "[fwportals] Generated broken destination portal at anchor {} with axis {} in {}",
+                        "[fwportals] Generated ruined destination portal at anchor {} with axis {} in {}",
                         layout.anchorBlock(),
                         layout.axis(),
                         level.dimension().identifier()
@@ -180,10 +180,10 @@ public final class PortalPlacementService {
         };
     }
 
-    static void applyBrokenLayout(ServerLevel level, PortalLayout layout) {
-        applyLayout(layout, BROKEN_FRAME_PRIMARY_STATE, false, true, (pos, state) -> level.setBlock(pos, state, 18));
+    static void applyRuinedLayout(ServerLevel level, PortalLayout layout) {
+        applyLayout(layout, RUINED_FRAME_PRIMARY_STATE, false, true, (pos, state) -> level.setBlock(pos, state, 18));
         for (BlockPos framePos : layout.frameBlocks()) {
-            level.setBlock(framePos, brokenFrameState(level.getRandom()), 18);
+            level.setBlock(framePos, ruinedFrameState(level.getRandom()), 18);
         }
     }
 
@@ -300,8 +300,8 @@ public final class PortalPlacementService {
                 || state.is(Blocks.END_GATEWAY);
     }
 
-    static BlockState brokenFrameState(RandomSource random) {
-        return random.nextInt(10) < 2 ? BROKEN_FRAME_ACCENT_STATE : BROKEN_FRAME_PRIMARY_STATE;
+    static BlockState ruinedFrameState(RandomSource random) {
+        return random.nextInt(10) < 2 ? RUINED_FRAME_ACCENT_STATE : RUINED_FRAME_PRIMARY_STATE;
     }
 
     private boolean canReplaceSubfoundationBlock(BlockGetter level, BlockPos pos) {

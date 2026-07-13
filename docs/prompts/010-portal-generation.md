@@ -133,7 +133,7 @@ No persistence is required yet.
 
 Handle frame changes gracefully.
 
-If a diamond frame is broken:
+If a diamond frame is damaged:
 
 * the portal should collapse using vanilla behavior where practical
 

@@ -131,13 +131,13 @@ The mod writes and loads `config/fwportals.properties`.
 - `maximumBiomeSearches` independently limits expensive biome-locator calls across one destination search
 - `maximumPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
 - `minimumGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
-- `destinationPortalMode` accepts `NONE`, `BROKEN`, or `COMPLETE` and defaults to `BROKEN`
+- `destinationPortalMode` accepts `NONE`, `RUINED`, or `COMPLETE` and defaults to `RUINED`
 - `client.portalColor` sets the fixed RGB tint used by the optional client module for valid Forever World portals and defaults to `#4CAF50`
 
 `destinationPortalMode` currently supports these values:
 
 - `NONE`: no destination portal is generated and no reverse portal is registered
-- `BROKEN`: a cobbled-deepslate placeholder frame plus buried crying-obsidian footing is generated and registered
+- `RUINED`: a cobbled-deepslate placeholder frame plus buried crying-obsidian footing is generated and registered
 - `COMPLETE`: a complete diamond Forever World portal plus buried crying-obsidian footing is generated and registered
 
 ## Status

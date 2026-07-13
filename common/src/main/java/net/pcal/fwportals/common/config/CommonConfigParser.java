@@ -258,7 +258,7 @@ public final class CommonConfigParser {
         if (logger != null) {
             logger.warn(
                     CommonService.LOG_PREFIX
-                            + "Invalid destination portal mode '{}' for '{}'; using default {}. Accepted values: NONE, BROKEN, COMPLETE",
+                            + "Invalid destination portal mode '{}' for '{}'; using default {}. Accepted values: NONE, RUINED, COMPLETE",
                     value,
                     key,
                     defaultValue.name()
