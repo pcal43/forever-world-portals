@@ -131,8 +131,8 @@ public final class PortalTravelService {
                 PortalFeedbackText.seekingFrontierMessage(selectedAttunement)
         ));
         logger.info(
-                "[fwportals] Selected destination portal mode {} for portal anchor {} in {}",
-                config.destinationPortalMode(),
+                "[fwportals] Selected return portal mode {} for portal anchor {} in {}",
+                config.returnPortalMode(),
                 portalAnchor,
                 level.dimension().identifier()
         );
@@ -151,7 +151,7 @@ public final class PortalTravelService {
             }
 
             DestinationPortalCandidate candidate = maybeCandidate.get();
-            BlockState destinationFrameState = config.destinationPortalMode() == CommonConfig.DestinationPortalMode.RUINED
+            BlockState destinationFrameState = config.returnPortalMode() == CommonConfig.ReturnPortalMode.RUINED
                     ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
                     : config.frameBlock().defaultBlockState();
             PortalPlacementService.LayoutSearchResult layoutSearchResult = portalPlacementService.findValidLayoutNearAnchor(
@@ -207,9 +207,9 @@ public final class PortalTravelService {
                 continue;
             }
 
-            if (config.destinationPortalMode() == CommonConfig.DestinationPortalMode.NONE) {
+            if (config.returnPortalMode() == CommonConfig.ReturnPortalMode.NONE) {
                 FoundingRegistration registration = buildFoundingRegistration(
-                        config.destinationPortalMode(),
+                        config.returnPortalMode(),
                         level.dimension(),
                         portalAnchor.immutable(),
                         destinationLevel.dimension(),
@@ -218,7 +218,7 @@ public final class PortalTravelService {
                 PortalRecord outboundPortal = registration.outboundPortal();
                 registry.putPortal(outboundPortal);
                 logger.info(
-                        "[fwportals] Registered outbound-only portal route {} in {} -> {} in {} with destination portal mode none",
+                        "[fwportals] Registered outbound-only portal route {} in {} -> {} in {} with return portal mode none",
                         outboundPortal.anchor(),
                         outboundPortal.dimension().identifier(),
                         outboundPortal.destinationAnchor().orElseThrow(),
@@ -243,11 +243,11 @@ public final class PortalTravelService {
                 GeneratedPortal generatedPortal = portalPlacementService.placeDestinationPortal(
                         destinationLevel,
                         layout,
-                        config.destinationPortalMode(),
+                        config.returnPortalMode(),
                         config.frameBlock().defaultBlockState()
                 );
                 FoundingRegistration registration = buildFoundingRegistration(
-                        config.destinationPortalMode(),
+                        config.returnPortalMode(),
                         level.dimension(),
                         portalAnchor.immutable(),
                         destinationLevel.dimension(),
@@ -284,7 +284,7 @@ public final class PortalTravelService {
                 );
                 logger.info(
                         "[fwportals] Destination portal {} generated at anchor {} with axis {} and registered for return travel",
-                        config.destinationPortalMode().name().toLowerCase(java.util.Locale.ROOT),
+                        config.returnPortalMode().name().toLowerCase(java.util.Locale.ROOT),
                         layout.anchorBlock(),
                         layout.axis()
                 );
@@ -355,7 +355,7 @@ public final class PortalTravelService {
     }
 
     static FoundingRegistration buildFoundingRegistration(
-            CommonConfig.DestinationPortalMode destinationPortalMode,
+            CommonConfig.ReturnPortalMode returnPortalMode,
             net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> sourceDimension,
             BlockPos sourceAnchor,
             net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> destinationDimension,
@@ -367,7 +367,7 @@ public final class PortalTravelService {
                 destinationDimension,
                 destinationAnchor
         );
-        if (destinationPortalMode == CommonConfig.DestinationPortalMode.NONE) {
+        if (returnPortalMode == CommonConfig.ReturnPortalMode.NONE) {
             return new FoundingRegistration(outboundPortal, Optional.empty());
         }
 

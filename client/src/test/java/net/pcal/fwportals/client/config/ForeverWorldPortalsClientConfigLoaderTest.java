@@ -22,7 +22,7 @@ class ForeverWorldPortalsClientConfigLoaderTest {
             requireEmptyInventory=true
             logLevel=INFO
             frameBlock=minecraft:diamond_block
-            destinationPortalMode=RUINED
+            returnPortalMode=RUINED
             client.portalColor=#4CAF50
             destinationSpiralSpacingBlocks=10000
             maximumSpiralSearchPositions=512

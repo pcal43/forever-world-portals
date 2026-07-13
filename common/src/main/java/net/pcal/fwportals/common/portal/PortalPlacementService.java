@@ -142,7 +142,7 @@ public final class PortalPlacementService {
     public GeneratedPortal placeDestinationPortal(
             ServerLevel level,
             PortalLayout layout,
-            CommonConfig.DestinationPortalMode mode,
+            CommonConfig.ReturnPortalMode mode,
             BlockState completeFrameState
     ) {
         return switch (mode) {

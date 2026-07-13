@@ -24,7 +24,7 @@ class ForeverWorldPortalsConfigParserTest {
         CommonConfig config = CommonConfigParser.parse(
                 properties("""
                         requireEmptyInventory=false
-                        destinationPortalMode=COMPLETE
+                        returnPortalMode=COMPLETE
                         destinationSpiralSpacingBlocks=23456
                         maximumSpiralSearchPositions=123
                         maximumBiomeSearches=45
@@ -36,7 +36,7 @@ class ForeverWorldPortalsConfigParserTest {
         );
 
         assertEquals(false, config.requireEmptyInventory());
-        assertEquals(CommonConfig.DestinationPortalMode.COMPLETE, config.destinationPortalMode());
+        assertEquals(CommonConfig.ReturnPortalMode.COMPLETE, config.returnPortalMode());
         assertEquals(23456, config.destinationSpiralSpacingBlocks());
         assertEquals(123, config.maximumSpiralSearchPositions());
         assertEquals(45, config.maximumBiomeSearches());
@@ -62,7 +62,7 @@ class ForeverWorldPortalsConfigParserTest {
 
         assertEquals(false, config.requireEmptyInventory());
         assertEquals(Level.INFO, config.logLevel());
-        assertEquals(CommonConfig.DestinationPortalMode.RUINED, config.destinationPortalMode());
+        assertEquals(CommonConfig.ReturnPortalMode.RUINED, config.returnPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
         assertEquals(512, config.maximumSpiralSearchPositions());
         assertEquals(45, config.maximumBiomeSearches());
@@ -82,7 +82,7 @@ class ForeverWorldPortalsConfigParserTest {
                         requireEmptyInventory=not_boolean
                         logLevel=LOUD
                         frameBlock=not a block id
-                        destinationPortalMode=glitched
+                        returnPortalMode=glitched
                         destinationSpiralSpacingBlocks=0
                         maximumSpiralSearchPositions=-1
                         maximumBiomeSearches=zero
@@ -96,7 +96,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(true, config.requireEmptyInventory());
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
-        assertEquals(CommonConfig.DestinationPortalMode.RUINED, config.destinationPortalMode());
+        assertEquals(CommonConfig.ReturnPortalMode.RUINED, config.returnPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
         assertEquals(512, config.maximumSpiralSearchPositions());
         assertEquals(64, config.maximumBiomeSearches());

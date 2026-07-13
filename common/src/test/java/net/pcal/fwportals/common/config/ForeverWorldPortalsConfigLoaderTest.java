@@ -20,7 +20,7 @@ class ForeverWorldPortalsConfigLoaderTest {
             requireEmptyInventory=true
             logLevel=INFO
             frameBlock=minecraft:diamond_block
-            destinationPortalMode=RUINED
+            returnPortalMode=RUINED
             destinationSpiralSpacingBlocks=10000
             maximumSpiralSearchPositions=512
             maximumBiomeSearches=64
@@ -65,7 +65,7 @@ class ForeverWorldPortalsConfigLoaderTest {
                 requireEmptyInventory=false
                 logLevel=DEBUG
                 frameBlock=minecraft:emerald_block
-                destinationPortalMode=COMPLETE
+                returnPortalMode=COMPLETE
                 destinationSpiralSpacingBlocks=20000
                 maximumSpiralSearchPositions=100
                 maximumBiomeSearches=50
@@ -78,7 +78,7 @@ class ForeverWorldPortalsConfigLoaderTest {
         assertFalse(config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.DEBUG, config.logLevel());
         assertEquals("minecraft:emerald_block", config.frameBlockId().toString());
-        assertEquals(CommonConfig.DestinationPortalMode.COMPLETE, config.destinationPortalMode());
+        assertEquals(CommonConfig.ReturnPortalMode.COMPLETE, config.returnPortalMode());
         assertEquals(20000, config.destinationSpiralSpacingBlocks());
         assertEquals(100, config.maximumSpiralSearchPositions());
         assertEquals(50, config.maximumBiomeSearches());
@@ -97,7 +97,7 @@ class ForeverWorldPortalsConfigLoaderTest {
         assertEquals(true, config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.INFO, config.logLevel());
         assertEquals("minecraft:diamond_block", config.frameBlockId().toString());
-        assertEquals(CommonConfig.DestinationPortalMode.RUINED, config.destinationPortalMode());
+        assertEquals(CommonConfig.ReturnPortalMode.RUINED, config.returnPortalMode());
         assertEquals(DEFAULT_TEMPLATE, Files.readString(configPath, StandardCharsets.UTF_8));
     }
 

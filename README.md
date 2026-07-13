@@ -119,7 +119,7 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `requireEmptyInventory`, `logLevel`, `frameBlock`, `destinationPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, `minimumGeneratedTerrainDistanceBlocks`, and `client.portalColor`
+- Current settings: `requireEmptyInventory`, `logLevel`, `frameBlock`, `returnPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, `minimumGeneratedTerrainDistanceBlocks`, and `client.portalColor`
 - Initial creation: if `fwportals.properties` does not exist, the mod copies the bundled `fwportals-default.properties` template verbatim
 - Defaults on startup: the bundled `fwportals-default.properties` resource is always loaded as the default-value source, and any keys present in the user file override it
 - Partial user configs: omitted keys continue using the defaults bundled with the installed mod version
@@ -131,10 +131,10 @@ The mod writes and loads `config/fwportals.properties`.
 - `maximumBiomeSearches` independently limits expensive biome-locator calls across one destination search
 - `maximumPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
 - `minimumGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
-- `destinationPortalMode` accepts `NONE`, `RUINED`, or `COMPLETE` and defaults to `RUINED`
+- `returnPortalMode` accepts `NONE`, `RUINED`, or `COMPLETE` and defaults to `RUINED`
 - `client.portalColor` sets the fixed RGB tint used by the optional client module for valid Forever World portals and defaults to `#4CAF50`
 
-`destinationPortalMode` currently supports these values:
+`returnPortalMode` currently supports these values:
 
 - `NONE`: no destination portal is generated and no reverse portal is registered
 - `RUINED`: a cobbled-deepslate placeholder frame plus buried crying-obsidian footing is generated and registered

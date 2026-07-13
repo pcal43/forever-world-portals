@@ -9,14 +9,14 @@ public record CommonConfig(
         Level logLevel,
         Identifier frameBlockId,
         Block frameBlock,
-        DestinationPortalMode destinationPortalMode,
+        ReturnPortalMode returnPortalMode,
         int destinationSpiralSpacingBlocks,
         int maximumSpiralSearchPositions,
         int maximumBiomeSearches,
         int maximumPortalPlacementAttemptsPerBiome,
         int minimumGeneratedTerrainDistanceBlocks
 ) {
-    public enum DestinationPortalMode {
+    public enum ReturnPortalMode {
         NONE,
         RUINED,
         COMPLETE

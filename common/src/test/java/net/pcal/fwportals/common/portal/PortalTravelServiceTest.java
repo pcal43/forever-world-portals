@@ -7,7 +7,6 @@ import net.pcal.fwportals.common.attunement.AttunementLookup;
 import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
 import net.pcal.fwportals.common.config.CommonConfig;
 import net.pcal.fwportals.common.persistence.PortalRecord;
-import net.pcal.fwportals.common.portal.PortalTravelService;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
 
@@ -106,7 +105,7 @@ class PortalTravelServiceTest {
     @Test
     void noneModeBuildsOutboundOnlyRegistration() {
         PortalTravelService.FoundingRegistration registration = PortalTravelService.buildFoundingRegistration(
-                CommonConfig.DestinationPortalMode.NONE,
+                CommonConfig.ReturnPortalMode.NONE,
                 Level.OVERWORLD,
                 new net.minecraft.core.BlockPos(0, 64, 0),
                 Level.OVERWORLD,
@@ -119,7 +118,7 @@ class PortalTravelServiceTest {
 
     @Test
     void ruinedAndCompleteModesBuildLinkedReverseRegistrations() {
-        for (CommonConfig.DestinationPortalMode mode : new CommonConfig.DestinationPortalMode[]{CommonConfig.DestinationPortalMode.RUINED, CommonConfig.DestinationPortalMode.COMPLETE}) {
+        for (CommonConfig.ReturnPortalMode mode : new CommonConfig.ReturnPortalMode[]{CommonConfig.ReturnPortalMode.RUINED, CommonConfig.ReturnPortalMode.COMPLETE}) {
             PortalTravelService.FoundingRegistration registration = PortalTravelService.buildFoundingRegistration(
                     mode,
                     Level.OVERWORLD,

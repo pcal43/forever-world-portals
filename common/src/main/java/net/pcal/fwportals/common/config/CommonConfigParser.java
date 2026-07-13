@@ -18,7 +18,7 @@ public final class CommonConfigParser {
             "requireEmptyInventory",
             "logLevel",
             "frameBlock",
-            "destinationPortalMode",
+            "returnPortalMode",
             "destinationSpiralSpacingBlocks",
             "maximumSpiralSearchPositions",
             "maximumBiomeSearches",
@@ -51,10 +51,10 @@ public final class CommonConfigParser {
         );
         Level logLevel = parseLevel(properties, "logLevel", defaults.logLevel(), logger);
         Block frameBlock = parseBlock(properties, "frameBlock", defaults.frameBlock(), logger);
-        CommonConfig.DestinationPortalMode destinationPortalMode = parseDestinationPortalMode(
+        CommonConfig.ReturnPortalMode returnPortalMode = parseReturnPortalMode(
                 properties,
-                "destinationPortalMode",
-                defaults.destinationPortalMode(),
+                "returnPortalMode",
+                defaults.returnPortalMode(),
                 logger
         );
         int destinationSpiralSpacingBlocks = parsePositiveInt(
@@ -92,7 +92,7 @@ public final class CommonConfigParser {
                 logLevel,
                 BuiltInRegistries.BLOCK.getKey(frameBlock),
                 frameBlock,
-                destinationPortalMode,
+                returnPortalMode,
                 destinationSpiralSpacingBlocks,
                 maximumSpiralSearchPositions,
                 maximumBiomeSearches,
@@ -209,10 +209,10 @@ public final class CommonConfigParser {
         return defaultValue;
     }
 
-    private static CommonConfig.DestinationPortalMode parseDestinationPortalMode(
+    private static CommonConfig.ReturnPortalMode parseReturnPortalMode(
             Properties properties,
             String key,
-            CommonConfig.DestinationPortalMode defaultValue,
+            CommonConfig.ReturnPortalMode defaultValue,
             Logger logger
     ) {
         String value = properties.getProperty(key);
@@ -220,13 +220,13 @@ public final class CommonConfigParser {
             return defaultValue;
         }
         try {
-            return CommonConfig.DestinationPortalMode.valueOf(value.trim());
+            return CommonConfig.ReturnPortalMode.valueOf(value.trim());
         } catch (IllegalArgumentException ignored) {
         }
         if (logger != null) {
             logger.warn(
                     CommonService.LOG_PREFIX
-                            + "Invalid destination portal mode '{}' for '{}'; using default {}. Accepted values: NONE, RUINED, COMPLETE",
+                            + "Invalid return portal mode '{}' for '{}'; using default {}. Accepted values: NONE, RUINED, COMPLETE",
                     value,
                     key,
                     defaultValue.name()
@@ -281,10 +281,10 @@ public final class CommonConfigParser {
                         "frameBlock",
                         requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock")
                 ),
-                requireParsedDestinationPortalModeDefault(
+                requireParsedReturnPortalModeDefault(
                         defaultResourceName,
-                        "destinationPortalMode",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "destinationPortalMode")
+                        "returnPortalMode",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "returnPortalMode")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
@@ -357,16 +357,16 @@ public final class CommonConfigParser {
         throw invalidBundledDefault(defaultResourceName, key, defaultValue, "positive integer");
     }
 
-    private static CommonConfig.DestinationPortalMode requireParsedDestinationPortalModeDefault(
+    private static CommonConfig.ReturnPortalMode requireParsedReturnPortalModeDefault(
             String defaultResourceName,
             String key,
             String defaultValue
     ) {
         try {
-            return CommonConfig.DestinationPortalMode.valueOf(defaultValue.trim());
+            return CommonConfig.ReturnPortalMode.valueOf(defaultValue.trim());
         } catch (IllegalArgumentException ignored) {
         }
-        throw invalidBundledDefault(defaultResourceName, key, defaultValue, "destination portal mode");
+        throw invalidBundledDefault(defaultResourceName, key, defaultValue, "return portal mode");
     }
 
     private CommonConfigParser() {
