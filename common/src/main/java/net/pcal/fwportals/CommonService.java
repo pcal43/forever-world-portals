@@ -5,7 +5,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.pcal.fwportals.common.attunement.AttunementRegistry;
@@ -97,12 +96,12 @@ public final class CommonService {
         return attunementRegistry;
     }
 
-    public boolean tryActivatePortal(Level level, BlockPos firePos, ItemStack activationStack, Player player) {
-        return portalActivationService().tryActivatePortal(level, firePos, activationStack, player);
+    public boolean tryActivatePortal(Level level, BlockPos firePos, Player player) {
+        return portalActivationService().tryActivatePortal(level, firePos, player);
     }
 
-    public boolean canActivatePortalAt(BlockGetter level, BlockPos firePos, ItemStack activationStack) {
-        return portalActivationService().canActivatePortalAt(level, firePos, activationStack);
+    public boolean canActivatePortalAt(BlockGetter level, BlockPos firePos) {
+        return portalActivationService().canActivatePortalAt(level, firePos);
     }
 
     public Optional<PortalFrame> findForeverWorldPortal(BlockGetter level, BlockPos pos) {

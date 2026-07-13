@@ -1,7 +1,6 @@
 package net.pcal.fwportals.common.config;
 
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import org.apache.logging.log4j.Level;
 
@@ -10,8 +9,6 @@ public record CommonConfig(
         Level logLevel,
         Identifier frameBlockId,
         Block frameBlock,
-        Identifier activationItemId,
-        Item activationItem,
         DestinationPortalMode destinationPortalMode,
         int destinationSpiralSpacingBlocks,
         int maximumSpiralSearchPositions,

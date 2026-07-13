@@ -2,7 +2,6 @@ package net.pcal.fwportals.common.config;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.pcal.fwportals.CommonService;
 import org.apache.logging.log4j.Level;
@@ -19,7 +18,6 @@ public final class CommonConfigParser {
             "requireEmptyInventory",
             "logLevel",
             "frameBlock",
-            "activationItem",
             "destinationPortalMode",
             "destinationSpiralSpacingBlocks",
             "maximumSpiralSearchPositions",
@@ -53,12 +51,6 @@ public final class CommonConfigParser {
         );
         Level logLevel = parseLevel(properties, "logLevel", defaults.logLevel(), logger);
         Block frameBlock = parseBlock(properties, "frameBlock", defaults.frameBlock(), logger);
-        Item activationItem = parseItem(
-                properties,
-                "activationItem",
-                defaults.activationItem(),
-                logger
-        );
         CommonConfig.DestinationPortalMode destinationPortalMode = parseDestinationPortalMode(
                 properties,
                 "destinationPortalMode",
@@ -100,8 +92,6 @@ public final class CommonConfigParser {
                 logLevel,
                 BuiltInRegistries.BLOCK.getKey(frameBlock),
                 frameBlock,
-                BuiltInRegistries.ITEM.getKey(activationItem),
-                activationItem,
                 destinationPortalMode,
                 destinationSpiralSpacingBlocks,
                 maximumSpiralSearchPositions,
@@ -189,28 +179,6 @@ public final class CommonConfigParser {
                         value,
                         key,
                         BuiltInRegistries.BLOCK.getKey(defaultValue)
-                );
-            }
-            return defaultValue;
-        });
-    }
-
-    private static Item parseItem(Properties properties, String key, Item defaultValue, Logger logger) {
-        String value = properties.getProperty(key);
-        if (value == null) {
-            return defaultValue;
-        }
-        Identifier id = parseIdentifier(key, value, logger);
-        if (id == null) {
-            return defaultValue;
-        }
-        return BuiltInRegistries.ITEM.getOptional(id).orElseGet(() -> {
-            if (logger != null) {
-                logger.warn(
-                        CommonService.LOG_PREFIX + "Unknown item '{}' for '{}'; using default {}",
-                        value,
-                        key,
-                        BuiltInRegistries.ITEM.getKey(defaultValue)
                 );
             }
             return defaultValue;
@@ -313,18 +281,6 @@ public final class CommonConfigParser {
                         "frameBlock",
                         requireDefaultValue(bundledDefaults, defaultResourceName, "frameBlock")
                 ),
-                BuiltInRegistries.ITEM.getKey(
-                        requireParsedItemDefault(
-                                defaultResourceName,
-                                "activationItem",
-                                requireDefaultValue(bundledDefaults, defaultResourceName, "activationItem")
-                        )
-                ),
-                requireParsedItemDefault(
-                        defaultResourceName,
-                        "activationItem",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "activationItem")
-                ),
                 requireParsedDestinationPortalModeDefault(
                         defaultResourceName,
                         "destinationPortalMode",
@@ -387,19 +343,6 @@ public final class CommonConfigParser {
             throw invalidBundledDefault(defaultResourceName, key, defaultValue, "known block");
         } catch (RuntimeException ex) {
             throw invalidBundledDefault(defaultResourceName, key, defaultValue, "block identifier");
-        }
-    }
-
-    private static Item requireParsedItemDefault(String defaultResourceName, String key, String defaultValue) {
-        try {
-            Identifier id = Identifier.parse(defaultValue.trim());
-            Item item = BuiltInRegistries.ITEM.getOptional(id).orElse(null);
-            if (item != null) {
-                return item;
-            }
-            throw invalidBundledDefault(defaultResourceName, key, defaultValue, "known item");
-        } catch (RuntimeException ex) {
-            throw invalidBundledDefault(defaultResourceName, key, defaultValue, "item identifier");
         }
     }
 

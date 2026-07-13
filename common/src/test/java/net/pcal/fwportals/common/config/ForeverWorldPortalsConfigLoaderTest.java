@@ -20,7 +20,6 @@ class ForeverWorldPortalsConfigLoaderTest {
             requireEmptyInventory=true
             logLevel=INFO
             frameBlock=minecraft:diamond_block
-            activationItem=minecraft:flint_and_steel
             destinationPortalMode=RUINED
             destinationSpiralSpacingBlocks=10000
             maximumSpiralSearchPositions=512
@@ -66,7 +65,6 @@ class ForeverWorldPortalsConfigLoaderTest {
                 requireEmptyInventory=false
                 logLevel=DEBUG
                 frameBlock=minecraft:emerald_block
-                activationItem=minecraft:fire_charge
                 destinationPortalMode=COMPLETE
                 destinationSpiralSpacingBlocks=20000
                 maximumSpiralSearchPositions=100
@@ -80,7 +78,6 @@ class ForeverWorldPortalsConfigLoaderTest {
         assertFalse(config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.DEBUG, config.logLevel());
         assertEquals("minecraft:emerald_block", config.frameBlockId().toString());
-        assertEquals("minecraft:fire_charge", config.activationItemId().toString());
         assertEquals(CommonConfig.DestinationPortalMode.COMPLETE, config.destinationPortalMode());
         assertEquals(20000, config.destinationSpiralSpacingBlocks());
         assertEquals(100, config.maximumSpiralSearchPositions());
@@ -100,7 +97,6 @@ class ForeverWorldPortalsConfigLoaderTest {
         assertEquals(true, config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.INFO, config.logLevel());
         assertEquals("minecraft:diamond_block", config.frameBlockId().toString());
-        assertEquals("minecraft:flint_and_steel", config.activationItemId().toString());
         assertEquals(CommonConfig.DestinationPortalMode.RUINED, config.destinationPortalMode());
         assertEquals(DEFAULT_TEMPLATE, Files.readString(configPath, StandardCharsets.UTF_8));
     }

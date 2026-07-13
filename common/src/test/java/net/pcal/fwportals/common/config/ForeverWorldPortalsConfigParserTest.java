@@ -1,6 +1,5 @@
 package net.pcal.fwportals.common.config;
 
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.pcal.fwportals.common.TestBootstrap;
 import org.apache.logging.log4j.Level;
@@ -83,7 +82,6 @@ class ForeverWorldPortalsConfigParserTest {
                         requireEmptyInventory=not_boolean
                         logLevel=LOUD
                         frameBlock=not a block id
-                        activationItem=minecraft:not_an_item
                         destinationPortalMode=glitched
                         destinationSpiralSpacingBlocks=0
                         maximumSpiralSearchPositions=-1
@@ -98,7 +96,6 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(true, config.requireEmptyInventory());
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
-        assertEquals(Items.FLINT_AND_STEEL, config.activationItem());
         assertEquals(CommonConfig.DestinationPortalMode.RUINED, config.destinationPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
         assertEquals(512, config.maximumSpiralSearchPositions());

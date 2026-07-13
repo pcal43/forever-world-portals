@@ -10,7 +10,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -44,11 +43,8 @@ public final class PortalActivationService {
         this.portalAttunementService = portalAttunementService;
     }
 
-    public boolean tryActivatePortal(Level level, BlockPos firePos, ItemStack activationStack, Player player) {
+    public boolean tryActivatePortal(Level level, BlockPos firePos, Player player) {
         if (level.isClientSide()) {
-            return false;
-        }
-        if (!activationStack.is(config.activationItem())) {
             return false;
         }
         if (!isPortalDimension(level)) {
@@ -80,11 +76,7 @@ public final class PortalActivationService {
         return true;
     }
 
-    public boolean canActivatePortalAt(BlockGetter level, BlockPos firePos, ItemStack activationStack) {
-        if (!activationStack.is(config.activationItem())) {
-            return false;
-        }
-
+    public boolean canActivatePortalAt(BlockGetter level, BlockPos firePos) {
         BlockState frameState = config.frameBlock().defaultBlockState();
         return detector.findEmptyFrame(level, firePos, Direction.Axis.X, frameState).isPresent();
     }
