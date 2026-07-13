@@ -1,6 +1,7 @@
 package net.pcal.fwportals.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -8,11 +9,13 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.client.resources.model.sprite.SpriteId;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.pcal.fwportals.ForeverWorldPortalsService;
 import net.pcal.fwportals.portal.PortalFrameDetector;
+import net.pcal.fwportals.portal.PortalInventoryAccess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,6 +47,35 @@ public final class ForeverWorldPortalsClient {
 
     public Material.Baked portalMaskMaterial() {
         return new Material.Baked(portalMaskSprite(), false);
+    }
+
+    public boolean shouldSuppressPortalEffect(LocalPlayer player) {
+        if (player == null || PortalInventoryAccess.isEmpty(player.getInventory()) || player.getActivePortalLocalTransition() == null) {
+            return false;
+        }
+
+        BlockAndTintGetter level = (BlockAndTintGetter) player.level();
+        double epsilon = 1.0E-5;
+        int minX = Mth.floor(player.getBoundingBox().minX + epsilon);
+        int minY = Mth.floor(player.getBoundingBox().minY + epsilon);
+        int minZ = Mth.floor(player.getBoundingBox().minZ + epsilon);
+        int maxX = Mth.floor(player.getBoundingBox().maxX - epsilon);
+        int maxY = Mth.floor(player.getBoundingBox().maxY - epsilon);
+        int maxZ = Mth.floor(player.getBoundingBox().maxZ - epsilon);
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    cursor.set(x, y, z);
+                    if (level.getBlockState(cursor).is(Blocks.NETHER_PORTAL) && isForeverWorldPortal(level, cursor)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     public BlockStateModel wrapPortalModelIfNeeded(

@@ -144,6 +144,7 @@ The mod writes and loads `config/fwportals.properties`.
 
 - The mod is intended to remain server-side-only so vanilla clients can connect.
 - Clients with the optional mod installed render valid Forever World portals with a fixed configurable green tint while ordinary Nether portals remain vanilla purple.
+- Clients with the optional mod installed also suppress the vanilla portal screen-warp effect while the local player is standing in a valid Forever World portal and carrying items.
 - Diamond-block Forever World portal activation, anchor-based route identity, first-entry teleportation, generated return portals, thrown-item portal attunement, and data-pack-driven attunement loading are implemented.
 - Ordinary obsidian Nether portals are left to vanilla behavior.
 - Entering a new Forever World portal permanently creates an anchor-to-anchor route in world saved data.
