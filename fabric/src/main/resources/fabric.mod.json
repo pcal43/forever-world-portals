@@ -20,7 +20,7 @@
     ]
   },
   "mixins": [
-    "fwportals.mixins.json",
+    "fwportals.common.mixins.json",
     "fwportals.client.mixins.json",
     "fwportals.fabric.client.mixins.json"
   ],
