@@ -10,12 +10,12 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.pcal.fwportals.TestBootstrap;
+import net.pcal.fwportals.common.persistence.PortalRecord;
+import net.pcal.fwportals.common.persistence.PortalRegistryData;
 import net.pcal.fwportals.common.portal.PortalFrame;
 import net.pcal.fwportals.common.portal.PortalFrameDetector;
-import net.pcal.fwportals.common.persistence.PortalRegistryData;
-import net.pcal.fwportals.common.persistence.PortalRecord;
-import net.pcal.fwportals.portal.PortalFrameDetectorTestBlockGetter;
 import net.pcal.fwportals.common.portal.PortalIdentity;
+import net.pcal.fwportals.portal.PortalFrameDetectorTestBlockGetter;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

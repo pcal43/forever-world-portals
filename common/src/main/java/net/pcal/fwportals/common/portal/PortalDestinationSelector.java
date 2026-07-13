@@ -5,8 +5,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.pcal.fwportals.common.config.Config;
 import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
+import net.pcal.fwportals.common.config.Config;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;

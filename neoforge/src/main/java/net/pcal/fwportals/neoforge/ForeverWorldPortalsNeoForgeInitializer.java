@@ -1,15 +1,15 @@
 package net.pcal.fwportals.neoforge;
 
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
-import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.pcal.fwportals.ForeverWorldPortals;
 import net.pcal.fwportals.ForeverWorldPortalsService;
 

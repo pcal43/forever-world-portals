@@ -17,8 +17,8 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.NetherPortalBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.pcal.fwportals.common.config.Config;
 import net.pcal.fwportals.ForeverWorldPortalsService;
+import net.pcal.fwportals.common.config.Config;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;

@@ -10,13 +10,13 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
-import net.pcal.fwportals.common.config.Config;
 import net.pcal.fwportals.common.attunement.AttunementDefinition;
 import net.pcal.fwportals.common.attunement.AttunementLookup;
 import net.pcal.fwportals.common.attunement.AttunementRegistry;
 import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
-import net.pcal.fwportals.common.persistence.PortalRegistryData;
+import net.pcal.fwportals.common.config.Config;
 import net.pcal.fwportals.common.persistence.PortalRecord;
+import net.pcal.fwportals.common.persistence.PortalRegistryData;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 

@@ -28,13 +28,6 @@ public final class GeneratedTerrainDistanceConstraint implements DestinationCons
         this.minimumGeneratedTerrainDistanceBlocks = minimumGeneratedTerrainDistanceBlocks;
     }
 
-    static GeneratedTerrainDistanceConstraint ofRegions(
-            List<RegionRectangle> occupiedRegions,
-            int minimumGeneratedTerrainDistanceBlocks
-    ) {
-        return new GeneratedTerrainDistanceConstraint(occupiedRegions, minimumGeneratedTerrainDistanceBlocks);
-    }
-
     public static GeneratedTerrainDistanceConstraint snapshot(
             ServerLevel level,
             int minimumGeneratedTerrainDistanceBlocks,

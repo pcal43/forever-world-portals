@@ -18,8 +18,8 @@ import net.minecraft.world.level.Level;
 import net.pcal.fwportals.common.attunement.AttunementDefinition;
 import net.pcal.fwportals.common.attunement.AttunementLookup;
 import net.pcal.fwportals.common.attunement.AttunementRegistry;
-import net.pcal.fwportals.common.persistence.PortalRegistryData;
 import net.pcal.fwportals.common.persistence.PortalRecord;
+import net.pcal.fwportals.common.persistence.PortalRegistryData;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 

@@ -1,13 +1,13 @@
 package net.pcal.fwportals.common.portal;
 
-import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.util.RandomSource;
 import net.pcal.fwportals.common.config.Config;
 import org.apache.logging.log4j.Logger;
 

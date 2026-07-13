@@ -3,8 +3,8 @@ package net.pcal.fwportals.portal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
-import net.pcal.fwportals.common.portal.PortalFrame;
 import net.pcal.fwportals.common.portal.PortalAttunementParticles;
+import net.pcal.fwportals.common.portal.PortalFrame;
 import org.joml.Vector3f;
 import org.junit.jupiter.api.Test;
 

@@ -6,8 +6,8 @@ import net.pcal.fwportals.common.attunement.AttunementDefinition;
 import net.pcal.fwportals.common.attunement.AttunementLookup;
 import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
 import net.pcal.fwportals.common.config.Config;
-import net.pcal.fwportals.common.portal.PortalTravelService;
 import net.pcal.fwportals.common.persistence.PortalRecord;
+import net.pcal.fwportals.common.portal.PortalTravelService;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
 
