@@ -20,6 +20,20 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.function.Predicate;
 
+/**
+ * Fabric-specific portal rendering hook for Indigo's alternate block renderer.
+ *
+ * <p>The shared client mixin targets vanilla {@code ModelBlockRenderer}, which is sufficient for
+ * loaders that follow the vanilla block model tessellation path. Fabric can also render blocks
+ * through Indigo's {@code AltModelBlockRendererImpl}, which bypasses that vanilla hook. When
+ * Indigo is the active Fabric renderer, Forever World portal blocks would therefore miss their
+ * custom masked portal rendering unless this mixin intercepts Indigo's quad emission path too.
+ *
+ * <p>This class cannot be moved into common code because it targets a Fabric-only implementation
+ * class from Indigo. NeoForge does not ship that class, and mixins must target classes that exist
+ * in the active runtime. The rendering decision remains shared through
+ * {@link ForeverWorldPortalsClient}; only the attachment point is loader-specific.
+ */
 @Mixin(AltModelBlockRendererImpl.class)
 abstract class AltModelBlockRendererImplMixin {
 
@@ -82,3 +96,4 @@ abstract class AltModelBlockRendererImplMixin {
         emitter.emit();
     }
 }
+Pl

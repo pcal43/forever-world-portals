@@ -15,6 +15,19 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.List;
 
+/**
+ * Shared portal rendering hook for the vanilla block model renderer.
+ *
+ * <p>This mixin redirects vanilla {@code ModelBlockRenderer} so Forever World portal blocks can
+ * substitute a tinted/masked portal model while leaving ordinary Nether portals unchanged. This is
+ * the common cross-loader rendering hook because both Fabric and NeoForge include the vanilla
+ * renderer classes.
+ *
+ * <p>Fabric also has an alternate renderer path via Indigo. That path does not necessarily pass
+ * through {@code ModelBlockRenderer}, so Fabric needs an additional loader-specific mixin targeting
+ * Indigo's {@code AltModelBlockRendererImpl}. This class handles the vanilla path; the Fabric
+ * mixin exists to preserve the same portal appearance when Indigo is the active renderer.
+ */
 @Mixin(ModelBlockRenderer.class)
 abstract class ModelBlockRendererMixin {
 
