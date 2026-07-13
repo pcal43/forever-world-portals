@@ -119,7 +119,7 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `server.enabled`, `server.requireEmptyInventory`, `server.logLevel`, `server.frameBlock`, `server.activationItem`, `server.destinationPortalMode`, `server.destinationSpiralSpacingBlocks`, `server.maximumSpiralSearchPositions`, `server.maximumBiomeSearches`, `server.maximumPortalPlacementAttemptsPerBiome`, and `server.minimumGeneratedTerrainDistanceBlocks`
+- Current settings: `server.enabled`, `server.requireEmptyInventory`, `server.logLevel`, `server.frameBlock`, `server.activationItem`, `server.destinationPortalMode`, `server.destinationSpiralSpacingBlocks`, `server.maximumSpiralSearchPositions`, `server.maximumBiomeSearches`, `server.maximumPortalPlacementAttemptsPerBiome`, `server.minimumGeneratedTerrainDistanceBlocks`, and `client.portalColor`
 - Initial creation: if `fwportals.properties` does not exist, the mod copies the bundled `fwportals-default.properties` template verbatim
 - Defaults on startup: the bundled `fwportals-default.properties` resource is always loaded as the default-value source, and any keys present in the user file override it
 - Partial user configs: omitted keys continue using the defaults bundled with the installed mod version
@@ -132,6 +132,7 @@ The mod writes and loads `config/fwportals.properties`.
 - `server.maximumPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
 - `server.minimumGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
 - `server.destinationPortalMode` accepts `NONE`, `BROKEN`, or `COMPLETE` and defaults to `BROKEN`
+- `client.portalColor` sets the fixed RGB tint used by the optional client module for valid Forever World portals and defaults to `#4CAF50`
 
 `server.destinationPortalMode` currently supports these values:
 
@@ -142,6 +143,7 @@ The mod writes and loads `config/fwportals.properties`.
 ## Status
 
 - The mod is intended to remain server-side-only so vanilla clients can connect.
+- Clients with the optional mod installed render valid Forever World portals with a fixed configurable green tint while ordinary Nether portals remain vanilla purple.
 - Diamond-block Forever World portal activation, anchor-based route identity, first-entry teleportation, generated return portals, thrown-item portal attunement, and data-pack-driven attunement loading are implemented.
 - Ordinary obsidian Nether portals are left to vanilla behavior.
 - Entering a new Forever World portal permanently creates an anchor-to-anchor route in world saved data.

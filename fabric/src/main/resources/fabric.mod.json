@@ -21,7 +21,8 @@
   },
   "mixins": [
     "fwportals.mixins.json",
-    "fwportals.client.mixins.json"
+    "fwportals.client.mixins.json",
+    "fwportals.fabric.client.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=${fabric_loader_version}",
