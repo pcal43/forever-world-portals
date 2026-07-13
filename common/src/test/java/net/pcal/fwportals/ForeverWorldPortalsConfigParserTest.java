@@ -2,6 +2,9 @@ package net.pcal.fwportals;
 
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.pcal.fwportals.common.config.Config;
+import net.pcal.fwportals.common.config.ConfigLoader;
+import net.pcal.fwportals.common.config.ForeverWorldPortalsConfigParser;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
 
@@ -17,11 +20,11 @@ class ForeverWorldPortalsConfigParserTest {
     @Test
     void parsesExplicitOverridesAgainstBundledDefaults() throws IOException {
         TestBootstrap.ensureBootstrapped();
-        ForeverWorldPortalsConfig defaults = ForeverWorldPortalsConfigParser.parseBundledDefaults(
+        Config defaults = ForeverWorldPortalsConfigParser.parseBundledDefaults(
                 loadBundledDefaults(),
-                ForeverWorldPortalsConfigLoader.DEFAULT_CONFIG_RESOURCE_NAME
+                ConfigLoader.DEFAULT_CONFIG_RESOURCE_NAME
         );
-        ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
+        Config config = ForeverWorldPortalsConfigParser.parse(
                 properties("""
                         server.requireEmptyInventory=false
                         server.destinationPortalMode=COMPLETE
@@ -36,7 +39,7 @@ class ForeverWorldPortalsConfigParserTest {
         );
 
         assertEquals(false, config.requireEmptyInventory());
-        assertEquals(DestinationPortalMode.COMPLETE, config.destinationPortalMode());
+        assertEquals(Config.DestinationPortalMode.COMPLETE, config.destinationPortalMode());
         assertEquals(23456, config.destinationSpiralSpacingBlocks());
         assertEquals(123, config.maximumSpiralSearchPositions());
         assertEquals(45, config.maximumBiomeSearches());
@@ -47,11 +50,11 @@ class ForeverWorldPortalsConfigParserTest {
     @Test
     void partialUserPropertiesUseBundledDefaultsForOmittedKeys() throws IOException {
         TestBootstrap.ensureBootstrapped();
-        ForeverWorldPortalsConfig defaults = ForeverWorldPortalsConfigParser.parseBundledDefaults(
+        Config defaults = ForeverWorldPortalsConfigParser.parseBundledDefaults(
                 loadBundledDefaults(),
-                ForeverWorldPortalsConfigLoader.DEFAULT_CONFIG_RESOURCE_NAME
+                ConfigLoader.DEFAULT_CONFIG_RESOURCE_NAME
         );
-        ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
+        Config config = ForeverWorldPortalsConfigParser.parse(
                 properties("""
                         server.requireEmptyInventory=false
                         server.maximumBiomeSearches=45
@@ -63,7 +66,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(false, config.requireEmptyInventory());
         assertEquals(true, config.enabled());
         assertEquals(Level.INFO, config.logLevel());
-        assertEquals(DestinationPortalMode.BROKEN, config.destinationPortalMode());
+        assertEquals(Config.DestinationPortalMode.BROKEN, config.destinationPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
         assertEquals(512, config.maximumSpiralSearchPositions());
         assertEquals(45, config.maximumBiomeSearches());
@@ -74,11 +77,11 @@ class ForeverWorldPortalsConfigParserTest {
     @Test
     void fallsBackToBundledDefaultsForMalformedUserValues() throws IOException {
         TestBootstrap.ensureBootstrapped();
-        ForeverWorldPortalsConfig defaults = ForeverWorldPortalsConfigParser.parseBundledDefaults(
+        Config defaults = ForeverWorldPortalsConfigParser.parseBundledDefaults(
                 loadBundledDefaults(),
-                ForeverWorldPortalsConfigLoader.DEFAULT_CONFIG_RESOURCE_NAME
+                ConfigLoader.DEFAULT_CONFIG_RESOURCE_NAME
         );
-        ForeverWorldPortalsConfig config = ForeverWorldPortalsConfigParser.parse(
+        Config config = ForeverWorldPortalsConfigParser.parse(
                 properties("""
                         server.enabled=maybe
                         server.requireEmptyInventory=not_boolean
@@ -101,7 +104,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());
         assertEquals(Items.FLINT_AND_STEEL, config.activationItem());
-        assertEquals(DestinationPortalMode.BROKEN, config.destinationPortalMode());
+        assertEquals(Config.DestinationPortalMode.BROKEN, config.destinationPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
         assertEquals(512, config.maximumSpiralSearchPositions());
         assertEquals(64, config.maximumBiomeSearches());
@@ -136,11 +139,11 @@ class ForeverWorldPortalsConfigParserTest {
     }
 
     private static Properties loadBundledDefaults() throws IOException {
-        return ForeverWorldPortalsConfigLoader.createDefault().loadBundledDefaultProperties();
+        return ConfigLoader.createDefault().loadBundledDefaultProperties();
     }
 
     private static Properties properties(String text) throws IOException {
-        ForeverWorldPortalsConfigLoader loader = new ForeverWorldPortalsConfigLoader(
+        ConfigLoader loader = new ConfigLoader(
                 "test.properties",
                 () -> new java.io.ByteArrayInputStream(text.getBytes(java.nio.charset.StandardCharsets.UTF_8))
         );

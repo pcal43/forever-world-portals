@@ -8,11 +8,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.pcal.fwportals.attunement.AttunementRegistry;
-import net.pcal.fwportals.portal.ForeverWorldPortalFrame;
-import net.pcal.fwportals.portal.PortalActivationService;
-import net.pcal.fwportals.portal.PortalAttunementService;
-import net.pcal.fwportals.portal.PortalTravelService;
+import net.pcal.fwportals.common.attunement.AttunementRegistry;
+import net.pcal.fwportals.common.config.Config;
+import net.pcal.fwportals.common.portal.PortalActivationService;
+import net.pcal.fwportals.common.portal.PortalAttunementService;
+import net.pcal.fwportals.common.portal.PortalFrame;
+import net.pcal.fwportals.common.portal.PortalTravelService;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +28,7 @@ public final class ForeverWorldPortalsService {
     public static final String LOGGER_NAME = "fwportals";
     public static final String LOG_PREFIX = "[fwportals] ";
 
-    private ForeverWorldPortalsConfig config;
+    private Config config;
     private Logger logger;
     private boolean initialized;
     private MinecraftServer currentServer;
@@ -40,7 +41,7 @@ public final class ForeverWorldPortalsService {
         return INSTANCE;
     }
 
-    void init(ForeverWorldPortalsConfig config, Logger logger) {
+    void init(Config config, Logger logger) {
         if (this.initialized) {
             throw new IllegalStateException("Forever World Portals has already been initialized");
         }
@@ -60,7 +61,7 @@ public final class ForeverWorldPortalsService {
         return logger;
     }
 
-    public ForeverWorldPortalsConfig config() {
+    public Config config() {
         if (!initialized) {
             throw new IllegalStateException("Forever World Portals has not been initialized");
         }
@@ -90,7 +91,7 @@ public final class ForeverWorldPortalsService {
         return portalActivationService().canActivatePortalAt(level, firePos, activationStack);
     }
 
-    public Optional<ForeverWorldPortalFrame> findForeverWorldPortal(BlockGetter level, BlockPos pos) {
+    public Optional<PortalFrame> findForeverWorldPortal(BlockGetter level, BlockPos pos) {
         return portalActivationService().findForeverWorldPortal(level, pos);
     }
 

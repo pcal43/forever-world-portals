@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "net.pcal.fwportals.common.mixins",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "FlintAndSteelItemMixin",
+    "NetherPortalBlockMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -9,6 +9,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.pcal.fwportals.TestBootstrap;
+import net.pcal.fwportals.common.portal.PortalFrame;
+import net.pcal.fwportals.common.portal.PortalFrameDetector;
+import net.pcal.fwportals.common.portal.PortalIdentity;
+import net.pcal.fwportals.common.portal.PortalLayout;
+import net.pcal.fwportals.common.portal.PortalPlacementService;
+import net.pcal.fwportals.common.portal.SafeLandingFinder;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +28,6 @@ import java.util.function.IntBinaryOperator;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PortalPlacementServiceTest {
@@ -235,7 +240,7 @@ class PortalPlacementServiceTest {
         assertTrue(level.getBlockState(layout.foundationBlocks().get(8)).is(Blocks.STONE));
         assertTrue(level.getBlockState(layout.frameBasePos()).is(Blocks.DIAMOND_BLOCK));
 
-        Optional<ForeverWorldPortalFrame> detected = detector.findPortalFrame(
+        Optional<PortalFrame> detected = detector.findPortalFrame(
                 level,
                 expectedAnchor,
                 Direction.Axis.Z,

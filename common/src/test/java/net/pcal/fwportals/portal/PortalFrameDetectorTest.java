@@ -9,6 +9,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.pcal.fwportals.TestBootstrap;
+import net.pcal.fwportals.common.portal.PortalFrame;
+import net.pcal.fwportals.common.portal.PortalFrameDetector;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -29,7 +31,7 @@ class PortalFrameDetectorTest {
         TestBlockGetter level = new TestBlockGetter();
         buildAxisZFrame(level, new BlockPos(0, 0, 0), Blocks.DIAMOND_BLOCK.defaultBlockState(), 2, 3);
 
-        Optional<ForeverWorldPortalFrame> frame = detector.findEmptyFrame(
+        Optional<PortalFrame> frame = detector.findEmptyFrame(
                 level,
                 new BlockPos(0, 1, 1),
                 Direction.Axis.Z,
@@ -52,7 +54,7 @@ class PortalFrameDetectorTest {
         buildAxisZFrame(level, new BlockPos(0, 0, 0), Blocks.DIAMOND_BLOCK.defaultBlockState(), 2, 3);
         level.setBlock(new BlockPos(0, 4, 1), Blocks.AIR.defaultBlockState());
 
-        Optional<ForeverWorldPortalFrame> frame = detector.findEmptyFrame(
+        Optional<PortalFrame> frame = detector.findEmptyFrame(
                 level,
                 new BlockPos(0, 1, 1),
                 Direction.Axis.Z,
@@ -68,7 +70,7 @@ class PortalFrameDetectorTest {
         TestBlockGetter level = new TestBlockGetter();
         buildAxisXFrame(level, new BlockPos(10, 5, 20), Blocks.DIAMOND_BLOCK.defaultBlockState(), 2, 3);
 
-        Optional<ForeverWorldPortalFrame> frame = detector.findEmptyFrame(
+        Optional<PortalFrame> frame = detector.findEmptyFrame(
                 level,
                 new BlockPos(11, 6, 20),
                 Direction.Axis.X,
@@ -85,7 +87,7 @@ class PortalFrameDetectorTest {
         TestBlockGetter level = new TestBlockGetter();
         buildAxisZFrame(level, new BlockPos(0, 0, 0), Blocks.OBSIDIAN.defaultBlockState(), 2, 3);
 
-        Optional<ForeverWorldPortalFrame> frame = detector.findEmptyFrame(
+        Optional<PortalFrame> frame = detector.findEmptyFrame(
                 level,
                 new BlockPos(0, 1, 1),
                 Direction.Axis.Z,

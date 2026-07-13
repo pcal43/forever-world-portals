@@ -6,10 +6,11 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.pcal.fwportals.TestBootstrap;
-import net.pcal.fwportals.attunement.AttunementDefinition;
-import net.pcal.fwportals.attunement.AttunementLookup;
-import net.pcal.fwportals.attunement.BiomeDestinationTarget;
-import net.pcal.fwportals.portal.persistence.PortalRecord;
+import net.pcal.fwportals.common.attunement.AttunementDefinition;
+import net.pcal.fwportals.common.attunement.AttunementLookup;
+import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
+import net.pcal.fwportals.common.persistence.PortalRecord;
+import net.pcal.fwportals.common.portal.PortalAttunementService;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

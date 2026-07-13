@@ -4,8 +4,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
-import net.pcal.fwportals.attunement.AttunementDefinition;
-import net.pcal.fwportals.attunement.BiomeDestinationTarget;
+import net.pcal.fwportals.common.attunement.AttunementDefinition;
+import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
+import net.pcal.fwportals.common.portal.PortalFeedbackText;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;

@@ -1,6 +1,8 @@
 package net.pcal.fwportals.portal;
 
 import net.minecraft.core.BlockPos;
+import net.pcal.fwportals.common.portal.GeneratedTerrainDistanceConstraint;
+import net.pcal.fwportals.common.portal.PortalDestinationSelector;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
