@@ -62,7 +62,6 @@ class ForeverWorldPortalsConfigParserTest {
         );
 
         assertEquals(false, config.requireEmptyInventory());
-        assertEquals(true, config.enabled());
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(CommonConfig.DestinationPortalMode.BROKEN, config.destinationPortalMode());
         assertEquals(10000, config.destinationSpiralSpacingBlocks());
@@ -81,7 +80,6 @@ class ForeverWorldPortalsConfigParserTest {
         );
         CommonConfig config = CommonConfigParser.parse(
                 properties("""
-                        enabled=maybe
                         requireEmptyInventory=not_boolean
                         logLevel=LOUD
                         frameBlock=not a block id
@@ -97,7 +95,6 @@ class ForeverWorldPortalsConfigParserTest {
                 null
         );
 
-        assertEquals(true, config.enabled());
         assertEquals(true, config.requireEmptyInventory());
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(Blocks.DIAMOND_BLOCK, config.frameBlock());

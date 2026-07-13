@@ -19,7 +19,6 @@ class ForeverWorldPortalsClientConfigLoaderTest {
 
     private static final Logger LOGGER = LogManager.getLogger("fwportals-test");
     private static final String DEFAULT_TEMPLATE = """
-            enabled=true
             requireEmptyInventory=true
             logLevel=INFO
             frameBlock=minecraft:diamond_block
@@ -61,7 +60,7 @@ class ForeverWorldPortalsClientConfigLoaderTest {
     void missingBundledClientPortalColorFailsClearly() {
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> new ForeverWorldPortalsClientConfigLoaderHelper("enabled=true\n").loadBundledDefaultColor()
+                () -> new ForeverWorldPortalsClientConfigLoaderHelper("requireEmptyInventory=true\n").loadBundledDefaultColor()
         );
         assertTrue(exception.getMessage().contains("client.portalColor"));
     }

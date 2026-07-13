@@ -17,7 +17,6 @@ class ForeverWorldPortalsConfigLoaderTest {
 
     private static final String DEFAULT_TEMPLATE = """
             # Example config
-            enabled=true
             requireEmptyInventory=true
             logLevel=INFO
             frameBlock=minecraft:diamond_block
@@ -64,7 +63,6 @@ class ForeverWorldPortalsConfigLoaderTest {
         CommonConfigLoader loader = loaderFor(DEFAULT_TEMPLATE);
         Path configPath = tempDir.resolve(CommonConfigLoader.CONFIG_FILENAME);
         Files.writeString(configPath, """
-                enabled=false
                 requireEmptyInventory=false
                 logLevel=DEBUG
                 frameBlock=minecraft:emerald_block
@@ -79,7 +77,6 @@ class ForeverWorldPortalsConfigLoaderTest {
 
         CommonConfig config = loader.load(configPath, null);
 
-        assertFalse(config.enabled());
         assertFalse(config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.DEBUG, config.logLevel());
         assertEquals("minecraft:emerald_block", config.frameBlockId().toString());
@@ -100,7 +97,6 @@ class ForeverWorldPortalsConfigLoaderTest {
 
         CommonConfig config = loader.load(configPath, null);
 
-        assertEquals(true, config.enabled());
         assertEquals(true, config.requireEmptyInventory());
         assertEquals(org.apache.logging.log4j.Level.INFO, config.logLevel());
         assertEquals("minecraft:diamond_block", config.frameBlockId().toString());

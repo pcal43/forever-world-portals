@@ -119,7 +119,7 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `enabled`, `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `destinationPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, `minimumGeneratedTerrainDistanceBlocks`, and `client.portalColor`
+- Current settings: `requireEmptyInventory`, `logLevel`, `frameBlock`, `activationItem`, `destinationPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, `minimumGeneratedTerrainDistanceBlocks`, and `client.portalColor`
 - Initial creation: if `fwportals.properties` does not exist, the mod copies the bundled `fwportals-default.properties` template verbatim
 - Defaults on startup: the bundled `fwportals-default.properties` resource is always loaded as the default-value source, and any keys present in the user file override it
 - Partial user configs: omitted keys continue using the defaults bundled with the installed mod version

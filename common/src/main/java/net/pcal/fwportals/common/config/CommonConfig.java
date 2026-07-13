@@ -6,7 +6,6 @@ import net.minecraft.world.level.block.Block;
 import org.apache.logging.log4j.Level;
 
 public record CommonConfig(
-        boolean enabled,
         boolean requireEmptyInventory,
         Level logLevel,
         Identifier frameBlockId,

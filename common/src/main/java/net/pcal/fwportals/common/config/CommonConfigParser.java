@@ -16,7 +16,6 @@ import java.util.Set;
 public final class CommonConfigParser {
 
     private static final Set<String> EXPECTED_KEYS = Set.of(
-            "enabled",
             "requireEmptyInventory",
             "logLevel",
             "frameBlock",
@@ -46,12 +45,6 @@ public final class CommonConfigParser {
             CommonConfig defaults,
             Logger logger
     ) {
-        boolean enabled = parseBoolean(
-                properties,
-                "enabled",
-                defaults.enabled(),
-                logger
-        );
         boolean requireEmptyInventory = parseBoolean(
                 properties,
                 "requireEmptyInventory",
@@ -103,7 +96,6 @@ public final class CommonConfigParser {
                 logger
         );
         return new CommonConfig(
-                enabled,
                 requireEmptyInventory,
                 logLevel,
                 BuiltInRegistries.BLOCK.getKey(frameBlock),
@@ -299,11 +291,6 @@ public final class CommonConfigParser {
 
     private static CommonConfig buildInternalDefaults(Properties bundledDefaults, String defaultResourceName) {
         return new CommonConfig(
-                requireParsedBooleanDefault(
-                        defaultResourceName,
-                        "enabled",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "enabled")
-                ),
                 requireParsedBooleanDefault(
                         defaultResourceName,
                         "requireEmptyInventory",

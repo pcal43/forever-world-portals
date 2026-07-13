@@ -45,7 +45,7 @@ public final class PortalActivationService {
     }
 
     public boolean tryActivatePortal(Level level, BlockPos firePos, ItemStack activationStack, Player player) {
-        if (!config.enabled() || level.isClientSide()) {
+        if (level.isClientSide()) {
             return false;
         }
         if (!activationStack.is(config.activationItem())) {
@@ -81,9 +81,6 @@ public final class PortalActivationService {
     }
 
     public boolean canActivatePortalAt(BlockGetter level, BlockPos firePos, ItemStack activationStack) {
-        if (!config.enabled()) {
-            return false;
-        }
         if (!activationStack.is(config.activationItem())) {
             return false;
         }
