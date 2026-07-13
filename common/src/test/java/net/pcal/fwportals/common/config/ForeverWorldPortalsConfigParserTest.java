@@ -25,11 +25,11 @@ class ForeverWorldPortalsConfigParserTest {
                 properties("""
                         requireEmptyInventory=false
                         returnPortalMode=COMPLETE
-                        destinationSpiralSpacingBlocks=23456
-                        maximumSpiralSearchPositions=123
-                        maximumBiomeSearches=45
-                        maximumPortalPlacementAttemptsPerBiome=67
-                        minimumGeneratedTerrainDistanceBlocks=12345
+                        spiralSearchSpacing=23456
+                        maxSpiralSearchPositions=123
+                        maxBiomeSearches=45
+                        maxPortalPlacementAttemptsPerBiome=67
+                        minGeneratedTerrainDistanceBlocks=12345
                         """),
                 defaults,
                 null
@@ -37,11 +37,11 @@ class ForeverWorldPortalsConfigParserTest {
 
         assertEquals(false, config.requireEmptyInventory());
         assertEquals(CommonConfig.ReturnPortalMode.COMPLETE, config.returnPortalMode());
-        assertEquals(23456, config.destinationSpiralSpacingBlocks());
-        assertEquals(123, config.maximumSpiralSearchPositions());
-        assertEquals(45, config.maximumBiomeSearches());
-        assertEquals(67, config.maximumPortalPlacementAttemptsPerBiome());
-        assertEquals(12345, config.minimumGeneratedTerrainDistanceBlocks());
+        assertEquals(23456, config.spiralSearchSpacing());
+        assertEquals(123, config.maxSpiralSearchPositions());
+        assertEquals(45, config.maxBiomeSearches());
+        assertEquals(67, config.maxPortalPlacementAttemptsPerBiome());
+        assertEquals(12345, config.minGeneratedTerrainDistanceBlocks());
     }
 
     @Test
@@ -54,7 +54,7 @@ class ForeverWorldPortalsConfigParserTest {
         CommonConfig config = CommonConfigParser.parse(
                 properties("""
                         requireEmptyInventory=false
-                        maximumBiomeSearches=45
+                        maxBiomeSearches=45
                         """),
                 defaults,
                 null
@@ -63,11 +63,11 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(false, config.requireEmptyInventory());
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(CommonConfig.ReturnPortalMode.RUINED, config.returnPortalMode());
-        assertEquals(10000, config.destinationSpiralSpacingBlocks());
-        assertEquals(512, config.maximumSpiralSearchPositions());
-        assertEquals(45, config.maximumBiomeSearches());
-        assertEquals(64, config.maximumPortalPlacementAttemptsPerBiome());
-        assertEquals(10000, config.minimumGeneratedTerrainDistanceBlocks());
+        assertEquals(10000, config.spiralSearchSpacing());
+        assertEquals(512, config.maxSpiralSearchPositions());
+        assertEquals(45, config.maxBiomeSearches());
+        assertEquals(64, config.maxPortalPlacementAttemptsPerBiome());
+        assertEquals(10000, config.minGeneratedTerrainDistanceBlocks());
     }
 
     @Test
@@ -83,11 +83,11 @@ class ForeverWorldPortalsConfigParserTest {
                         logLevel=LOUD
                         portalFrameBlock=not a block id
                         returnPortalMode=glitched
-                        destinationSpiralSpacingBlocks=0
-                        maximumSpiralSearchPositions=-1
-                        maximumBiomeSearches=zero
-                        maximumPortalPlacementAttemptsPerBiome=-2
-                        minimumGeneratedTerrainDistanceBlocks=-100
+                        spiralSearchSpacing=0
+                        maxSpiralSearchPositions=-1
+                        maxBiomeSearches=zero
+                        maxPortalPlacementAttemptsPerBiome=-2
+                        minGeneratedTerrainDistanceBlocks=-100
                         """),
                 defaults,
                 null
@@ -97,18 +97,18 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(Level.INFO, config.logLevel());
         assertEquals(Blocks.DIAMOND_BLOCK, config.portalFrameBlock());
         assertEquals(CommonConfig.ReturnPortalMode.RUINED, config.returnPortalMode());
-        assertEquals(10000, config.destinationSpiralSpacingBlocks());
-        assertEquals(512, config.maximumSpiralSearchPositions());
-        assertEquals(64, config.maximumBiomeSearches());
-        assertEquals(64, config.maximumPortalPlacementAttemptsPerBiome());
-        assertEquals(10000, config.minimumGeneratedTerrainDistanceBlocks());
+        assertEquals(10000, config.spiralSearchSpacing());
+        assertEquals(512, config.maxSpiralSearchPositions());
+        assertEquals(64, config.maxBiomeSearches());
+        assertEquals(64, config.maxPortalPlacementAttemptsPerBiome());
+        assertEquals(10000, config.minGeneratedTerrainDistanceBlocks());
     }
 
     @Test
     void missingExpectedBundledDefaultKeyFailsClearly() throws IOException {
         TestBootstrap.ensureBootstrapped();
         Properties bundledDefaults = loadBundledDefaults();
-        bundledDefaults.remove("maximumBiomeSearches");
+        bundledDefaults.remove("maxBiomeSearches");
 
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
@@ -118,7 +118,7 @@ class ForeverWorldPortalsConfigParserTest {
                 )
         );
 
-        assertTrue(exception.getMessage().contains("maximumBiomeSearches"));
+        assertTrue(exception.getMessage().contains("maxBiomeSearches"));
         assertTrue(exception.getMessage().contains("test-defaults.properties"));
     }
 

@@ -119,18 +119,18 @@ The registry stores anchor-to-anchor routes, not linked portal-pair objects and 
 The mod writes and loads `config/fwportals.properties`.
 
 - Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `requireEmptyInventory`, `logLevel`, `portalFrameBlock`, `returnPortalMode`, `destinationSpiralSpacingBlocks`, `maximumSpiralSearchPositions`, `maximumBiomeSearches`, `maximumPortalPlacementAttemptsPerBiome`, `minimumGeneratedTerrainDistanceBlocks`, and `client.portalColor`
+- Current settings: `requireEmptyInventory`, `logLevel`, `portalFrameBlock`, `returnPortalMode`, `spiralSearchSpacing`, `maxSpiralSearchPositions`, `maxBiomeSearches`, `maxPortalPlacementAttemptsPerBiome`, `minGeneratedTerrainDistanceBlocks`, and `client.portalColor`
 - Initial creation: if `fwportals.properties` does not exist, the mod copies the bundled `fwportals-default.properties` template verbatim
 - Defaults on startup: the bundled `fwportals-default.properties` resource is always loaded as the default-value source, and any keys present in the user file override it
 - Partial user configs: omitted keys continue using the defaults bundled with the installed mod version
 - Existing user files are never automatically overwritten or rewritten just to add newly introduced settings
 - `requireEmptyInventory=true` prevents portal activation unless the player's main inventory, hotbar, armor slots, and offhand are all empty
-- `destinationSpiralSpacingBlocks` controls square-spiral search-center spacing
+- `spiralSearchSpacing` controls square-spiral search-center spacing
 - The biome-search radius is derived from spiral spacing as `ceil(spacing / sqrt(2))`
-- `maximumSpiralSearchPositions` limits cheap spiral-center inspection across one destination search
-- `maximumBiomeSearches` independently limits expensive biome-locator calls across one destination search
-- `maximumPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
-- `minimumGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
+- `maxSpiralSearchPositions` limits cheap spiral-center inspection across one destination search
+- `maxBiomeSearches` independently limits expensive biome-locator calls across one destination search
+- `maxPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
+- `minGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
 - `returnPortalMode` accepts `NONE`, `RUINED`, or `COMPLETE` and defaults to `RUINED`
 - `client.portalColor` sets the fixed RGB tint used by the optional client module for valid Forever World portals and defaults to `#4CAF50`
 

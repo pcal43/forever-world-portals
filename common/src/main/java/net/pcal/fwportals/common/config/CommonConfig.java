@@ -10,11 +10,11 @@ public record CommonConfig(
         Identifier portalFrameBlockId,
         Block portalFrameBlock,
         ReturnPortalMode returnPortalMode,
-        int destinationSpiralSpacingBlocks,
-        int maximumSpiralSearchPositions,
-        int maximumBiomeSearches,
-        int maximumPortalPlacementAttemptsPerBiome,
-        int minimumGeneratedTerrainDistanceBlocks
+        int spiralSearchSpacing,
+        int maxSpiralSearchPositions,
+        int maxBiomeSearches,
+        int maxPortalPlacementAttemptsPerBiome,
+        int minGeneratedTerrainDistanceBlocks
 ) {
     public enum ReturnPortalMode {
         NONE,

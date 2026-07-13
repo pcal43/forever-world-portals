@@ -19,11 +19,11 @@ public final class CommonConfigParser {
             "logLevel",
             "portalFrameBlock",
             "returnPortalMode",
-            "destinationSpiralSpacingBlocks",
-            "maximumSpiralSearchPositions",
-            "maximumBiomeSearches",
-            "maximumPortalPlacementAttemptsPerBiome",
-            "minimumGeneratedTerrainDistanceBlocks"
+            "spiralSearchSpacing",
+            "maxSpiralSearchPositions",
+            "maxBiomeSearches",
+            "maxPortalPlacementAttemptsPerBiome",
+            "minGeneratedTerrainDistanceBlocks"
     );
 
     static CommonConfig parseBundledDefaults(Properties bundledDefaults, String defaultResourceName) {
@@ -57,34 +57,34 @@ public final class CommonConfigParser {
                 defaults.returnPortalMode(),
                 logger
         );
-        int destinationSpiralSpacingBlocks = parsePositiveInt(
+        int spiralSearchSpacing = parsePositiveInt(
                 properties,
-                "destinationSpiralSpacingBlocks",
-                defaults.destinationSpiralSpacingBlocks(),
+                "spiralSearchSpacing",
+                defaults.spiralSearchSpacing(),
                 logger
         );
-        int maximumSpiralSearchPositions = parsePositiveInt(
+        int maxSpiralSearchPositions = parsePositiveInt(
                 properties,
-                "maximumSpiralSearchPositions",
-                defaults.maximumSpiralSearchPositions(),
+                "maxSpiralSearchPositions",
+                defaults.maxSpiralSearchPositions(),
                 logger
         );
-        int maximumBiomeSearches = parsePositiveInt(
+        int maxBiomeSearches = parsePositiveInt(
                 properties,
-                "maximumBiomeSearches",
-                defaults.maximumBiomeSearches(),
+                "maxBiomeSearches",
+                defaults.maxBiomeSearches(),
                 logger
         );
-        int maximumPortalPlacementAttemptsPerBiome = parsePositiveInt(
+        int maxPortalPlacementAttemptsPerBiome = parsePositiveInt(
                 properties,
-                "maximumPortalPlacementAttemptsPerBiome",
-                defaults.maximumPortalPlacementAttemptsPerBiome(),
+                "maxPortalPlacementAttemptsPerBiome",
+                defaults.maxPortalPlacementAttemptsPerBiome(),
                 logger
         );
-        int minimumGeneratedTerrainDistanceBlocks = parsePositiveInt(
+        int minGeneratedTerrainDistanceBlocks = parsePositiveInt(
                 properties,
-                "minimumGeneratedTerrainDistanceBlocks",
-                defaults.minimumGeneratedTerrainDistanceBlocks(),
+                "minGeneratedTerrainDistanceBlocks",
+                defaults.minGeneratedTerrainDistanceBlocks(),
                 logger
         );
         return new CommonConfig(
@@ -93,11 +93,11 @@ public final class CommonConfigParser {
                 BuiltInRegistries.BLOCK.getKey(portalFrameBlock),
                 portalFrameBlock,
                 returnPortalMode,
-                destinationSpiralSpacingBlocks,
-                maximumSpiralSearchPositions,
-                maximumBiomeSearches,
-                maximumPortalPlacementAttemptsPerBiome,
-                minimumGeneratedTerrainDistanceBlocks
+                spiralSearchSpacing,
+                maxSpiralSearchPositions,
+                maxBiomeSearches,
+                maxPortalPlacementAttemptsPerBiome,
+                minGeneratedTerrainDistanceBlocks
         );
     }
 
@@ -288,28 +288,28 @@ public final class CommonConfigParser {
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "destinationSpiralSpacingBlocks",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "destinationSpiralSpacingBlocks")
+                        "spiralSearchSpacing",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "spiralSearchSpacing")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "maximumSpiralSearchPositions",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumSpiralSearchPositions")
+                        "maxSpiralSearchPositions",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "maxSpiralSearchPositions")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "maximumBiomeSearches",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumBiomeSearches")
+                        "maxBiomeSearches",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "maxBiomeSearches")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "maximumPortalPlacementAttemptsPerBiome",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "maximumPortalPlacementAttemptsPerBiome")
+                        "maxPortalPlacementAttemptsPerBiome",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "maxPortalPlacementAttemptsPerBiome")
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "minimumGeneratedTerrainDistanceBlocks",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "minimumGeneratedTerrainDistanceBlocks")
+                        "minGeneratedTerrainDistanceBlocks",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "minGeneratedTerrainDistanceBlocks")
                 )
         );
     }

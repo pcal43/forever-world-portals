@@ -21,11 +21,11 @@ class ForeverWorldPortalsConfigLoaderTest {
             logLevel=INFO
             portalFrameBlock=minecraft:diamond_block
             returnPortalMode=RUINED
-            destinationSpiralSpacingBlocks=10000
-            maximumSpiralSearchPositions=512
-            maximumBiomeSearches=64
-            maximumPortalPlacementAttemptsPerBiome=64
-            minimumGeneratedTerrainDistanceBlocks=10000
+            spiralSearchSpacing=10000
+            maxSpiralSearchPositions=512
+            maxBiomeSearches=64
+            maxPortalPlacementAttemptsPerBiome=64
+            minGeneratedTerrainDistanceBlocks=10000
             """;
 
     @Test
@@ -45,7 +45,7 @@ class ForeverWorldPortalsConfigLoaderTest {
         Files.createDirectories(configPath.getParent());
         String partialConfig = """
                 requireEmptyInventory=false
-                maximumBiomeSearches=5
+                maxBiomeSearches=5
                 """;
         Files.writeString(configPath, partialConfig, StandardCharsets.UTF_8);
         long originalModifiedTime = Files.getLastModifiedTime(configPath).toMillis();
@@ -66,11 +66,11 @@ class ForeverWorldPortalsConfigLoaderTest {
                 logLevel=DEBUG
                 portalFrameBlock=minecraft:emerald_block
                 returnPortalMode=COMPLETE
-                destinationSpiralSpacingBlocks=20000
-                maximumSpiralSearchPositions=100
-                maximumBiomeSearches=50
-                maximumPortalPlacementAttemptsPerBiome=25
-                minimumGeneratedTerrainDistanceBlocks=30000
+                spiralSearchSpacing=20000
+                maxSpiralSearchPositions=100
+                maxBiomeSearches=50
+                maxPortalPlacementAttemptsPerBiome=25
+                minGeneratedTerrainDistanceBlocks=30000
                 """, StandardCharsets.UTF_8);
 
         CommonConfig config = loader.load(configPath, null);
@@ -79,11 +79,11 @@ class ForeverWorldPortalsConfigLoaderTest {
         assertEquals(org.apache.logging.log4j.Level.DEBUG, config.logLevel());
         assertEquals("minecraft:emerald_block", config.portalFrameBlockId().toString());
         assertEquals(CommonConfig.ReturnPortalMode.COMPLETE, config.returnPortalMode());
-        assertEquals(20000, config.destinationSpiralSpacingBlocks());
-        assertEquals(100, config.maximumSpiralSearchPositions());
-        assertEquals(50, config.maximumBiomeSearches());
-        assertEquals(25, config.maximumPortalPlacementAttemptsPerBiome());
-        assertEquals(30000, config.minimumGeneratedTerrainDistanceBlocks());
+        assertEquals(20000, config.spiralSearchSpacing());
+        assertEquals(100, config.maxSpiralSearchPositions());
+        assertEquals(50, config.maxBiomeSearches());
+        assertEquals(25, config.maxPortalPlacementAttemptsPerBiome());
+        assertEquals(30000, config.minGeneratedTerrainDistanceBlocks());
     }
 
     @Test

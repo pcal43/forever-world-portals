@@ -24,11 +24,11 @@ class ForeverWorldPortalsClientConfigLoaderTest {
             portalFrameBlock=minecraft:diamond_block
             returnPortalMode=RUINED
             client.portalColor=#4CAF50
-            destinationSpiralSpacingBlocks=10000
-            maximumSpiralSearchPositions=512
-            maximumBiomeSearches=64
-            maximumPortalPlacementAttemptsPerBiome=64
-            minimumGeneratedTerrainDistanceBlocks=10000
+            spiralSearchSpacing=10000
+            maxSpiralSearchPositions=512
+            maxBiomeSearches=64
+            maxPortalPlacementAttemptsPerBiome=64
+            minGeneratedTerrainDistanceBlocks=10000
             """;
 
     @Test

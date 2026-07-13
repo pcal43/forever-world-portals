@@ -157,7 +157,7 @@ public final class PortalTravelService {
             PortalPlacementService.LayoutSearchResult layoutSearchResult = portalPlacementService.findValidLayoutNearAnchor(
                     destinationLevel,
                     candidate.requestedAnchor(),
-                    config.maximumPortalPlacementAttemptsPerBiome(),
+                    config.maxPortalPlacementAttemptsPerBiome(),
                     destinationFrameState
             );
             if (layoutSearchResult.layout().isEmpty()) {
@@ -165,7 +165,7 @@ public final class PortalTravelService {
                         == PortalPlacementService.LayoutSearchResult.FailureReason.PLACEMENT_ATTEMPTS_EXHAUSTED) {
                     logger.debug(
                             "[fwportals] Exhausted {} portal placement attempts for biome result {} in {}. Continuing outer search with {} spiral positions and {} biome searches consumed.",
-                            config.maximumPortalPlacementAttemptsPerBiome(),
+                            config.maxPortalPlacementAttemptsPerBiome(),
                             candidate.requestedAnchor(),
                             destinationLevel.dimension().identifier(),
                             searchContext.searchBudget().spiralPositionsExamined(),

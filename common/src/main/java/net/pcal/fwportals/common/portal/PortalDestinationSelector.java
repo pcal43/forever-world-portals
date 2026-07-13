@@ -44,13 +44,13 @@ public final class PortalDestinationSelector {
                 portalAnchor.immutable(),
                 destinationTarget,
                 targetLabel,
-                new SpiralAnchorIterator(config.destinationSpiralSpacingBlocks()),
-                deriveBiomeSearchRadiusBlocks(config.destinationSpiralSpacingBlocks()),
-                new SearchBudget(config.maximumSpiralSearchPositions(), config.maximumBiomeSearches()),
+                new SpiralAnchorIterator(config.spiralSearchSpacing()),
+                deriveBiomeSearchRadiusBlocks(config.spiralSearchSpacing()),
+                new SearchBudget(config.maxSpiralSearchPositions(), config.maxBiomeSearches()),
                 List.of(
                         GeneratedTerrainDistanceConstraint.snapshot(
                                 level,
-                                config.minimumGeneratedTerrainDistanceBlocks(),
+                                config.minGeneratedTerrainDistanceBlocks(),
                                 logger
                         )
                 )
