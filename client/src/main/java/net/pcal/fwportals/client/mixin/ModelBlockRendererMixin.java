@@ -23,10 +23,12 @@ import java.util.List;
  * the common cross-loader rendering hook because both Fabric and NeoForge include the vanilla
  * renderer classes.
  *
- * <p>Fabric also has an alternate renderer path via Indigo. That path does not necessarily pass
- * through {@code ModelBlockRenderer}, so Fabric needs an additional loader-specific mixin targeting
- * Indigo's {@code AltModelBlockRendererImpl}. This class handles the vanilla path; the Fabric
- * mixin exists to preserve the same portal appearance when Indigo is the active renderer.
+ * <p>This mixin is necessary because vanilla {@code BlockStateModel.collectParts(...)} does
+ * not receive world or position context, while the decision between an ordinary Nether portal and
+ * a valid Forever World portal is inherently position-sensitive. Fabric Renderer API renderers may
+ * also consume models through {@code BlockStateModel.emitQuads(...)} instead of
+ * {@code ModelBlockRenderer}; that alternate path is handled on Fabric through public baked-model
+ * wrapping rather than a renderer-implementation mixin.
  */
 @Mixin(ModelBlockRenderer.class)
 abstract class ModelBlockRendererMixin {
@@ -36,9 +38,10 @@ abstract class ModelBlockRendererMixin {
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/block/dispatch/BlockStateModel;collectParts(Lnet/minecraft/util/RandomSource;Ljava/util/List;)V"
-            )
+            ),
+            require = 0
     )
-    private void fwportals$useTintedPortalModel(
+    private void fwportals$useTintedPortalModelVanilla(
             BlockStateModel model,
             RandomSource random,
             List<BlockStateModelPart> parts,
@@ -52,6 +55,34 @@ abstract class ModelBlockRendererMixin {
             BlockStateModel originalModel,
             long seed
     ) {
-        ForeverWorldPortalsClient.getInstance().wrapPortalModelIfNeeded(level, pos, state, model).collectParts(random, parts);
+        ForeverWorldPortalsClient.getInstance().collectPortalModelParts(level, pos, state, model, random, parts);
+    }
+
+    @Redirect(
+            method = "tesselateBlock",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/block/dispatch/BlockStateModel;collectParts(Lnet/minecraft/client/renderer/block/BlockAndTintGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/util/RandomSource;Ljava/util/List;)V"
+            ),
+            require = 0
+    )
+    private void fwportals$useTintedPortalModelNeoForge(
+            BlockStateModel model,
+            BlockAndTintGetter collectLevel,
+            BlockPos collectPos,
+            BlockState collectState,
+            RandomSource random,
+            List<BlockStateModelPart> parts,
+            BlockQuadOutput output,
+            float x,
+            float y,
+            float z,
+            BlockAndTintGetter level,
+            BlockPos pos,
+            BlockState state,
+            BlockStateModel originalModel,
+            long seed
+    ) {
+        ForeverWorldPortalsClient.getInstance().collectPortalModelParts(collectLevel, collectPos, collectState, model, random, parts);
     }
 }

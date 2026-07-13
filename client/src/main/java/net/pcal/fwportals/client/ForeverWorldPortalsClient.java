@@ -19,6 +19,11 @@ import net.pcal.fwportals.common.portal.PortalInventoryAccess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.Method;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+
 public final class ForeverWorldPortalsClient {
 
     private static final ForeverWorldPortalsClient INSTANCE = new ForeverWorldPortalsClient();
@@ -27,7 +32,29 @@ public final class ForeverWorldPortalsClient {
     static final SpriteId PORTAL_MASK_SPRITE_ID = new SpriteId(TextureAtlas.LOCATION_BLOCKS, PORTAL_MASK_TEXTURE_ID);
 
     private final PortalFrameDetector detector = new PortalFrameDetector();
+    private final Map<BlockStateModel, BlockStateModel> tintedPortalModelCache = new IdentityHashMap<>();
+    private final ClassValue<CollectPartsInvoker> collectPartsInvokers = new ClassValue<>() {
+        @Override
+        protected CollectPartsInvoker computeValue(Class<?> type) {
+            try {
+                Method method = type.getMethod(
+                        "collectParts",
+                        BlockAndTintGetter.class,
+                        BlockPos.class,
+                        BlockState.class,
+                        net.minecraft.util.RandomSource.class,
+                        List.class
+                );
+                return (model, level, pos, state, random, parts) -> method.invoke(model, level, pos, state, random, parts);
+            } catch (NoSuchMethodException ignored) {
+                return (model, level, pos, state, random, parts) -> model.collectParts(random, parts);
+            } catch (Throwable error) {
+                throw new IllegalStateException("Failed to resolve BlockStateModel.collectParts invoker for " + type.getName(), error);
+            }
+        }
+    };
     private ForeverWorldPortalsClientConfig config;
+    private TextureAtlasSprite cachedPortalMaskSprite;
 
     public static ForeverWorldPortalsClient getInstance() {
         return INSTANCE;
@@ -87,7 +114,18 @@ public final class ForeverWorldPortalsClient {
         if (!state.is(Blocks.NETHER_PORTAL) || !isForeverWorldPortal(level, pos)) {
             return model;
         }
-        return new TintedPortalBlockStateModel(model, portalMaskSprite());
+        return wrapPortalModel(model);
+    }
+
+    public BlockStateModel wrapPortalModel(BlockStateModel model) {
+        TextureAtlasSprite sprite = portalMaskSprite();
+        synchronized (tintedPortalModelCache) {
+            if (cachedPortalMaskSprite != sprite) {
+                tintedPortalModelCache.clear();
+                cachedPortalMaskSprite = sprite;
+            }
+            return tintedPortalModelCache.computeIfAbsent(model, key -> new TintedPortalBlockStateModel(key, sprite));
+        }
     }
 
     public boolean isForeverWorldPortal(BlockAndTintGetter level, BlockPos pos) {
@@ -95,6 +133,30 @@ public final class ForeverWorldPortalsClient {
                 ? ForeverWorldPortalsService.getInstance().config().frameBlock().defaultBlockState()
                 : Blocks.DIAMOND_BLOCK.defaultBlockState();
         return detector.findPortalFrame(level, pos, frameState).isPresent();
+    }
+
+    public void collectPortalModelParts(
+            BlockAndTintGetter level,
+            BlockPos pos,
+            BlockState state,
+            BlockStateModel model,
+            net.minecraft.util.RandomSource random,
+            List<net.minecraft.client.renderer.block.dispatch.BlockStateModelPart> parts
+    ) {
+        try {
+            collectPartsInvokers.get(model.getClass()).invoke(
+                    wrapPortalModelIfNeeded(level, pos, state, model),
+                    level,
+                    pos,
+                    state,
+                    random,
+                    parts
+            );
+        } catch (RuntimeException | Error error) {
+            throw error;
+        } catch (Throwable error) {
+            throw new IllegalStateException("Failed to collect portal model parts for " + model.getClass().getName(), error);
+        }
     }
 
     private TextureAtlasSprite portalMaskSprite() {
@@ -106,5 +168,17 @@ public final class ForeverWorldPortalsClient {
             config = ForeverWorldPortalsClientConfigLoader.load(LOGGER);
         }
         return config;
+    }
+
+    @FunctionalInterface
+    private interface CollectPartsInvoker {
+        void invoke(
+                BlockStateModel model,
+                BlockAndTintGetter level,
+                BlockPos pos,
+                BlockState state,
+                net.minecraft.util.RandomSource random,
+                List<net.minecraft.client.renderer.block.dispatch.BlockStateModelPart> parts
+        ) throws Throwable;
     }
 }
