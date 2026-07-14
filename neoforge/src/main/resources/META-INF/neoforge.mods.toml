@@ -9,6 +9,7 @@ config = "fwportals.client.mixins.json"
 modId = "fwportals"
 version = "${mod_version}"
 displayName = "Forever World Portals"
+logoFile = "assets/fwportals/icon.png"
 description = "Server-side diamond-frame portal activation and recognition without teleportation yet."
 displayTest = "IGNORE_ALL_VERSION"
 [[dependencies.fwportals]]
