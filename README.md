@@ -1,163 +1,90 @@
 # Forever World Portals
 
-Forever World Portals currently supports diamond-frame portal activation, anchor-based persistent routes, generated return portals, and reloadable data-driven attunement definitions. Inventory stripping is still intentionally not implemented.
+Forever World Portals adds player-built portals that permanently connect your 
+world to distant regions of the Overworld. This makes it easy to explore new 
+biomes or to return to the early-game experience without starting a new world 
+or walking thousands of blocks.
 
-- Mod ID: `fwportals`
-- Java package: `net.pcal.fwportals`
-- Supported Minecraft version: `26.2`
-- Supported loaders: Fabric and NeoForge
-- Java version: `25`
-- Intended deployment: server-side only
+Over time, your world becomes a collection of settlements connected by a 
+growing network of permanent portals, making it easy to revisit old homes, 
+discover newly generated content, and continue the same adventure for years 
+instead of constantly starting over.
 
-## Build
+## Features
 
-```sh
-./gradlew clean build
-```
+* Teleport to distant lands in ungenerated chunks.
+* Attune portals to specific biomes by offering items.
+* Highly configurable.
+* Vanilla-friendly, works with vanilla clients.
+* Supports both Fabric and NeoForge.
 
-## Development Launch
+## Usage
 
-```sh
-just run-fabric-server
-just run-neoforge-server
-```
+### Building a Portal
 
-Client launch recipes are also present to match the Quicksort template:
+Build a normal Nether portal frame, but use **diamond blocks** instead of obsidian.
 
-```sh
-just run-fabric
-just run-neoforge
-```
+Light the portal with Flint and Steel.
 
-## Useful `just` Recipes
+The first time a player enters the portal, Forever World Portals searches for a suitable destination and permanently links the portal to it. Future trips through that portal always return to the same location.
 
-- `just clean`
-- `just compile`
-- `just compile-common`
-- `just test`
-- `just jar`
-- `just run-fabric-server`
-- `just run-neoforge-server`
+### Portal Attunements
 
-## Diamond Portal Construction
+Before a newly created portal is used for the first time, you may throw certain items into it to influence where it will lead.
 
-Build a standard vertical Nether-portal rectangle, but use `minecraft:diamond_block` for the full frame instead of obsidian.
+The default configuration includes attunements for several biome types:
 
-- Supported geometry matches vanilla Nether portals
-- The interior must be empty before activation
-- Light the interior with `minecraft:flint_and_steel`
-- The portal uses vanilla Nether portal blocks, sounds, particles, and visuals after activation
-- Lighting a portal alone does not generate a destination
+* Sunflower → Sunflower Plains
+* Allium → Flower Forest
+* Pale Oak Sapling → Pale Garden
 
-## First-Entry Behavior
+If no offering is made, the portal uses the server's default destination.
 
-The first time a player enters a valid diamond-frame portal:
+Attunements can be customized using Minecraft data packs.
 
-- the complete portal is detected and assigned one canonical anchor block in the lowest interior row
-- if no registered portal anchor is enclosed by that physical portal, the mod walks a deterministic square spiral of distant search anchors
-- entering an unresolved portal displays a server-driven action-bar destination-search message before the search begins
-- at each eligible spiral anchor, the mod uses Minecraft's built-in worldgen biome search for the current default biome target
-- the mod attempts to generate a destination portal whose canonical anchor is exactly the requested candidate block
-- after generation succeeds, two independent portal routes are stored persistently:
-  - original portal anchor -> generated destination anchor
-  - generated destination anchor -> original portal anchor
-- the player is teleported to `Vec3.atBottomCenterOf(destinationAnchor)`
+### Return Travel
 
-Later entries through any physical Forever World portal that still encloses the same stored portal anchor reuse the same exact destination anchor without rerolling anything.
+By default, a ruined portal will generate at your destination. In order to get back home, you'll have to rebuild it using diamond blocks.
 
-## Attunements
-
-Attunements are loaded from server data packs at:
-
-```text
-data/<namespace>/forever_world_portals/attunements.json
-```
-
-The built-in file lives at:
-
-```text
-common/src/main/resources/data/forever_world_portals/forever_world_portals/attunements.json
-```
-
-Definitions are merged by logical attunement ID in pack-priority order. A higher-priority definition replaces the entire lower-priority definition with the same logical ID. Definitions with other IDs remain in place.
-
-The built-in file includes a required reserved `default` definition. After merge, there must be exactly one effective `default` entry, it must not specify an `item`, and all non-`default` entries must specify one.
-
-Current built-in mappings:
-
-- `default` -> `minecraft:cherry_grove`
-- `minecraft:sunflower` -> `minecraft:sunflower_plains`
-- `minecraft:allium` -> `minecraft:flower_forest`
-- `minecraft:pale_oak_sapling` -> `minecraft:pale_garden`
-
-Current scope:
-
-- item-to-target mappings plus color and optional vanilla particle metadata are loaded and validated from data packs
-- biome targets only
-- `minecraft:overworld` only
-- attunement is applied by throwing one recognized item into an unresolved portal before first use
-- the most recently accepted offering replaces any previous portal attunement
-- accepted offerings are consumed immediately, trigger a brief multi-tick portal-wide magical particle surge plus a confirmation sound, and send an action-bar message to the throwing player when identified
-- unrecognized items are ignored without feedback
-- established portals cannot be re-attuned
-- portal founding uses the stored portal attunement when present and otherwise falls back to the effective data-driven `default` target
-
-## Portal Anchor Identity
-
-The registry stores anchor-to-anchor routes, not linked portal-pair objects and not separate landing coordinates.
-
-- Every physical Forever World portal has one canonical `anchorBlock`
-- The anchor is inside the portal interior, in the lowest interior row, as close as possible to the horizontal center
-- Even-width portals break ties toward the more-negative world coordinate along the portal axis
-- A rebuilt frame keeps the same identity if it still encloses that stored portal anchor
-- Moving the frame so it no longer encloses that anchor creates a new portal
-- Teleportation always derives arrival from the stored destination anchor and does not use a separate persisted landing position
-- By default, players must carry absolutely nothing to enter a Forever World portal; this can be disabled with `requireEmptyInventory=false`
+But you can also change the configuration to generate a fully-functional return portal or no portal whatsoever.
 
 ## Configuration
 
-The mod writes and loads `config/fwportals.properties`.
+The first time the mod runs, it creates:
 
-- Purpose: configure Forever World portal activation, logging, destination selection, and return-portal behavior
-- Current settings: `requireEmptyInventory`, `logLevel`, `portalFrameBlock`, `returnPortalMode`, `spiralSearchSpacing`, `maxSpiralSearchPositions`, `maxBiomeSearches`, `maxPortalPlacementAttemptsPerBiome`, `minGeneratedTerrainDistanceBlocks`, and `client.portalColor`
-- Initial creation: if `fwportals.properties` does not exist, the mod copies the bundled `fwportals-default.properties` template verbatim
-- Defaults on startup: the bundled `fwportals-default.properties` resource is always loaded as the default-value source, and any keys present in the user file override it
-- Partial user configs: omitted keys continue using the defaults bundled with the installed mod version
-- Existing user files are never automatically overwritten or rewritten just to add newly introduced settings
-- `requireEmptyInventory=true` prevents portal activation unless the player's main inventory, hotbar, armor slots, and offhand are all empty
-- `spiralSearchSpacing` controls square-spiral search-center spacing
-- The biome-search radius is derived from spiral spacing as `ceil(spacing / sqrt(2))`
-- `maxSpiralSearchPositions` limits cheap spiral-center inspection across one destination search
-- `maxBiomeSearches` independently limits expensive biome-locator calls across one destination search
-- `maxPortalPlacementAttemptsPerBiome` resets for each eligible biome result and limits concrete generated-layout evaluations
-- `minGeneratedTerrainDistanceBlocks` remains the independent minimum distance from pre-existing generated terrain
-- `returnPortalMode` accepts `NONE`, `RUINED`, or `COMPLETE` and defaults to `RUINED`
-- `client.portalColor` sets the fixed RGB tint used by the optional client module for valid Forever World portals and defaults to `#4CAF50`
+```text
+config/fwportals.properties
+```
 
-`returnPortalMode` currently supports these values:
+Most servers can use the default configuration without modification.
 
-- `NONE`: no destination portal is generated and no reverse portal is registered
-- `RUINED`: a cobbled-deepslate placeholder frame plus buried crying-obsidian footing is generated and registered
-- `COMPLETE`: a complete diamond Forever World portal plus buried crying-obsidian footing is generated and registered
+Configuration options allow server operators to control:
 
-## Status
+* portal activation requirements
+* whether players must have empty inventories
+* destination portal generation
+* destination search behavior
+* logging
+* optional client portal color
 
-- The mod is intended to remain server-side-only so vanilla clients can connect.
-- Clients with the optional mod installed render valid Forever World portals with a fixed configurable green tint while ordinary Nether portals remain vanilla purple.
-- Clients with the optional mod installed also suppress the vanilla portal screen-warp effect while the local player is standing in a valid Forever World portal and carrying items.
-- Diamond-block Forever World portal activation, anchor-based route identity, first-entry teleportation, generated return portals, thrown-item portal attunement, and data-pack-driven attunement loading are implemented.
-- Ordinary obsidian Nether portals are left to vanilla behavior.
-- Entering a new Forever World portal permanently creates an anchor-to-anchor route in world saved data.
-- Generated return travel works by creating a second independent source portal route from the generated destination anchor back to the original source anchor.
-- Teleportation currently supports only `minecraft:overworld` destination targets.
-- Destination selection uses a stored thrown-item portal attunement when present and otherwise uses the effective data-pack `default` target for new portals.
-- Inventory stripping, player-built return-portal matching, commands, custom content, and other later gameplay systems are not implemented yet.
+## Optional Client Module
 
-## Known Limitations
+Forever World Portals works with completely vanilla clients.  But if you
+do have the mod installed on the client (or are playing single-player),
+you will get some enhanced effects on the portals.
 
-- Only players are teleported in Pass 4. Non-player entities are recognized but not transported.
-- `REQUIRE_PLAYER_BUILD` and `NONE` are intentionally not implemented yet and fail clearly if selected.
-- Attunement reload fails fast on invalid item IDs, biome IDs, duplicate effective input items, empty biome lists, or unsupported destination dimensions.
-- Inventory stripping and player-built portal matching are deferred to later passes.
-- This pass keeps the current development-only assumption that older experimental registry data will be discarded rather than migrated.
-- In-world portal founding and restart persistence were not exercised through automated game tests in this pass; verification focused on build/test coverage plus Fabric and NeoForge dedicated-server startup.
+## Disclaimers
+
+* Forever World Portals is published under the MIT License.
+
+* You're free to include this mod in modpacks provided appropriate attribution 
+is given and that modpack consumers download it from modrinth or curseforge
+(e.g., in an mrpack).
+
+* A significant portion of this mod was developed using AI coding tools.
+
+## Questions?
+
+If you have questions, suggestions, or bug reports, please join the Discord server:
+
+https://discord.pcal.net
