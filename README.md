@@ -1,13 +1,13 @@
 # Forever World Portals
 
-Forever World Portals adds player-built portals that permanently connect your 
-world to distant regions of the Overworld. This makes it easy to explore new 
-biomes or to return to the early-game experience without starting a new world 
+Forever World Portals adds player-built portals that permanently connect your
+world to distant regions of the Overworld. This makes it easy to explore new
+biomes or to return to the early-game experience without starting a new world
 or walking thousands of blocks.
 
-Over time, your world becomes a collection of settlements connected by a 
-growing network of permanent portals, making it easy to revisit old homes, 
-discover newly generated content, and continue the same adventure for years 
+Over time, your world becomes a collection of settlements connected by a
+growing network of permanent portals, making it easy to revisit old homes,
+discover newly generated content, and continue the same adventure for years
 instead of constantly starting over.
 
 ## Features
@@ -22,9 +22,11 @@ instead of constantly starting over.
 
 ### Building a Portal
 
-Build a normal Nether portal frame, but use **diamond blocks** instead of obsidian.
+Build a normal Nether portal frame, but use **diamond blocks** instead of obsidian.  Light the portal with Flint-and-Steel.
 
-Light the portal with Flint and Steel.
+<a href="https://raw.githubusercontent.com/pcal43/forever-world-portals/refs/heads/main/etc/screenshots/portal.png">
+<img src="https://raw.githubusercontent.com/pcal43/forever-world-portals/refs/heads/main/etc/screenshots/portal.png" width="640" alt="Portal">
+</a>
 
 The first time a player enters the portal, Forever World Portals searches for a suitable destination and permanently links the portal to it. Future trips through that portal always return to the same location.
 
@@ -32,13 +34,17 @@ The first time a player enters the portal, Forever World Portals searches for a 
 
 Before a newly created portal is used for the first time, you may throw certain items into it to influence where it will lead.
 
-The default configuration includes attunements for several biome types:
+<a href="https://raw.githubusercontent.com/pcal43/forever-world-portals/refs/heads/main/etc/screenshots/attunement.png">
+<img src="https://raw.githubusercontent.com/pcal43/forever-world-portals/refs/heads/main/etc/screenshots/attunement.png" width="640" alt="Attunement">
+</a>
+
+The default configuration includes attunements for several biome types, such as:
 
 * Sunflower → Sunflower Plains
 * Allium → Flower Forest
 * Pale Oak Sapling → Pale Garden
 
-If no offering is made, the portal uses the server's default destination.
+The full list is <a href='https://github.com/pcal43/forever-world-portals/blob/main/common/src/main/resources/data/forever_world_portals/forever_world_portals/attunements.json'>here</a>.  If no offering is made, the portal uses the server's default destination.
 
 Attunements can be customized using Minecraft data packs.
 
@@ -46,28 +52,26 @@ Attunements can be customized using Minecraft data packs.
 
 By default, a ruined portal will generate at your destination. In order to get back home, you'll have to rebuild it using diamond blocks.
 
-But you can also change the configuration to generate a fully-functional return portal or no portal whatsoever.
+<a href="https://raw.githubusercontent.com/pcal43/forever-world-portals/refs/heads/main/etc/screenshots/return-portal.png">
+<img src="https://raw.githubusercontent.com/pcal43/forever-world-portals/refs/heads/main/etc/screenshots/return-portal.png" width="640" alt="Return portal">
+</a>
+
+But you can also change the <a href='https://github.com/pcal43/forever-world-portals/blob/main/common/src/main/resources/fwportals-default.properties'>configuration</a> to generate a fully-functional return portal or no portal whatsoever.
 
 ## Configuration
 
-The first time the mod runs, it creates:
+The first time the mod runs, it creates a <a href='https://github.com/pcal43/forever-world-portals/blob/main/common/src/main/resources/fwportals-default.properties'>default configuration</a> file in
 
 ```text
 config/fwportals.properties
 ```
+You can edit this file to change
+* Whether players must have empty inventories to enter the portal
+* How return portals are generated
+* Biome search behavior
+* ...and more
 
-Most servers can use the default configuration without modification.
-
-Configuration options allow server operators to control:
-
-* portal activation requirements
-* whether players must have empty inventories
-* destination portal generation
-* destination search behavior
-* logging
-* optional client portal color
-
-## Optional Client Module
+## Client-Optional
 
 Forever World Portals works with completely vanilla clients.  But if you
 do have the mod installed on the client (or are playing single-player),
@@ -77,9 +81,9 @@ you will get some enhanced effects on the portals.
 
 * Forever World Portals is published under the MIT License.
 
-* You're free to include this mod in modpacks provided appropriate attribution 
-is given and that modpack consumers download it from modrinth or curseforge
-(e.g., in an mrpack).
+* You're free to include this mod in modpacks provided appropriate attribution
+  is given and that modpack consumers download it from modrinth or curseforge
+  (e.g., in an mrpack).
 
 * A significant portion of this mod was developed using AI coding tools.
 
