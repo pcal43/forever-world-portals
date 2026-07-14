@@ -1,4 +1,4 @@
-package net.pcal.fwportals.common.portal;
+package net.pcal.fwportals.common.attunement;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -6,10 +6,11 @@ import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.pcal.fwportals.common.portal.PortalFrame;
 
 import java.util.List;
 
-public final class PortalAttunementParticles {
+public final class AttunementParticles {
 
     static final int ANIMATION_TICKS = 6;
     static final int END_ROD_COUNT = 30;
@@ -17,7 +18,7 @@ public final class PortalAttunementParticles {
     static final int DUST_COUNT = 18;
     static final float DUST_SCALE = 0.9F;
 
-    private PortalAttunementParticles() {
+    private AttunementParticles() {
     }
 
     public static void emitAcceptedOfferingTick(ServerLevel level, PortalInteriorBounds bounds, int colorRgb, int tickIndex) {

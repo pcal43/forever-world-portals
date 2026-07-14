@@ -11,7 +11,7 @@ import net.pcal.fwportals.common.attunement.AttunementRegistry;
 import net.pcal.fwportals.common.config.CommonConfig;
 import net.pcal.fwportals.common.config.CommonConfigLoader;
 import net.pcal.fwportals.common.portal.PortalActivationService;
-import net.pcal.fwportals.common.portal.PortalAttunementService;
+import net.pcal.fwportals.common.attunement.AttunementService;
 import net.pcal.fwportals.common.portal.PortalFrame;
 import net.pcal.fwportals.common.portal.PortalTravelService;
 import org.apache.logging.log4j.LogManager;
@@ -38,7 +38,7 @@ public final class CommonService {
     private boolean initialized;
     private MinecraftServer currentServer;
     private PortalActivationService portalActivationService;
-    private PortalAttunementService portalAttunementService;
+    private AttunementService portalAttunementService;
     private PortalTravelService portalTravelService;
     private AttunementRegistry attunementRegistry;
 
@@ -61,7 +61,7 @@ public final class CommonService {
         this.config = requireNonNull(config);
         this.logger = requireNonNull(logger);
         this.attunementRegistry = new AttunementRegistry(logger);
-        this.portalAttunementService = new PortalAttunementService(logger, attunementRegistry);
+        this.portalAttunementService = new AttunementService(logger, attunementRegistry);
         this.portalActivationService = new PortalActivationService(config, logger, portalAttunementService);
         this.portalTravelService = new PortalTravelService(config, logger, attunementRegistry);
         this.initialized = true;

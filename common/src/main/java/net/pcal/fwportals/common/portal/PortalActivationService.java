@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.NetherPortalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.pcal.fwportals.CommonService;
+import net.pcal.fwportals.common.attunement.AttunementService;
 import net.pcal.fwportals.common.config.CommonConfig;
 import org.apache.logging.log4j.Logger;
 
@@ -31,13 +32,13 @@ public final class PortalActivationService {
     private static final long INVENTORY_WARNING_COOLDOWN_TICKS = 40L;
     private final CommonConfig config;
     private final Logger logger;
-    private final PortalAttunementService portalAttunementService;
+    private final AttunementService portalAttunementService;
     private final PortalFrameDetector detector = new PortalFrameDetector();
     private final PortalIdentity portalIdentity = new PortalIdentity();
     private final Map<UUID, PortalEntryRecord> recentEntries = new HashMap<>();
     private final Map<UUID, Long> recentInventoryWarnings = new HashMap<>();
 
-    public PortalActivationService(CommonConfig config, Logger logger, PortalAttunementService portalAttunementService) {
+    public PortalActivationService(CommonConfig config, Logger logger, AttunementService portalAttunementService) {
         this.config = config;
         this.logger = logger;
         this.portalAttunementService = portalAttunementService;

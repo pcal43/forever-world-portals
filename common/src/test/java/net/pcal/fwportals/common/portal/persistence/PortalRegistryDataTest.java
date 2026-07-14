@@ -24,7 +24,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ForeverWorldPortalRegistryDataTest {
+class PortalRegistryDataTest {
 
     private final PortalFrameDetector detector = new PortalFrameDetector();
     private final PortalIdentity identity = new PortalIdentity();

@@ -1,9 +1,8 @@
-package net.pcal.fwportals.common.portal;
+package net.pcal.fwportals.common.attunement;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
-import net.pcal.fwportals.common.portal.PortalAttunementParticles;
 import net.pcal.fwportals.common.portal.PortalFrame;
 import org.joml.Vector3f;
 import org.junit.jupiter.api.Test;
@@ -13,25 +12,25 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class PortalAttunementParticlesTest {
+class AttunementParticlesTest {
 
     @Test
     void convertsAttunementRgbIntoDustParticleOptions() {
-        DustParticleOptions dust = PortalAttunementParticles.dustFromRgb(0x3366CC);
+        DustParticleOptions dust = AttunementParticles.dustFromRgb(0x3366CC);
         Vector3f color = dust.getColor();
 
         assertEquals(0x33 / 255.0F, color.x(), 0.0001F);
         assertEquals(0x66 / 255.0F, color.y(), 0.0001F);
         assertEquals(0xCC / 255.0F, color.z(), 0.0001F);
-        assertEquals(PortalAttunementParticles.DUST_SCALE, dust.getScale(), 0.0001F);
+        assertEquals(AttunementParticles.DUST_SCALE, dust.getScale(), 0.0001F);
     }
 
     @Test
     void spreadsParticleCountsAcrossAnimationTicks() {
-        assertEquals(6, PortalAttunementParticles.ANIMATION_TICKS);
-        assertEquals(30, sumCountsForAllTicks(PortalAttunementParticles.END_ROD_COUNT));
-        assertEquals(36, sumCountsForAllTicks(PortalAttunementParticles.REVERSE_PORTAL_COUNT));
-        assertEquals(18, sumCountsForAllTicks(PortalAttunementParticles.DUST_COUNT));
+        assertEquals(6, AttunementParticles.ANIMATION_TICKS);
+        assertEquals(30, sumCountsForAllTicks(AttunementParticles.END_ROD_COUNT));
+        assertEquals(36, sumCountsForAllTicks(AttunementParticles.REVERSE_PORTAL_COUNT));
+        assertEquals(18, sumCountsForAllTicks(AttunementParticles.DUST_COUNT));
     }
 
     @Test
@@ -53,7 +52,7 @@ class PortalAttunementParticlesTest {
                 )
         );
 
-        PortalAttunementParticles.PortalInteriorBounds bounds = PortalAttunementParticles.boundsOf(frame);
+        AttunementParticles.PortalInteriorBounds bounds = AttunementParticles.boundsOf(frame);
 
         assertEquals(0.15, bounds.minX(), 0.0001);
         assertEquals(0.85, bounds.maxX(), 0.0001);
@@ -68,8 +67,8 @@ class PortalAttunementParticlesTest {
 
     private static int sumCountsForAllTicks(int totalCount) {
         int sum = 0;
-        for (int tick = 0; tick < PortalAttunementParticles.ANIMATION_TICKS; tick++) {
-            sum += PortalAttunementParticles.countForTick(totalCount, PortalAttunementParticles.ANIMATION_TICKS, tick);
+        for (int tick = 0; tick < AttunementParticles.ANIMATION_TICKS; tick++) {
+            sum += AttunementParticles.countForTick(totalCount, AttunementParticles.ANIMATION_TICKS, tick);
         }
         return sum;
     }

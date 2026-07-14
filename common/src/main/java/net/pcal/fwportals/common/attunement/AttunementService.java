@@ -1,4 +1,4 @@
-package net.pcal.fwportals.common.portal;
+package net.pcal.fwportals.common.attunement;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -15,11 +15,11 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.pcal.fwportals.common.attunement.AttunementDefinition;
-import net.pcal.fwportals.common.attunement.AttunementLookup;
-import net.pcal.fwportals.common.attunement.AttunementRegistry;
 import net.pcal.fwportals.common.persistence.PortalRecord;
 import net.pcal.fwportals.common.persistence.PortalRegistryData;
+import net.pcal.fwportals.common.portal.PortalFeedbackText;
+import net.pcal.fwportals.common.portal.PortalFrame;
+import net.pcal.fwportals.common.portal.PortalIdentity;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class PortalAttunementService {
+public final class AttunementService {
 
     private static final long OFFERING_COOLDOWN_TICKS = 100L;
 
@@ -40,7 +40,7 @@ public final class PortalAttunementService {
     private final Map<UUID, Long> recentlyAcceptedOfferingTicks = new HashMap<>();
     private final Map<ResourceKey<Level>, List<ActiveAnimation>> activeAnimationsByDimension = new HashMap<>();
 
-    public PortalAttunementService(Logger logger, AttunementRegistry attunementRegistry) {
+    public AttunementService(Logger logger, AttunementRegistry attunementRegistry) {
         this.logger = logger;
         this.attunementRegistry = attunementRegistry;
     }
@@ -114,13 +114,13 @@ public final class PortalAttunementService {
             Iterator<ActiveAnimation> iterator = entry.getValue().iterator();
             while (iterator.hasNext()) {
                 ActiveAnimation animation = iterator.next();
-                PortalAttunementParticles.emitAcceptedOfferingTick(
+                AttunementParticles.emitAcceptedOfferingTick(
                         level,
                         animation.bounds(),
                         animation.colorRgb(),
                         animation.tickIndex()
                 );
-                if (animation.tickIndex() + 1 >= PortalAttunementParticles.ANIMATION_TICKS) {
+                if (animation.tickIndex() + 1 >= AttunementParticles.ANIMATION_TICKS) {
                     iterator.remove();
                 } else {
                     animation.advance();
@@ -190,11 +190,11 @@ public final class PortalAttunementService {
     ) {
         level.playSound(null, portalAnchor, SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.BLOCKS, 0.75F, 1.1F);
         ActiveAnimation animation = new ActiveAnimation(
-                PortalAttunementParticles.boundsOf(frame),
+                AttunementParticles.boundsOf(frame),
                 attunementDefinition.colorRgb()
         );
         activeAnimationsByDimension.computeIfAbsent(level.dimension(), ignored -> new java.util.ArrayList<>()).add(animation);
-        PortalAttunementParticles.emitAcceptedOfferingTick(level, animation.bounds(), animation.colorRgb(), animation.tickIndex());
+        AttunementParticles.emitAcceptedOfferingTick(level, animation.bounds(), animation.colorRgb(), animation.tickIndex());
         animation.advance();
     }
 
@@ -219,16 +219,16 @@ public final class PortalAttunementService {
     }
 
     private static final class ActiveAnimation {
-        private final PortalAttunementParticles.PortalInteriorBounds bounds;
+        private final AttunementParticles.PortalInteriorBounds bounds;
         private final int colorRgb;
         private int tickIndex;
 
-        private ActiveAnimation(PortalAttunementParticles.PortalInteriorBounds bounds, int colorRgb) {
+        private ActiveAnimation(AttunementParticles.PortalInteriorBounds bounds, int colorRgb) {
             this.bounds = bounds;
             this.colorRgb = colorRgb;
         }
 
-        PortalAttunementParticles.PortalInteriorBounds bounds() {
+        AttunementParticles.PortalInteriorBounds bounds() {
             return bounds;
         }
 

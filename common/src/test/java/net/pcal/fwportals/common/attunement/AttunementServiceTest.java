@@ -1,4 +1,4 @@
-package net.pcal.fwportals.common.portal;
+package net.pcal.fwportals.common.attunement;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
@@ -6,9 +6,6 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.pcal.fwportals.common.TestBootstrap;
-import net.pcal.fwportals.common.attunement.AttunementDefinition;
-import net.pcal.fwportals.common.attunement.AttunementLookup;
-import net.pcal.fwportals.common.attunement.BiomeDestinationTarget;
 import net.pcal.fwportals.common.persistence.PortalRecord;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +16,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class PortalAttunementServiceTest {
+class AttunementServiceTest {
 
     @Test
     void replacingOneAttunementWithAnotherUsesLastAcceptedOffering() {
@@ -27,7 +24,7 @@ class PortalAttunementServiceTest {
         AttunementLookup lookup = lookupWithTwoAttunements();
         PortalRecord existing = PortalRecord.pending(Level.OVERWORLD, new BlockPos(0, 64, 0), Identifier.parse("minecraft:sunflower"));
 
-        PortalAttunementService.AcceptedOffering offering = PortalAttunementService.resolveAcceptedOffering(
+        AttunementService.AcceptedOffering offering = AttunementService.resolveAcceptedOffering(
                 lookup,
                 existing,
                 Level.OVERWORLD,
@@ -43,7 +40,7 @@ class PortalAttunementServiceTest {
         TestBootstrap.ensureBootstrapped();
         AttunementLookup lookup = lookupWithTwoAttunements();
 
-        assertTrue(PortalAttunementService.resolveAcceptedOffering(
+        assertTrue(AttunementService.resolveAcceptedOffering(
                 lookup,
                 null,
                 Level.OVERWORLD,
@@ -63,7 +60,7 @@ class PortalAttunementServiceTest {
                 new BlockPos(100, 70, 100)
         );
 
-        assertTrue(PortalAttunementService.resolveAcceptedOffering(
+        assertTrue(AttunementService.resolveAcceptedOffering(
                 lookup,
                 resolved,
                 Level.OVERWORLD,
@@ -75,7 +72,7 @@ class PortalAttunementServiceTest {
     @Test
     void consumesExactlyOneItemFromStack() {
         TestBootstrap.ensureBootstrapped();
-        assertEquals(2, PortalAttunementService.remainingCountAfterAcceptedOffering(3));
+        assertEquals(2, AttunementService.remainingCountAfterAcceptedOffering(3));
     }
 
     private static AttunementLookup lookupWithTwoAttunements() {
