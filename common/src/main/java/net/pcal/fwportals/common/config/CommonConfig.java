@@ -14,7 +14,7 @@ public record CommonConfig(
         int maxSpiralSearchPositions,
         int maxBiomeSearches,
         int maxPortalPlacementAttemptsPerBiome,
-        int minGeneratedTerrainDistanceBlocks
+        int minTeleportDistance
 ) {
     public enum ReturnPortalMode {
         NONE,

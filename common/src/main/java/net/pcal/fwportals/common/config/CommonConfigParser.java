@@ -23,7 +23,7 @@ public final class CommonConfigParser {
             "maxSpiralSearchPositions",
             "maxBiomeSearches",
             "maxPortalPlacementAttemptsPerBiome",
-            "minGeneratedTerrainDistanceBlocks"
+            "minTeleportDistance"
     );
 
     static CommonConfig parseBundledDefaults(Properties bundledDefaults, String defaultResourceName) {
@@ -81,10 +81,10 @@ public final class CommonConfigParser {
                 defaults.maxPortalPlacementAttemptsPerBiome(),
                 logger
         );
-        int minGeneratedTerrainDistanceBlocks = parsePositiveInt(
+        int minTeleportDistance = parsePositiveInt(
                 properties,
-                "minGeneratedTerrainDistanceBlocks",
-                defaults.minGeneratedTerrainDistanceBlocks(),
+                "minTeleportDistance",
+                defaults.minTeleportDistance(),
                 logger
         );
         return new CommonConfig(
@@ -97,7 +97,7 @@ public final class CommonConfigParser {
                 maxSpiralSearchPositions,
                 maxBiomeSearches,
                 maxPortalPlacementAttemptsPerBiome,
-                minGeneratedTerrainDistanceBlocks
+                minTeleportDistance
         );
     }
 
@@ -308,8 +308,8 @@ public final class CommonConfigParser {
                 ),
                 requireParsedPositiveIntDefault(
                         defaultResourceName,
-                        "minGeneratedTerrainDistanceBlocks",
-                        requireDefaultValue(bundledDefaults, defaultResourceName, "minGeneratedTerrainDistanceBlocks")
+                        "minTeleportDistance",
+                        requireDefaultValue(bundledDefaults, defaultResourceName, "minTeleportDistance")
                 )
         );
     }

@@ -28,7 +28,7 @@ class ForeverWorldPortalsClientConfigLoaderTest {
             maxSpiralSearchPositions=512
             maxBiomeSearches=64
             maxPortalPlacementAttemptsPerBiome=64
-            minGeneratedTerrainDistanceBlocks=10000
+            minTeleportDistance=10000
             """;
 
     @Test

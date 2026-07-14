@@ -29,7 +29,7 @@ class ForeverWorldPortalsConfigParserTest {
                         maxSpiralSearchPositions=123
                         maxBiomeSearches=45
                         maxPortalPlacementAttemptsPerBiome=67
-                        minGeneratedTerrainDistanceBlocks=12345
+                        minTeleportDistance=12345
                         """),
                 defaults,
                 null
@@ -41,7 +41,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(123, config.maxSpiralSearchPositions());
         assertEquals(45, config.maxBiomeSearches());
         assertEquals(67, config.maxPortalPlacementAttemptsPerBiome());
-        assertEquals(12345, config.minGeneratedTerrainDistanceBlocks());
+        assertEquals(12345, config.minTeleportDistance());
     }
 
     @Test
@@ -67,7 +67,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(512, config.maxSpiralSearchPositions());
         assertEquals(45, config.maxBiomeSearches());
         assertEquals(64, config.maxPortalPlacementAttemptsPerBiome());
-        assertEquals(10000, config.minGeneratedTerrainDistanceBlocks());
+        assertEquals(10000, config.minTeleportDistance());
     }
 
     @Test
@@ -87,7 +87,7 @@ class ForeverWorldPortalsConfigParserTest {
                         maxSpiralSearchPositions=-1
                         maxBiomeSearches=zero
                         maxPortalPlacementAttemptsPerBiome=-2
-                        minGeneratedTerrainDistanceBlocks=-100
+                        minTeleportDistance=-100
                         """),
                 defaults,
                 null
@@ -101,7 +101,7 @@ class ForeverWorldPortalsConfigParserTest {
         assertEquals(512, config.maxSpiralSearchPositions());
         assertEquals(64, config.maxBiomeSearches());
         assertEquals(64, config.maxPortalPlacementAttemptsPerBiome());
-        assertEquals(10000, config.minGeneratedTerrainDistanceBlocks());
+        assertEquals(10000, config.minTeleportDistance());
     }
 
     @Test

@@ -50,7 +50,7 @@ public final class PortalDestinationSelector {
                 List.of(
                         GeneratedTerrainDistanceConstraint.snapshot(
                                 level,
-                                config.minGeneratedTerrainDistanceBlocks(),
+                                config.minTeleportDistance(),
                                 logger
                         )
                 )

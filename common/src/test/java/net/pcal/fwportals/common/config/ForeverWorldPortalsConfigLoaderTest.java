@@ -25,7 +25,7 @@ class ForeverWorldPortalsConfigLoaderTest {
             maxSpiralSearchPositions=512
             maxBiomeSearches=64
             maxPortalPlacementAttemptsPerBiome=64
-            minGeneratedTerrainDistanceBlocks=10000
+            minTeleportDistance=10000
             """;
 
     @Test
@@ -70,7 +70,7 @@ class ForeverWorldPortalsConfigLoaderTest {
                 maxSpiralSearchPositions=100
                 maxBiomeSearches=50
                 maxPortalPlacementAttemptsPerBiome=25
-                minGeneratedTerrainDistanceBlocks=30000
+                minTeleportDistance=30000
                 """, StandardCharsets.UTF_8);
 
         CommonConfig config = loader.load(configPath, null);
@@ -83,7 +83,7 @@ class ForeverWorldPortalsConfigLoaderTest {
         assertEquals(100, config.maxSpiralSearchPositions());
         assertEquals(50, config.maxBiomeSearches());
         assertEquals(25, config.maxPortalPlacementAttemptsPerBiome());
-        assertEquals(30000, config.minGeneratedTerrainDistanceBlocks());
+        assertEquals(30000, config.minTeleportDistance());
     }
 
     @Test
